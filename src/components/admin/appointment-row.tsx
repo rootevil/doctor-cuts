@@ -68,15 +68,15 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
   };
 
   return (
-    <article className="flex flex-col gap-4 border border-border p-4 md:flex-row md:items-center md:justify-between">
-      <div className="grid min-w-0 flex-1 grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1 md:grid-cols-[80px_1fr]">
+    <article className="flex flex-col gap-3 border border-border bg-[var(--admin-panel)] p-3 md:flex-row md:items-center md:justify-between md:gap-4 md:p-3.5">
+      <div className="grid min-w-0 flex-1 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 md:grid-cols-[72px_1fr]">
         <div className="flex flex-col leading-none">
-          <span className="font-display text-2xl">{startsAt}</span>
-          <span className="text-[10px] tracking-[0.22em] text-muted uppercase">{day}</span>
+          <span className="font-display text-xl md:text-2xl">{startsAt}</span>
+          <span className="text-[10px] tracking-[0.18em] text-muted uppercase">{day}</span>
         </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex flex-wrap items-baseline gap-x-3">
-            <h3 className="font-display text-lg leading-none">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+            <h3 className="font-display text-base leading-none md:text-lg">
               {appointment.customer?.full_name?.trim() ||
                 appointment.customer?.email ||
                 copy.unknownCustomer}
@@ -91,8 +91,10 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
             </span>
           </div>
           <p className="truncate text-xs text-muted">
-            {appointment.service?.name ?? "—"} · {appointment.service?.duration_minutes ?? 0} min ·{" "}
-            {appointment.service ? fmtCurrency(Number(appointment.service.price), locale) : "—"}
+            {appointment.service?.name ?? "—"}
+            {appointment.service
+              ? ` · ${fmtCurrency(Number(appointment.service.price), locale)}`
+              : ""}
           </p>
           {appointment.customer?.phone ? (
             <a

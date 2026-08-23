@@ -69,6 +69,7 @@ export function contactFromSettings(settings: SettingsRow) {
     telHref: telHrefFrom(settings.phone),
     whatsapp: settings.whatsapp || site.whatsapp,
     instagram: settings.instagram || site.instagram,
+    facebook: settings.facebook || site.facebook,
     mapsUrl: mapsUrlFromAddress(settings.address),
   };
 }

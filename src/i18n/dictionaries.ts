@@ -48,8 +48,6 @@ export type Dictionary = {
   };
   cta: {
     lines: [string, string, string];
-    button: string;
-    imageAlt: string;
   };
   gallery: {
     kicker: string;
@@ -59,26 +57,14 @@ export type Dictionary = {
     next: string;
     filters: Record<GalleryFilter, string>;
   };
-  experience: {
-    kicker: string;
-    items: [
-      { n: string; title: string; line: string; imageAlt: string },
-      { n: string; title: string; line: string; imageAlt: string },
-      { n: string; title: string; line: string; imageAlt: string },
-      { n: string; title: string; line: string; imageAlt: string },
-    ];
-  };
   about: {
     kicker: string;
     lines: [string, string];
     body: string;
     yearLabel: string;
     locationLabel: string;
+    findUs: string;
     imageAlt: string;
-  };
-  testimonials: {
-    kicker: string;
-    items: { quote: string; name: string }[];
   };
   location: {
     kicker: string;
@@ -93,16 +79,18 @@ export type Dictionary = {
   };
   footer: {
     rights: string;
-  };
-  bookBar: {
-    label: string;
-    cta: string;
+    backToTop: string;
   };
   pages: {
     servizi: {
       kicker: string;
       title: [string, string];
       intro: string;
+      listLabel: string;
+      priceCol: string;
+      durationCol: string;
+      detailsHint: string;
+      bookCta: string;
       metaTitle: string;
       metaDescription: string;
     };
@@ -113,12 +101,18 @@ export type Dictionary = {
       includesLabel: string;
       idealLabel: string;
       bookCta: string;
+      bookHint: string;
       relatedLabel: string;
+      viewAllServices: string;
     };
     galleria: {
       kicker: string;
       title: [string, string];
       intro: string;
+      heroImageAlt: string;
+      filterLabel: string;
+      empty: string;
+      bookCta: string;
       metaTitle: string;
       metaDescription: string;
     };
@@ -126,6 +120,8 @@ export type Dictionary = {
       kicker: string;
       title: [string, string];
       lead: string;
+      heroImageAlt: string;
+      storyLabel: string;
       sections: {
         title: string;
         body: string;
@@ -133,6 +129,10 @@ export type Dictionary = {
       }[];
       values: { label: string; body: string }[];
       valuesTitle: string;
+      visitTitle: string;
+      visitLead: string;
+      bookCta: string;
+      findUsCta: string;
       metaTitle: string;
       metaDescription: string;
     };
@@ -143,6 +143,7 @@ export type Dictionary = {
       channelsTitle: string;
       hoursTitle: string;
       addressTitle: string;
+      bookCta: string;
       metaTitle: string;
       metaDescription: string;
     };
@@ -178,6 +179,11 @@ export type Dictionary = {
           slotsAvailable: string;
           selected: string;
           timezoneNote: string;
+          legendAvailable: string;
+          legendBooked: string;
+          legendUnavailable: string;
+          booked: string;
+          unavailable: string;
         };
       };
       notesLabel: string;
@@ -185,6 +191,18 @@ export type Dictionary = {
       confirm: string;
       submitting: string;
       signInToBook: string;
+      nextHint: {
+        pickService: string;
+        pickDate: string;
+        pickTime: string;
+        addDetails: string;
+        ready: string;
+      };
+      locked: {
+        needService: string;
+        needDate: string;
+        needTime: string;
+      };
       guest: {
         title: string;
         lead: string;
@@ -201,6 +219,8 @@ export type Dictionary = {
         notConfiguredLead: string;
         emptyTitle: string;
         emptyLead: string;
+        closedTitle: string;
+        closedLead: string;
       };
       success: {
         kicker: string;
@@ -219,6 +239,7 @@ export type Dictionary = {
         authRequired: string;
         guestRequired: string;
         createFailed: string;
+        bookingsClosed: string;
       };
     };
     gestisci: {
@@ -280,8 +301,11 @@ export type Dictionary = {
       greeting: string;
       signOut: string;
       emailLabel: string;
+      phoneLabel: string;
       roleLabel: string;
       joinedLabel: string;
+      detailsTitle: string;
+      adminRole: string;
       adminPanelCta: string;
       appointmentsCta: string;
       metaTitle: string;
@@ -298,6 +322,7 @@ export type Dictionary = {
         bookCta: string;
         cancel: string;
         confirmCancel: string;
+        refLabel: string;
         statuses: {
           pending: string;
           confirmed: string;
@@ -360,6 +385,16 @@ export type Dictionary = {
         pendingHint: string;
         todaySchedule: string;
         emptyToday: string;
+        quickActions: string;
+        actionAppointments: string;
+        actionServices: string;
+        actionHours: string;
+        actionSettings: string;
+        attention: string;
+        attentionLead: string;
+        emptyPending: string;
+        nextUp: string;
+        scheduleCount: string;
       };
       appointments: {
         kicker: string;
@@ -496,6 +531,9 @@ export type Dictionary = {
         slotInterval: string;
         slotHint: string;
         requireConfirm: string;
+        requireConfirmHint: string;
+        bookingsEnabled: string;
+        bookingsEnabledHint: string;
         save: string;
         saving: string;
       };
@@ -518,7 +556,7 @@ const it: Dictionary = {
     gallery: "Galleria",
     about: "Storia",
     contact: "Contatti",
-    book: "Prenota",
+    book: "Prenota ora",
     menu: "Menu",
     close: "Chiudi",
     language: "Lingua",
@@ -528,10 +566,10 @@ const it: Dictionary = {
     en: "English",
   },
   hero: {
-    kicker: "EST. 2026",
+    kicker: "EST. 2025",
     lines: ["L’ARTE", "DEL", "TAGLIO."],
     sub: "Precisione e cura per l’uomo contemporaneo.",
-    cta: "Prenota appuntamento",
+    cta: "Prenota ora",
     scroll: "Scopri",
     imageAlt: "Taglio in corso nello studio Doctor Cuts",
   },
@@ -600,8 +638,6 @@ const it: Dictionary = {
   },
   cta: {
     lines: ["IL TUO PROSSIMO", "MIGLIOR LOOK", "INIZIA QUI."],
-    button: "Prenota",
-    imageAlt: "Uscita dallo studio, luce serale",
   },
   gallery: {
     kicker: "Galleria",
@@ -618,30 +654,14 @@ const it: Dictionary = {
       studio: "Studio",
     },
   },
-  experience: {
-    kicker: "L’esperienza",
-    items: [
-      { n: "01", title: "Arrivo", line: "Il rumore resta fuori.", imageAlt: "Interno dello studio" },
-      { n: "02", title: "Pausa", line: "Siediti. Rallenta.", imageAlt: "Attrezzi disposti con cura" },
-      { n: "03", title: "Craft", line: "Precisione in ogni dettaglio.", imageAlt: "Dettaglio di un taglio" },
-      { n: "04", title: "Uscita", line: "Esci diverso.", imageAlt: "Silhouette all’uscita dello studio" },
-    ],
-  },
   about: {
     kicker: "Storia",
     lines: ["COSTRUITO INTORNO", "AL BUON GUSTO."],
     body: "Doctor Cuts esiste per chi nota i dettagli. Uno studio a Macerata, pensato come un ritaglio di calma: luce bassa, attrezzi a posto, un taglio che tiene.",
     yearLabel: "Aperto",
     locationLabel: "Sede",
+    findUs: "Come trovarci",
     imageAlt: "Interno Doctor Cuts a Macerata",
-  },
-  testimonials: {
-    kicker: "Voci",
-    items: [
-      { quote: "Il miglior taglio che abbia fatto da anni.", name: "Marco R." },
-      { quote: "Silenzio, precisione, niente teatro. Esci a posto.", name: "Luca B." },
-      { quote: "Finalmente uno studio che tratta il taglio come un mestiere.", name: "Andrea V." },
-    ],
   },
   location: {
     kicker: "Trovaci",
@@ -656,17 +676,19 @@ const it: Dictionary = {
   },
   footer: {
     rights: "Tutti i diritti riservati.",
-  },
-  bookBar: {
-    label: "Taglio",
-    cta: "Prenota",
+    backToTop: "Torna su",
   },
   pages: {
     servizi: {
       kicker: "Servizi",
       title: ["QUATTRO MODI", "DI USCIRE DIVERSO."],
       intro:
-        "Ogni servizio è pensato come un rituale, non come una lista. Prezzi in euro, tempi reali. La prenotazione richiede pochi passaggi.",
+        "Ogni servizio è un rituale, non una lista. Prezzi chiari — tocca un servizio per prenotare.",
+      listLabel: "Menu servizi",
+      priceCol: "Prezzo",
+      durationCol: "Durata",
+      detailsHint: "Prenota",
+      bookCta: "Prenota ora",
       metaTitle: "Servizi — Doctor Cuts",
       metaDescription:
         "Tagli, fade, barba e rituale completo. Servizi di grooming maschile a Macerata da Doctor Cuts.",
@@ -677,14 +699,20 @@ const it: Dictionary = {
       priceLabel: "Prezzo",
       includesLabel: "Cosa è compreso",
       idealLabel: "Per chi è",
-      bookCta: "Prenota questo servizio",
+      bookCta: "Prenota ora",
+      bookHint: "Scegli data e ora online — questo servizio sarà già selezionato.",
       relatedLabel: "Altri servizi",
+      viewAllServices: "Vedi tutti",
     },
     galleria: {
       kicker: "Galleria",
       title: ["DENTRO", "LO STUDIO."],
       intro:
-        "Selezione di tagli, dettagli e ambienti. Le immagini si aprono a schermo intero.",
+        "Tagli, dettagli e ambienti. Filtra per categoria, tocca una foto per aprirla a schermo intero.",
+      heroImageAlt: "Interno dello studio Doctor Cuts a Macerata",
+      filterLabel: "Filtra per",
+      empty: "Nessuna foto in questa categoria.",
+      bookCta: "Prenota ora",
       metaTitle: "Galleria — Doctor Cuts",
       metaDescription:
         "Selezione di tagli, fade, barba e interni dello studio Doctor Cuts a Macerata.",
@@ -692,7 +720,9 @@ const it: Dictionary = {
     storia: {
       kicker: "Storia",
       title: ["COSTRUITO INTORNO", "AL BUON GUSTO."],
-      lead: "Doctor Cuts è uno studio a Macerata pensato per chi tratta il proprio look come parte di uno stile personale.",
+      lead: "Uno studio a Macerata per chi tratta il look come parte del proprio stile — non una corsa al prossimo cliente.",
+      heroImageAlt: "Interno dello studio Doctor Cuts",
+      storyLabel: "Come lavoriamo",
       sections: [
         {
           title: "L’idea",
@@ -716,6 +746,10 @@ const it: Dictionary = {
         { label: "Cura", body: "Prodotti e strumenti scelti uno per uno." },
       ],
       valuesTitle: "Valori",
+      visitTitle: "Vieni in studio",
+      visitLead: "Prenota online o passaci a trovare a Macerata.",
+      bookCta: "Prenota ora",
+      findUsCta: "Trovaci",
       metaTitle: "Storia — Doctor Cuts",
       metaDescription:
         "Come nasce Doctor Cuts a Macerata: uno studio pensato per chi tratta il proprio look come parte di uno stile personale.",
@@ -723,10 +757,11 @@ const it: Dictionary = {
     contatti: {
       kicker: "Contatti",
       title: ["SCRIVICI,", "CHIAMACI,", "PASSA."],
-      lead: "Prenotazioni via app, telefono o WhatsApp. Rispondiamo negli orari di apertura.",
+      lead: "Prenota online, chiamaci o scrivi su WhatsApp. Rispondiamo negli orari di apertura.",
       channelsTitle: "Canali",
       hoursTitle: "Orari",
       addressTitle: "Indirizzo",
+      bookCta: "Prenota ora",
       metaTitle: "Contatti — Doctor Cuts",
       metaDescription:
         "Indirizzo, telefono e canali per raggiungere Doctor Cuts a Macerata.",
@@ -734,7 +769,7 @@ const it: Dictionary = {
     prenota: {
       kicker: "Prenotazioni",
       title: ["PRENOTA", "ONLINE."],
-      lead: "Scegli il servizio, la data e l’orario. Puoi prenotare anche senza account: ti confermiamo via email.",
+      lead: "Scegli servizio, data e orario. Conferma via email — senza account.",
       note: "Prenotazioni disponibili fino a 30 giorni in anticipo.",
       contactCta: "Chiama lo studio",
       whatsappCta: "Scrivi su WhatsApp",
@@ -743,8 +778,8 @@ const it: Dictionary = {
       metaDescription:
         "Prenota il tuo appuntamento da Doctor Cuts a Macerata: scegli servizio, data e orario in pochi secondi.",
       steps: {
-        service: { title: "01 · Servizio", lead: "Scegli l’esperienza." },
-        date: { title: "02 · Data", lead: "Scegli un giorno dal calendario." },
+        service: { title: "Servizio", lead: "Cosa vuoi prenotare." },
+        date: { title: "Data", lead: "Scegli un giorno disponibile." },
         calendar: {
           prevMonth: "Mese precedente",
           nextMonth: "Mese successivo",
@@ -753,31 +788,48 @@ const it: Dictionary = {
           gridLabel: "Calendario prenotazioni",
         },
         time: {
-          title: "03 · Orario",
-          lead: "Orari liberi in base al servizio scelto.",
+          title: "Orario",
+          lead: "Solo orari ancora liberi.",
           loading: "Cerco orari disponibili…",
           empty: "Nessun orario libero in questa data. Prova un altro giorno.",
-          pickDateFirst: "Seleziona una data per vedere gli orari.",
-          pickSlot: "Tocca un orario per continuare.",
+          pickDateFirst: "Prima scegli una data.",
+          pickSlot: "Tocca un orario.",
           selectedLead: "Appuntamento alle",
           groups: {
             morning: "Mattina",
             afternoon: "Pomeriggio",
             evening: "Sera",
           },
-          slotsAvailable: "{count} orari disponibili",
+          slotsAvailable: "{count} disponibili",
           selected: "Selezionato: {time}",
-          timezoneNote: "Orari in fuso Europe/Rome (Macerata)",
+          timezoneNote: "Orari · Macerata",
+          legendAvailable: "Disponibile",
+          legendBooked: "Occupato",
+          legendUnavailable: "Chiuso",
+          booked: "Occupato",
+          unavailable: "Non disponibile",
         },
       },
-      notesLabel: "Note per il barbiere (opzionale)",
-      notesPlaceholder: "Es. preferenze di taglio, allergie, richieste particolari…",
+      notesLabel: "Note (opzionale)",
+      notesPlaceholder: "Preferenze, allergie, richieste…",
       confirm: "Conferma prenotazione",
       submitting: "Conferma in corso…",
       signInToBook: "Accedi per confermare",
+      nextHint: {
+        pickService: "Scegli un servizio",
+        pickDate: "Scegli una data",
+        pickTime: "Scegli un orario",
+        addDetails: "Inserisci nome e email",
+        ready: "Pronto per confermare",
+      },
+      locked: {
+        needService: "Prima scegli un servizio.",
+        needDate: "Prima scegli una data.",
+        needTime: "Prima scegli un orario.",
+      },
       guest: {
-        title: "04 · I tuoi dati",
-        lead: "Nessun account necessario. Ti mandiamo la conferma via email.",
+        title: "I tuoi dati",
+        lead: "Conferma via email — account non obbligatorio.",
         name: "Nome",
         email: "Email",
         phone: "Telefono (opzionale)",
@@ -785,7 +837,7 @@ const it: Dictionary = {
         signInLink: "Accedi",
       },
       summary: { service: "Servizio", date: "Data", time: "Ora", total: "Totale" },
-      assist: { lead: "Hai bisogno di aiuto?" },
+      assist: { lead: "Serve aiuto?" },
       states: {
         notConfiguredTitle: "Prenotazioni online in configurazione",
         notConfiguredLead:
@@ -793,6 +845,9 @@ const it: Dictionary = {
         emptyTitle: "Nessun servizio disponibile",
         emptyLead:
           "Non troviamo servizi attivi nel database. Se hai appena collegato Supabase, esegui supabase/seed.sql dal SQL Editor.",
+        closedTitle: "Prenotazioni sospese",
+        closedLead:
+          "Le prenotazioni online sono temporaneamente chiuse. Contattaci via WhatsApp o telefono.",
       },
       success: {
         kicker: "Confermata",
@@ -813,6 +868,8 @@ const it: Dictionary = {
         authRequired: "Accedi per confermare la prenotazione.",
         guestRequired: "Inserisci nome e email per confermare come ospite.",
         createFailed: "Non è stato possibile completare la prenotazione. Riprova.",
+        bookingsClosed:
+          "Le prenotazioni online sono sospese. Contatta lo studio via WhatsApp o telefono.",
       },
     },
     gestisci: {
@@ -872,13 +929,16 @@ const it: Dictionary = {
     account: {
       kicker: "Account",
       title: ["CIAO,", ""],
-      lead: "Da qui gestirai prenotazioni, preferenze e dati di contatto.",
+      lead: "I tuoi appuntamenti e i dati del profilo, tutto in un’unica pagina.",
       greeting: "Ciao",
       signOut: "Esci",
       emailLabel: "Email",
+      phoneLabel: "Telefono",
       roleLabel: "Ruolo",
       joinedLabel: "Iscritto dal",
-      adminPanelCta: "Vai al pannello admin",
+      detailsTitle: "I tuoi dati",
+      adminRole: "Admin",
+      adminPanelCta: "Pannello admin",
       appointmentsCta: "I tuoi appuntamenti",
       metaTitle: "Account — Doctor Cuts",
       metaDescription: "Area personale Doctor Cuts.",
@@ -887,14 +947,15 @@ const it: Dictionary = {
         title: ["I TUOI", "APPUNTAMENTI."],
         lead: "Gestisci le tue prenotazioni passate e future.",
         backToAccount: "Torna all’account",
-        upcomingTitle: "In arrivo",
+        upcomingTitle: "Prossimi appuntamenti",
         pastTitle: "Storico",
         emptyUpcomingLead:
           "Non hai appuntamenti in arrivo. Prenota il prossimo taglio in pochi secondi.",
-        emptyPastLead: "Nessun appuntamento passato al momento.",
+        emptyPastLead: "Nessun appuntamento nello storico.",
         bookCta: "Prenota ora",
         cancel: "Annulla",
         confirmCancel: "Sei sicuro di voler annullare questo appuntamento?",
+        refLabel: "Rif.",
         statuses: {
           pending: "In attesa",
           confirmed: "Confermato",
@@ -948,16 +1009,26 @@ const it: Dictionary = {
       },
       overview: {
         kicker: "Overview",
-        lead: "Il polso dello studio in tempo reale.",
+        lead: "Cosa fare ora: conferma le richieste, gestisci l’agenda di oggi.",
         viewAll: "Tutti gli appuntamenti",
         today: "Oggi",
-        todayHint: "Prenotazioni attive per oggi",
+        todayHint: "In agenda oggi",
         upcoming: "In arrivo",
-        upcomingHint: "Confermati o in attesa",
+        upcomingHint: "Prossimi giorni",
         pending: "Da confermare",
-        pendingHint: "Richiedono la tua approvazione",
+        pendingHint: "Richiedono azione",
         todaySchedule: "Agenda di oggi",
-        emptyToday: "Nessun appuntamento oggi. Buona giornata.",
+        emptyToday: "Nessun appuntamento oggi.",
+        quickActions: "Scorciatoie",
+        actionAppointments: "Appuntamenti",
+        actionServices: "Servizi",
+        actionHours: "Orari",
+        actionSettings: "Impostazioni",
+        attention: "Da confermare",
+        attentionLead: "Conferma o aggiorna queste richieste.",
+        emptyPending: "Nessuna richiesta in attesa.",
+        nextUp: "Prossimo",
+        scheduleCount: "{count} in lista",
       },
       appointments: {
         kicker: "Appuntamenti",
@@ -1092,7 +1163,12 @@ const it: Dictionary = {
         cancellationHint: "Ore minime prima dell’appuntamento per annullare online.",
         slotInterval: "Slot (min)",
         slotHint: "Griglia di orari mostrata al cliente (es. ogni 15 min).",
-        requireConfirm: "Richiedi conferma manuale per ogni prenotazione",
+        requireConfirm: "Richiedi approvazione admin (altrimenti conferma automatica)",
+        requireConfirmHint:
+          "Se attivo, le prenotazioni restano in attesa finché non le confermi dal pannello.",
+        bookingsEnabled: "Accetta prenotazioni online",
+        bookingsEnabledHint:
+          "Disattiva per sospendere le nuove prenotazioni. Gli slot liberati dalle cancellazioni tornano disponibili.",
         save: "Salva impostazioni",
         saving: "Salvataggio…",
       },
@@ -1115,7 +1191,7 @@ const en: Dictionary = {
     gallery: "Gallery",
     about: "About",
     contact: "Contact",
-    book: "Book",
+    book: "Book now",
     menu: "Menu",
     close: "Close",
     language: "Language",
@@ -1125,10 +1201,10 @@ const en: Dictionary = {
     en: "English",
   },
   hero: {
-    kicker: "EST. 2026",
+    kicker: "EST. 2025",
     lines: ["THE ART", "OF THE", "CUT."],
     sub: "Precision grooming for modern men.",
-    cta: "Book appointment",
+    cta: "Book now",
     scroll: "Explore",
     imageAlt: "A cut in progress at Doctor Cuts",
   },
@@ -1197,8 +1273,6 @@ const en: Dictionary = {
   },
   cta: {
     lines: ["YOUR NEXT", "BEST LOOK", "STARTS HERE."],
-    button: "Book now",
-    imageAlt: "Leaving the studio at dusk",
   },
   gallery: {
     kicker: "Gallery",
@@ -1215,30 +1289,14 @@ const en: Dictionary = {
       studio: "Studio",
     },
   },
-  experience: {
-    kicker: "The experience",
-    items: [
-      { n: "01", title: "Arrive", line: "Leave the noise outside.", imageAlt: "Studio interior" },
-      { n: "02", title: "Reset", line: "Sit back. Slow down.", imageAlt: "Tools laid out with care" },
-      { n: "03", title: "Craft", line: "Precision in every detail.", imageAlt: "Close detail of a cut" },
-      { n: "04", title: "Leave sharp", line: "Walk out different.", imageAlt: "Leaving the studio" },
-    ],
-  },
   about: {
     kicker: "About",
     lines: ["BUILT AROUND", "GOOD TASTE."],
     body: "Doctor Cuts was created for people who notice the details. A studio in Macerata, cut out of the noise: low light, tools in place, a cut that holds.",
     yearLabel: "Established",
     locationLabel: "Location",
+    findUs: "Find us",
     imageAlt: "Doctor Cuts interior in Macerata",
-  },
-  testimonials: {
-    kicker: "Notes",
-    items: [
-      { quote: "The best cut I’ve had in years.", name: "Marco R." },
-      { quote: "Quiet, precise, no theatre. You leave put together.", name: "Luca B." },
-      { quote: "A studio that still treats cutting as a craft.", name: "Andrea V." },
-    ],
   },
   location: {
     kicker: "Find us",
@@ -1253,17 +1311,19 @@ const en: Dictionary = {
   },
   footer: {
     rights: "All rights reserved.",
-  },
-  bookBar: {
-    label: "Haircut",
-    cta: "Book",
+    backToTop: "Back to top",
   },
   pages: {
     servizi: {
       kicker: "Services",
       title: ["FOUR WAYS", "TO LEAVE DIFFERENT."],
       intro:
-        "Every service is a ritual, not a list. Prices in euros, real durations. Booking takes a few steps.",
+        "Every service is a ritual, not a list. Clear prices — tap a service to book now.",
+      listLabel: "Service menu",
+      priceCol: "Price",
+      durationCol: "Duration",
+      detailsHint: "Book",
+      bookCta: "Book now",
       metaTitle: "Services — Doctor Cuts",
       metaDescription:
         "Cuts, fades, beard work, and the full ritual. Men’s grooming services in Macerata.",
@@ -1274,14 +1334,20 @@ const en: Dictionary = {
       priceLabel: "Price",
       includesLabel: "What’s included",
       idealLabel: "Ideal for",
-      bookCta: "Book this service",
+      bookCta: "Book now",
+      bookHint: "Pick a date and time online — this service is pre-selected.",
       relatedLabel: "Other services",
+      viewAllServices: "View all",
     },
     galleria: {
       kicker: "Gallery",
       title: ["INSIDE", "THE STUDIO."],
       intro:
-        "A selection of cuts, details, and spaces. Tap any image to view it full-screen.",
+        "Cuts, details, and the room. Filter by category, tap a photo to open it full-screen.",
+      heroImageAlt: "Doctor Cuts studio interior in Macerata",
+      filterLabel: "Filter by",
+      empty: "No photos in this category.",
+      bookCta: "Book now",
       metaTitle: "Gallery — Doctor Cuts",
       metaDescription:
         "Selected cuts, fades, beard work, and interiors from Doctor Cuts in Macerata.",
@@ -1289,7 +1355,9 @@ const en: Dictionary = {
     storia: {
       kicker: "About",
       title: ["BUILT AROUND", "GOOD TASTE."],
-      lead: "Doctor Cuts is a studio in Macerata for people who treat their look as part of a personal style.",
+      lead: "A studio in Macerata for people who treat their look as part of personal style — not a rush to the next chair.",
+      heroImageAlt: "Doctor Cuts studio interior",
+      storyLabel: "How we work",
       sections: [
         {
           title: "The idea",
@@ -1313,6 +1381,10 @@ const en: Dictionary = {
         { label: "Care", body: "Products and tools chosen one by one." },
       ],
       valuesTitle: "Values",
+      visitTitle: "Visit the studio",
+      visitLead: "Book online or find us in Macerata.",
+      bookCta: "Book now",
+      findUsCta: "Find us",
       metaTitle: "About — Doctor Cuts",
       metaDescription:
         "How Doctor Cuts came to be in Macerata: a studio for people who treat their look as part of a personal style.",
@@ -1320,17 +1392,18 @@ const en: Dictionary = {
     contatti: {
       kicker: "Contact",
       title: ["WRITE,", "CALL,", "COME IN."],
-      lead: "Bookings by app, phone, or WhatsApp. We reply during opening hours.",
+      lead: "Book online, call, or message on WhatsApp. We reply during opening hours.",
       channelsTitle: "Channels",
       hoursTitle: "Hours",
       addressTitle: "Address",
+      bookCta: "Book now",
       metaTitle: "Contact — Doctor Cuts",
       metaDescription: "Address, phone, and channels to reach Doctor Cuts in Macerata.",
     },
     prenota: {
       kicker: "Bookings",
       title: ["BOOK", "ONLINE."],
-      lead: "Pick a service, a date, and a time. No account needed — confirmation lands in your inbox.",
+      lead: "Choose service, date, and time. Email confirmation — no account needed.",
       note: "Book up to 30 days in advance.",
       contactCta: "Call the studio",
       whatsappCta: "Message on WhatsApp",
@@ -1339,8 +1412,8 @@ const en: Dictionary = {
       metaDescription:
         "Book your appointment at Doctor Cuts in Macerata: pick a service, date, and time in seconds.",
       steps: {
-        service: { title: "01 · Service", lead: "Choose your experience." },
-        date: { title: "02 · Date", lead: "Pick a day from the calendar." },
+        service: { title: "Service", lead: "What would you like?" },
+        date: { title: "Date", lead: "Pick an available day." },
         calendar: {
           prevMonth: "Previous month",
           nextMonth: "Next month",
@@ -1349,31 +1422,48 @@ const en: Dictionary = {
           gridLabel: "Booking calendar",
         },
         time: {
-          title: "03 · Time",
-          lead: "Open slots based on your service.",
+          title: "Time",
+          lead: "Only open slots are shown.",
           loading: "Loading available times…",
           empty: "No open slots on this day. Try another date.",
-          pickDateFirst: "Select a date to see available times.",
-          pickSlot: "Tap a time to continue.",
+          pickDateFirst: "Pick a date first.",
+          pickSlot: "Tap a time.",
           selectedLead: "Appointment at",
           groups: {
             morning: "Morning",
             afternoon: "Afternoon",
             evening: "Evening",
           },
-          slotsAvailable: "{count} slots available",
+          slotsAvailable: "{count} open",
           selected: "Selected: {time}",
-          timezoneNote: "Times shown in Europe/Rome (Macerata)",
+          timezoneNote: "Times · Macerata",
+          legendAvailable: "Open",
+          legendBooked: "Taken",
+          legendUnavailable: "Closed",
+          booked: "Booked",
+          unavailable: "Unavailable",
         },
       },
-      notesLabel: "Notes for the barber (optional)",
-      notesPlaceholder: "e.g. style preferences, allergies, requests…",
+      notesLabel: "Notes (optional)",
+      notesPlaceholder: "Style preferences, allergies, requests…",
       confirm: "Confirm booking",
       submitting: "Confirming…",
       signInToBook: "Sign in to confirm",
+      nextHint: {
+        pickService: "Choose a service",
+        pickDate: "Pick a date",
+        pickTime: "Choose a time",
+        addDetails: "Add your name and email",
+        ready: "Ready to confirm",
+      },
+      locked: {
+        needService: "Choose a service first.",
+        needDate: "Pick a date first.",
+        needTime: "Choose a time first.",
+      },
       guest: {
-        title: "04 · Your details",
-        lead: "No account needed. We’ll email the confirmation.",
+        title: "Your details",
+        lead: "Confirmation by email — no account required.",
         name: "Name",
         email: "Email",
         phone: "Phone (optional)",
@@ -1389,6 +1479,9 @@ const en: Dictionary = {
         emptyTitle: "No services available",
         emptyLead:
           "We can’t find any active services in the database. If you just linked Supabase, run supabase/seed.sql in the SQL Editor.",
+        closedTitle: "Bookings paused",
+        closedLead:
+          "Online booking is temporarily closed. Reach us on WhatsApp or by phone.",
       },
       success: {
         kicker: "Confirmed",
@@ -1408,6 +1501,8 @@ const en: Dictionary = {
         authRequired: "Sign in to confirm the booking.",
         guestRequired: "Add your name and email to confirm as a guest.",
         createFailed: "We couldn’t complete the booking. Try again.",
+        bookingsClosed:
+          "Online booking is paused. Reach the studio on WhatsApp or by phone.",
       },
     },
     gestisci: {
@@ -1467,13 +1562,16 @@ const en: Dictionary = {
     account: {
       kicker: "Account",
       title: ["HELLO,", ""],
-      lead: "Manage your bookings, preferences, and contact details.",
+      lead: "Your appointments and profile details — all on one page.",
       greeting: "Hello",
       signOut: "Sign out",
       emailLabel: "Email",
+      phoneLabel: "Phone",
       roleLabel: "Role",
       joinedLabel: "Member since",
-      adminPanelCta: "Open admin panel",
+      detailsTitle: "Your details",
+      adminRole: "Admin",
+      adminPanelCta: "Admin panel",
       appointmentsCta: "Your appointments",
       metaTitle: "Account — Doctor Cuts",
       metaDescription: "Doctor Cuts personal area.",
@@ -1490,6 +1588,7 @@ const en: Dictionary = {
         bookCta: "Book now",
         cancel: "Cancel",
         confirmCancel: "Are you sure you want to cancel this appointment?",
+        refLabel: "Ref.",
         statuses: {
           pending: "Pending",
           confirmed: "Confirmed",
@@ -1543,16 +1642,26 @@ const en: Dictionary = {
       },
       overview: {
         kicker: "Overview",
-        lead: "The studio at a glance.",
+        lead: "What to do now: confirm requests, run today’s chair.",
         viewAll: "All appointments",
         today: "Today",
-        todayHint: "Active bookings for today",
+        todayHint: "On the book today",
         upcoming: "Upcoming",
-        upcomingHint: "Confirmed or pending",
+        upcomingHint: "Next days",
         pending: "To confirm",
-        pendingHint: "Waiting on your approval",
+        pendingHint: "Needs your action",
         todaySchedule: "Today’s schedule",
         emptyToday: "Nothing on the schedule today.",
+        quickActions: "Shortcuts",
+        actionAppointments: "Appointments",
+        actionServices: "Services",
+        actionHours: "Hours",
+        actionSettings: "Settings",
+        attention: "Needs confirmation",
+        attentionLead: "Confirm or update these requests.",
+        emptyPending: "No pending requests.",
+        nextUp: "Next up",
+        scheduleCount: "{count} listed",
       },
       appointments: {
         kicker: "Appointments",
@@ -1687,7 +1796,12 @@ const en: Dictionary = {
         cancellationHint: "Minimum hours ahead to cancel online.",
         slotInterval: "Slot (min)",
         slotHint: "Grid the client sees (e.g. every 15 min).",
-        requireConfirm: "Require manual confirmation for every booking",
+        requireConfirm: "Require admin approval (otherwise auto-confirm)",
+        requireConfirmHint:
+          "When on, bookings stay pending until you confirm them in admin.",
+        bookingsEnabled: "Accept online bookings",
+        bookingsEnabledHint:
+          "Turn off to pause new bookings. Cancelled appointments free their slots again.",
         save: "Save settings",
         saving: "Saving…",
       },

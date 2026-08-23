@@ -15,20 +15,18 @@ function padId(index: number) {
 
 export async function Services({ locale, t }: { locale: Locale; t: Dictionary }) {
   const r = routes(locale);
+  const bookHint = t.pages.servizi.detailsHint;
   const dbServices = await getActiveServices();
   const list =
     dbServices.length > 0
       ? dbServices.map((s, i) => {
           const dict = t.services.items[s.slug as ServiceSlug];
-          const fallback = staticServices.find((x) => x.slug === s.slug);
           return {
             slug: s.slug,
             id: padId(i),
             name: dict?.name ?? s.name,
             blurb: dict?.blurb ?? s.description ?? "",
             price: formatPrice(Number(s.price), locale),
-            duration: `${s.duration_minutes} ${t.services.minutes}`,
-            image: s.image_url || fallback?.image || "/images/cut-detail.jpg",
           };
         })
       : staticServices.map((service) => {
@@ -39,15 +37,13 @@ export async function Services({ locale, t }: { locale: Locale; t: Dictionary })
             name: copy.name,
             blurb: copy.blurb,
             price: formatPrice(service.price, locale),
-            duration: `${service.duration} ${t.services.minutes}`,
-            image: service.image,
           };
         });
 
   return (
-    <section id="services" className="border-t border-border bg-background">
-      <div className="mx-auto max-w-[1600px] px-6 md:px-10">
-        <div className="flex items-baseline justify-between border-b border-border pb-8 pt-24">
+    <section id="services" className="section-shell bg-background">
+      <div className="site-wrap-wide section-pad-y">
+        <div className="section-head flex items-baseline justify-between">
           <Kicker>{t.services.kicker}</Kicker>
           <Link
             href={r.services}
@@ -57,25 +53,24 @@ export async function Services({ locale, t }: { locale: Locale; t: Dictionary })
           </Link>
         </div>
 
-        <ul className="divide-y divide-border">
+        <ul className="divide-y section-rule">
           {list.map((service) => (
             <li key={service.slug}>
               <RevealFade>
                 <ServiceRow
-                  href={r.service(service.slug)}
+                  href={r.bookService(service.slug)}
                   id={service.id}
                   name={service.name}
                   blurb={service.blurb}
                   price={service.price}
-                  duration={service.duration}
-                  image={service.image}
+                  detailsHint={bookHint}
                 />
               </RevealFade>
             </li>
           ))}
         </ul>
 
-        <div className="flex justify-end border-t border-border py-8 md:hidden">
+        <div className="mt-2 flex justify-end border-t section-rule pt-6 md:hidden">
           <Link
             href={r.services}
             className="link-brass text-[11px] tracking-[0.28em] uppercase"

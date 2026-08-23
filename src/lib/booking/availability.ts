@@ -37,6 +37,14 @@ export type AvailabilityInput = {
   bookings: ExistingBooking[];
 };
 
+/** available = bookable · booked = taken · unavailable = break / too soon / past */
+export type SlotState = "available" | "booked" | "unavailable";
+
+export type SlotOption = {
+  startsAt: string;
+  state: SlotState;
+};
+
 function hhmmToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + (m ?? 0);
@@ -48,8 +56,45 @@ function minutesToHHMM(mins: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-/** Returns an array of ISO UTC strings — the slot *start* times. */
-export function computeSlots(input: AvailabilityInput): string[] {
+function overlapsRange(
+  start: number,
+  end: number,
+  ranges: Array<[number, number]>,
+): boolean {
+  return ranges.some(([bs, be]) => start < be && end > bs);
+}
+
+function bookingRanges(
+  dateISO: string,
+  bookings: ExistingBooking[],
+): Array<[number, number]> {
+  const dayStartUtc = shopLocalToUtc(dateISO, "00:00").getTime();
+  const ranges: Array<[number, number]> = [];
+  for (const booking of bookings) {
+    const s = new Date(booking.starts_at);
+    const e = new Date(booking.ends_at);
+    const startMin = Math.floor((s.getTime() - dayStartUtc) / 60_000);
+    const endMin = Math.ceil((e.getTime() - dayStartUtc) / 60_000);
+    if (endMin <= 0 || startMin >= 24 * 60) continue;
+    ranges.push([Math.max(0, startMin), Math.min(24 * 60, endMin)]);
+  }
+  return ranges;
+}
+
+function breakRanges(dayOfWeek: number, breaks: Break[]): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  for (const b of breaks) {
+    if (b.day_of_week !== null && b.day_of_week !== dayOfWeek) continue;
+    ranges.push([hhmmToMinutes(b.start_time), hhmmToMinutes(b.end_time)]);
+  }
+  return ranges;
+}
+
+/**
+ * Full day grid with status so the UI can show available (green) vs booked (red).
+ * Cancelled appointments are not in `bookings` — they free the slot again.
+ */
+export function computeSlotGrid(input: AvailabilityInput): SlotOption[] {
   if (input.blockedDate) return [];
 
   const dayHours = input.hours.find((h) => h.day_of_week === input.dayOfWeek);
@@ -61,45 +106,37 @@ export function computeSlots(input: AvailabilityInput): string[] {
   const closeMin = hhmmToMinutes(dayHours.close_time);
   const duration = input.serviceDurationMinutes;
   const step = Math.max(5, input.slotIntervalMinutes);
+  const noticeCutoff = new Date(
+    input.now.getTime() + input.bookingNoticeHours * 3_600_000,
+  );
 
-  const noticeCutoff = new Date(input.now.getTime() + input.bookingNoticeHours * 3_600_000);
+  const taken = bookingRanges(input.dateISO, input.bookings);
+  const paused = breakRanges(input.dayOfWeek, input.breaks);
 
-  // Existing bookings + breaks reshaped as [startMinute, endMinute) in shop-local for the day.
-  const blocks: Array<[number, number]> = [];
-
-  for (const b of input.breaks) {
-    if (b.day_of_week !== null && b.day_of_week !== input.dayOfWeek) continue;
-    blocks.push([hhmmToMinutes(b.start_time), hhmmToMinutes(b.end_time)]);
-  }
-
-  for (const booking of input.bookings) {
-    const s = new Date(booking.starts_at);
-    const e = new Date(booking.ends_at);
-    // Convert to shop-local minutes on `dateISO`. If the booking straddles
-    // midnight in shop time, we still get a clean interval by comparing to
-    // the day's UTC bounds via shopLocalToUtc anchors.
-    const dayStartUtc = shopLocalToUtc(input.dateISO, "00:00").getTime();
-    const startMin = Math.floor((s.getTime() - dayStartUtc) / 60_000);
-    const endMin = Math.ceil((e.getTime() - dayStartUtc) / 60_000);
-    if (endMin <= 0 || startMin >= 24 * 60) continue;
-    blocks.push([Math.max(0, startMin), Math.min(24 * 60, endMin)]);
-  }
-
-  const slots: string[] = [];
+  const slots: SlotOption[] = [];
 
   for (let start = openMin; start + duration <= closeMin; start += step) {
     const end = start + duration;
-
-    const overlaps = blocks.some(([bs, be]) => start < be && end > bs);
-    if (overlaps) continue;
-
     const startUtc = shopLocalToUtc(input.dateISO, minutesToHHMM(start));
-    if (startUtc < noticeCutoff) continue;
 
-    slots.push(startUtc.toISOString());
+    let state: SlotState = "available";
+    if (startUtc < noticeCutoff || overlapsRange(start, end, paused)) {
+      state = "unavailable";
+    } else if (overlapsRange(start, end, taken)) {
+      state = "booked";
+    }
+
+    slots.push({ startsAt: startUtc.toISOString(), state });
   }
 
   return slots;
+}
+
+/** Open (bookable) start times only — used where a flat list is enough. */
+export function computeSlots(input: AvailabilityInput): string[] {
+  return computeSlotGrid(input)
+    .filter((s) => s.state === "available")
+    .map((s) => s.startsAt);
 }
 
 /** Convenience: shift a date by N days (re-exported for consumers). */

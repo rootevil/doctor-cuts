@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHero } from "@/components/layout/page-hero";
 import { GalleryFull } from "@/components/gallery/gallery-full";
 import { getPublicGallery } from "@/lib/data/gallery";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -40,14 +39,5 @@ export default async function GalleriaPage({
   const t = getDictionary(locale);
   const items = await getPublicGallery();
 
-  return (
-    <>
-      <PageHero
-        kicker={t.pages.galleria.kicker}
-        title={t.pages.galleria.title}
-        lead={t.pages.galleria.intro}
-      />
-      <GalleryFull t={t} items={items} />
-    </>
-  );
+  return <GalleryFull t={t} locale={locale} items={items} />;
 }

@@ -15,6 +15,7 @@ insert into public.settings (
   max_booking_days,
   cancellation_hours,
   require_confirmation,
+  bookings_enabled,
   slot_interval_minutes
 ) values (
   true,
@@ -28,6 +29,7 @@ insert into public.settings (
   30,
   12,
   false,
+  true,
   15
 )
 on conflict (singleton) do update set

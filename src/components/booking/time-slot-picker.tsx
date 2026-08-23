@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { CalendarClock, Clock, Loader2, Moon, Sun, Sunrise } from "lucide-react";
 import type { Locale } from "@/i18n/config";
+import type { SlotOption } from "@/lib/booking/availability";
 import { Alert } from "@/components/ui/alert";
 
 export type TimeSlotCopy = {
@@ -16,13 +17,18 @@ export type TimeSlotCopy = {
   slotsAvailable: string;
   selected: string;
   timezoneNote: string;
+  legendAvailable: string;
+  legendBooked: string;
+  legendUnavailable: string;
+  booked: string;
+  unavailable: string;
 };
 
 type Props = {
   locale: Locale;
   timezone: string;
   dateISO: string | null;
-  slots: string[];
+  slots: SlotOption[];
   value: string | null;
   loading: boolean;
   error: string | null;
@@ -79,16 +85,21 @@ export function TimeSlotPicker({
   copy,
 }: Props) {
   const grouped = useMemo(() => {
-    const map: Record<SlotGroup, string[]> = {
+    const map: Record<SlotGroup, SlotOption[]> = {
       morning: [],
       afternoon: [],
       evening: [],
     };
-    for (const iso of slots) {
-      map[slotGroup(iso, timezone)].push(iso);
+    for (const slot of slots) {
+      map[slotGroup(slot.startsAt, timezone)].push(slot);
     }
     return map;
   }, [slots, timezone]);
+
+  const availableCount = useMemo(
+    () => slots.filter((s) => s.state === "available").length,
+    [slots],
+  );
 
   const timeLabel = (iso: string) => formatInTimeZone(new Date(iso), timezone, "HH:mm");
   const selectedTime = value ? timeLabel(value) : null;
@@ -98,8 +109,8 @@ export function TimeSlotPicker({
   if (!dateISO) {
     return (
       <div className="time-slot-panel time-slot-panel--hint">
-        <Clock className="h-8 w-8 text-brass-muted" aria-hidden />
-        <p className="text-sm text-body">{copy.pickDateFirst}</p>
+        <Clock className="h-5 w-5 text-brass-muted" aria-hidden />
+        <p className="text-xs text-body">{copy.pickDateFirst}</p>
       </div>
     );
   }
@@ -135,13 +146,11 @@ export function TimeSlotPicker({
   if (slots.length === 0) {
     return (
       <div className="time-slot-panel time-slot-panel--hint" role="status">
-        <CalendarClock className="h-8 w-8 text-muted" aria-hidden />
-        <div className="flex flex-col gap-1 text-center">
-          <p className="text-sm text-foreground">{copy.empty}</p>
+        <CalendarClock className="h-5 w-5 text-muted" aria-hidden />
+        <div className="flex flex-col gap-0.5 text-center">
+          <p className="text-xs text-foreground">{copy.empty}</p>
           {dateHeading ? (
-            <p className="text-label capitalize">
-              {dateHeading}
-            </p>
+            <p className="text-label capitalize">{dateHeading}</p>
           ) : null}
         </div>
       </div>
@@ -155,27 +164,32 @@ export function TimeSlotPicker({
       <div className="time-slot-panel-head">
         <div className="min-w-0 flex-1">
           <p className="time-slot-date capitalize">{dateHeading}</p>
-          <p className="mt-1 text-caption uppercase">
-            {copy.timezoneNote}
-          </p>
+          <p className="mt-1 text-caption uppercase">{copy.timezoneNote}</p>
         </div>
         <span className="time-slot-badge" role="status">
-          {copy.slotsAvailable.replace("{count}", String(slots.length))}
+          {copy.slotsAvailable.replace("{count}", String(availableCount))}
         </span>
       </div>
 
+      <ul className="time-slot-legend" aria-label="Slot legend">
+        <li>
+          <span className="time-slot-legend-swatch is-available" aria-hidden />
+          {copy.legendAvailable}
+        </li>
+        <li>
+          <span className="time-slot-legend-swatch is-booked" aria-hidden />
+          {copy.legendBooked}
+        </li>
+        <li>
+          <span className="time-slot-legend-swatch is-unavailable" aria-hidden />
+          {copy.legendUnavailable}
+        </li>
+      </ul>
+
       {selectedTime ? (
-        <div className="time-slot-selected" role="status" aria-live="polite">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] tracking-[0.24em] text-brass-muted uppercase">
-              {copy.selectedLead}
-            </p>
-            <p className="time-slot-selected-clock">{selectedTime}</p>
-          </div>
-          <p className="text-label uppercase">
-            {copy.selected.replace("{time}", selectedTime)}
-          </p>
-        </div>
+        <p className="time-slot-pick-hint !text-brass" role="status" aria-live="polite">
+          {copy.selected.replace("{time}", selectedTime)}
+        </p>
       ) : (
         <p className="time-slot-pick-hint">{copy.pickSlot}</p>
       )}
@@ -193,21 +207,41 @@ export function TimeSlotPicker({
                   {copy.groups[key]}
                 </h4>
                 <span className="time-slot-group-range">{range}</span>
-                <span className="time-slot-group-count">{list.length}</span>
+                <span className="time-slot-group-count">
+                  {list.filter((s) => s.state === "available").length}
+                </span>
               </div>
               <div className="time-slot-grid" role="group" aria-label={copy.groups[key]}>
-                {list.map((iso) => {
-                  const selected = iso === value;
+                {list.map((slot) => {
+                  const { startsAt, state } = slot;
+                  const selected = startsAt === value;
+                  const selectable = state === "available";
+                  const stateLabel =
+                    state === "booked"
+                      ? copy.booked
+                      : state === "unavailable"
+                        ? copy.unavailable
+                        : null;
                   return (
                     <button
-                      key={iso}
+                      key={startsAt}
                       type="button"
-                      onClick={() => onChange(iso)}
+                      disabled={!selectable}
+                      onClick={() => selectable && onChange(startsAt)}
                       aria-pressed={selected}
-                      aria-label={`${timeLabel(iso)}${selected ? `, ${copy.selected.replace("{time}", timeLabel(iso))}` : ""}`}
-                      className={`time-slot-btn ${selected ? "time-slot-btn--selected" : ""}`}
+                      aria-label={`${timeLabel(startsAt)}${
+                        stateLabel ? `, ${stateLabel}` : ""
+                      }${selected ? `, ${copy.selected.replace("{time}", timeLabel(startsAt))}` : ""}`}
+                      className={`time-slot-btn time-slot-btn--${state} ${
+                        selected ? "time-slot-btn--selected" : ""
+                      }`}
                     >
-                      <span className="time-slot-btn-time">{timeLabel(iso)}</span>
+                      <span className="time-slot-btn-time">{timeLabel(startsAt)}</span>
+                      {stateLabel && !selected ? (
+                        <span className="time-slot-btn-state" aria-hidden>
+                          {stateLabel}
+                        </span>
+                      ) : null}
                       {selected ? (
                         <span className="time-slot-btn-check" aria-hidden>
                           ✓

@@ -71,6 +71,8 @@ export type SettingsRow = {
   max_booking_days: number;
   cancellation_hours: number;
   require_confirmation: boolean;
+  /** When false, online booking is paused for customers. */
+  bookings_enabled: boolean;
   slot_interval_minutes: number;
   updated_at: string;
 };

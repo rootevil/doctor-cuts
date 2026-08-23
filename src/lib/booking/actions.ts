@@ -5,7 +5,8 @@ import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
-import { computeSlots } from "@/lib/booking/availability";
+import { computeSlotGrid, type SlotOption } from "@/lib/booking/availability";
+import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
 import { SHOP_TZ, shopDayOfWeek, shopToday } from "@/lib/booking/timezone";
 import { getBookingsForDate } from "@/lib/data/appointments";
 import {
@@ -36,10 +37,17 @@ export type SlotList = {
   ok: true;
   dateISO: string;
   timezone: string;
-  slots: string[];
+  slots: SlotOption[];
+  bookingsEnabled: boolean;
 } | {
   ok: false;
-  reason: "not_configured" | "invalid_input" | "unknown_service" | "past_date" | "beyond_window";
+  reason:
+    | "not_configured"
+    | "invalid_input"
+    | "unknown_service"
+    | "past_date"
+    | "beyond_window"
+    | "bookings_closed";
 };
 
 export async function getAvailableSlots(
@@ -61,6 +69,10 @@ export async function getAvailableSlots(
   if (!service) return { ok: false, reason: "unknown_service" };
 
   const settings = await getSettings();
+  if (!settings.bookings_enabled) {
+    return { ok: false, reason: "bookings_closed" };
+  }
+
   const today = shopToday();
   if (dateISO < today) return { ok: false, reason: "past_date" };
 
@@ -71,11 +83,11 @@ export async function getAvailableSlots(
     getBookingsForDate(dateISO),
   ]);
 
-  const slots = computeSlots({
+  const slots = computeSlotGrid({
     dateISO,
     dayOfWeek: shopDayOfWeek(dateISO),
-    serviceDurationMinutes: service.duration_minutes,
-    slotIntervalMinutes: settings.slot_interval_minutes,
+    serviceDurationMinutes: BOOKING_SLOT_MINUTES,
+    slotIntervalMinutes: BOOKING_SLOT_MINUTES,
     bookingNoticeHours: settings.booking_notice_hours,
     now: new Date(),
     hours,
@@ -84,7 +96,13 @@ export async function getAvailableSlots(
     bookings,
   });
 
-  return { ok: true, dateISO, timezone: SHOP_TZ, slots };
+  return {
+    ok: true,
+    dateISO,
+    timezone: SHOP_TZ,
+    slots,
+    bookingsEnabled: true,
+  };
 }
 
 export type CreateBookingInput = {
@@ -112,6 +130,7 @@ export type CreateBookingResult =
         | "unknown_service"
         | "invalid_time"
         | "slot_taken"
+        | "bookings_closed"
         | "unknown";
       message?: string;
     };
@@ -157,11 +176,15 @@ export async function createBooking(
   const service = await getServiceById(validated.serviceId);
   if (!service) return { ok: false, reason: "unknown_service" };
 
+  const settings = await getSettings();
+  if (!settings.bookings_enabled) {
+    return { ok: false, reason: "bookings_closed" };
+  }
+
   const startsAt = new Date(validated.startsAtUTC);
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
-  const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60_000);
+  const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
 
-  const settings = await getSettings();
   const initialStatus = settings.require_confirmation ? "pending" : "confirmed";
   const manageToken = user ? null : generateManageToken();
   const writer =
@@ -206,7 +229,7 @@ export async function createBooking(
   const isGuest = !user;
   const managePath = isGuest && manageToken
     ? routes(validated.locale).manageBooking(data.reference_code, manageToken)
-    : routes(validated.locale).accountAppointments;
+    : routes(validated.locale).account;
 
   let to: string | null = null;
   let customerName: string | null = null;
@@ -231,7 +254,7 @@ export async function createBooking(
       customerName,
       serviceName: service.name,
       startsAt: startsAt.toISOString(),
-      durationMinutes: service.duration_minutes,
+      durationMinutes: BOOKING_SLOT_MINUTES,
       referenceCode: data.reference_code,
       price: Number(service.price),
       settings,
@@ -240,6 +263,7 @@ export async function createBooking(
     await sendEmail({ to, ...template });
   }
 
+  revalidatePath(routes(validated.locale).account);
   revalidatePath(routes(validated.locale).accountAppointments);
   revalidatePath(routes(validated.locale).admin, "layout");
   return {
@@ -319,11 +343,12 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
       referenceCode: existing.reference_code,
       price: Number(service.price),
       settings,
-      manageUrl: `${origin}${routes(locale).accountAppointments}`,
+      manageUrl: `${origin}${routes(locale).account}`,
     });
     await sendEmail({ to, ...template });
   }
 
+  revalidatePath(routes(locale).account);
   revalidatePath(routes(locale).accountAppointments);
   revalidatePath(routes(locale).admin, "layout");
   return { ok: true };

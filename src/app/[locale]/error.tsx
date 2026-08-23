@@ -32,7 +32,7 @@ export default function LocaleError({
   return (
     <section className="mx-auto flex min-h-[70dvh] max-w-2xl flex-col items-start justify-center px-6 py-24 md:px-10">
       <Kicker accent>{copy.kicker}</Kicker>
-      <h1 className="mt-4 font-display text-5xl leading-tight md:text-7xl">{copy.title}</h1>
+      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight md:text-6xl">{copy.title}</h1>
       <p className="mt-6 max-w-md text-lg text-foreground-soft">{copy.lead}</p>
       {error.digest ? (
         <p className="mt-2 text-xs text-muted-subtle">

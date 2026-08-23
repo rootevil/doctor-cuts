@@ -8,8 +8,10 @@ import { supabaseConfigured } from "@/lib/supabase/env";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
+import { HomeAwareNav } from "@/components/layout/home-aware-nav";
+import { ButtonLink } from "@/components/ui/button";
 
-type NavItem = { href: string; label: string };
+type NavItem = { href: string; label: string; hash?: string };
 
 async function currentUserSummary() {
   if (!supabaseConfigured) return null;
@@ -29,10 +31,10 @@ export async function SiteHeader({
 }) {
   const r = routes(locale);
   const items: NavItem[] = [
-    { href: r.services, label: t.nav.services },
-    { href: r.gallery, label: t.nav.gallery },
-    { href: r.about, label: t.nav.about },
-    { href: r.contact, label: t.nav.contact },
+    { href: r.services, label: t.nav.services, hash: "#services" },
+    { href: r.gallery, label: t.nav.gallery, hash: "#gallery" },
+    { href: r.about, label: t.nav.about, hash: "#about" },
+    { href: r.contact, label: t.nav.contact, hash: "#contact" },
   ];
 
   const user = await currentUserSummary();
@@ -41,7 +43,7 @@ export async function SiteHeader({
 
   return (
     <ScrollAwareHeader>
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 md:px-10">
+      <div className="site-wrap-wide flex h-16 items-center justify-between">
         <Link
           href={r.home}
           className="font-display text-lg tracking-[0.18em] uppercase"
@@ -50,36 +52,20 @@ export async function SiteHeader({
           Doctor Cuts
         </Link>
 
-        <nav
-          aria-label={t.nav.menu}
-          className="hidden items-center gap-8 text-[11px] tracking-[0.22em] uppercase md:flex"
-        >
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-nav uppercase transition hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <HomeAwareNav locale={locale} items={items} menuLabel={t.nav.menu} />
 
         <div className="hidden items-center gap-4 md:flex">
           <LanguageToggle locale={locale} label={t.nav.language} labels={t.lang} />
           <Link
             href={accountHref}
-            className="text-nav inline-flex items-center gap-2 text-[11px] tracking-[0.22em] uppercase transition hover:text-foreground"
+            className="text-nav inline-flex min-h-11 items-center gap-2 text-[11px] tracking-[0.22em] uppercase transition hover:text-foreground"
           >
             <User className="h-3.5 w-3.5" aria-hidden />
             {accountLabel}
           </Link>
-          <Link
-            href={r.book}
-            className="border border-foreground px-4 py-2 text-[11px] tracking-[0.22em] uppercase transition hover:border-brass hover:bg-brass hover:text-background"
-          >
+          <ButtonLink href={r.book} variant="book" size="sm" className="min-h-11">
             {t.nav.book}
-          </Link>
+          </ButtonLink>
         </div>
 
         <div className="md:hidden">

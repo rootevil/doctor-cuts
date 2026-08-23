@@ -8,7 +8,7 @@ import { RevealFade } from "@/components/motion/reveal-fade";
  */
 export function Statement({ t }: { t: Dictionary }) {
   return (
-    <section className="statement-band relative isolate overflow-hidden border-t border-border">
+    <section className="statement-band section-shell relative isolate overflow-hidden">
       {/* Atmosphere layer — size: full bleed, ~viewport-tall on desktop */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
         <Image
@@ -22,11 +22,11 @@ export function Statement({ t }: { t: Dictionary }) {
         <div className="statement-scrim absolute inset-0" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[70vh] max-w-[1600px] flex-col justify-center px-6 py-28 md:min-h-[78vh] md:px-10 md:py-40">
+      <div className="relative site-wrap-wide flex min-h-[62vh] flex-col justify-center section-pad-y md:min-h-[70vh]">
         <RevealFade>
           <div className="flex flex-col gap-8 md:flex-row md:items-start md:gap-16">
             <div className="accent-rule mt-4 hidden shrink-0 md:block" aria-hidden />
-            <h2 className="font-display text-5xl leading-[0.95] tracking-tight text-foreground sm:text-6xl md:max-w-[14ch] md:text-[6.5rem] lg:text-[8rem]">
+            <h2 className="type-display-section text-foreground md:max-w-[16ch]">
               {t.statement.lines.map((line) => (
                 <span key={line} className="block">
                   {line}
@@ -36,7 +36,7 @@ export function Statement({ t }: { t: Dictionary }) {
           </div>
         </RevealFade>
         <RevealFade delay={0.15}>
-          <p className="mt-14 max-w-md text-lg text-body md:mt-20 md:ml-auto md:pl-16">
+          <p className="mt-14 max-w-md rounded-sm bg-background/35 px-1 py-1 text-lg text-body backdrop-blur-[2px] md:mt-20 md:ml-auto md:bg-background/45 md:px-4 md:py-3 md:pl-16">
             {t.statement.body}
           </p>
         </RevealFade>

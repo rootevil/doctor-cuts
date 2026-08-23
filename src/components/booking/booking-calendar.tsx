@@ -185,7 +185,7 @@ export function BookingCalendar({
 
   return (
     <div className="booking-calendar">
-      <div className="mb-4 flex items-center justify-between gap-2">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={goPrev}
@@ -193,10 +193,10 @@ export function BookingCalendar({
           aria-label={copy.prevMonth}
           className="calendar-nav-btn"
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
         </button>
         <h3
-          className="font-display text-lg tracking-tight text-foreground capitalize md:text-xl"
+          className="font-display text-base tracking-tight text-foreground capitalize md:text-lg"
           aria-live="polite"
         >
           {monthTitle}
@@ -208,7 +208,7 @@ export function BookingCalendar({
           aria-label={copy.nextMonth}
           className="calendar-nav-btn"
         >
-          <ChevronRight className="h-4 w-4" aria-hidden />
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
 

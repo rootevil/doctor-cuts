@@ -131,6 +131,7 @@ export const settingsSchema = z.object({
   max_booking_days: z.coerce.number().int().min(1).max(365),
   cancellation_hours: z.coerce.number().int().min(0).max(720),
   require_confirmation: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
+  bookings_enabled: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
   slot_interval_minutes: z.coerce.number().int().min(5).max(180),
 });
 

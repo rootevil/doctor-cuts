@@ -13,6 +13,8 @@ export function routes(locale: Locale) {
     about: `/${locale}/storia`,
     contact: `/${locale}/contatti`,
     book: `/${locale}/prenota`,
+    bookService: (slug: string) =>
+      `/${locale}/prenota?service=${encodeURIComponent(slug)}`,
     manageBooking: (code: string, token: string) =>
       `/${locale}/gestisci-prenotazione/${encodeURIComponent(code)}?t=${encodeURIComponent(token)}`,
     account: `/${locale}/account`,

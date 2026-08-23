@@ -52,7 +52,7 @@ export function LocalBusinessJsonLd({
       latitude: 43.3006,
       longitude: 13.4534,
     },
-    sameAs: [site.instagram, site.whatsapp].filter(Boolean),
+    sameAs: [site.instagram, site.facebook, site.whatsapp].filter(Boolean),
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",

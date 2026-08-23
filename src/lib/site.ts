@@ -7,12 +7,13 @@ export const site = {
   telHref: "tel:+393481748052",
   instagram: "https://www.instagram.com/dr_barbiere/",
   instagramHandle: "dr_barbiere",
+  facebook: "https://www.facebook.com/206368819943168",
   whatsapp: "https://wa.me/393481748052",
   mapsUrl:
     "https://www.google.com/maps/search/?api=1&query=Via+Antelmo+Severini+4/C+62100+Macerata",
   mapsEmbedUrl:
     "https://www.google.com/maps?q=Via+Antelmo+Severini+4%2FC+62100+Macerata&output=embed",
-  established: 2026,
+  established: 2025,
 } as const;
 
 export const hours = [

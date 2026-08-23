@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { PageHero } from "@/components/layout/page-hero";
 import { GuestCancelButton } from "@/components/booking/guest-cancel-button";
+import { ButtonLink } from "@/components/ui/button";
 import { getGuestAppointment } from "@/lib/booking/actions";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -51,12 +52,9 @@ export default async function ManageGuestBookingPage({
       <>
         <PageHero kicker={copy.kicker} title={[copy.missing, ""] as [string, string]} lead={copy.missingLead} />
         <section className="mx-auto flex max-w-2xl flex-col gap-4 px-6 pb-24 md:px-10">
-          <Link
-            href={r.book}
-            className="inline-flex w-fit items-center gap-3 bg-foreground px-6 py-3 text-[11px] tracking-[0.28em] text-background uppercase"
-          >
+          <ButtonLink href={r.book} variant="book" arrow>
             {copy.bookAgain}
-          </Link>
+          </ButtonLink>
         </section>
       </>
     );
@@ -79,25 +77,25 @@ export default async function ManageGuestBookingPage({
       <section className="mx-auto flex max-w-2xl flex-col gap-8 px-6 pb-24 md:px-10">
         <dl className="grid grid-cols-1 gap-4 border-y border-border py-8 sm:grid-cols-2">
           <div>
-            <dt className="text-[11px] tracking-[0.22em] text-muted uppercase">
+            <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
               {t.pages.prenota.summary.service}
             </dt>
             <dd className="font-display text-2xl">{appointment.service_name}</dd>
           </div>
           <div>
-            <dt className="text-[11px] tracking-[0.22em] text-muted uppercase">
+            <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
               {t.pages.prenota.success.dateLabel}
             </dt>
             <dd className="font-display text-2xl">{when}</dd>
           </div>
           <div>
-            <dt className="text-[11px] tracking-[0.22em] text-muted uppercase">
+            <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
               {t.pages.prenota.success.referenceLabel}
             </dt>
             <dd className="font-display text-2xl">{appointment.reference_code}</dd>
           </div>
           <div>
-            <dt className="text-[11px] tracking-[0.22em] text-muted uppercase">
+            <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
               {t.pages.prenota.summary.total}
             </dt>
             <dd className="font-display text-2xl">
@@ -105,7 +103,7 @@ export default async function ManageGuestBookingPage({
             </dd>
           </div>
         </dl>
-        <p className="text-[11px] tracking-[0.22em] text-muted uppercase">{statusLabel}</p>
+        <p className="text-[11px] tracking-[0.28em] text-muted uppercase">{statusLabel}</p>
 
         {appointment.can_cancel && token ? (
           <GuestCancelButton
@@ -127,12 +125,9 @@ export default async function ManageGuestBookingPage({
           >
             {copy.home}
           </Link>
-          <Link
-            href={r.book}
-            className="border border-foreground px-6 py-3 text-[11px] tracking-[0.28em] uppercase transition hover:bg-foreground hover:text-background"
-          >
+          <ButtonLink href={r.book} variant="book" arrow>
             {copy.bookAgain}
-          </Link>
+          </ButtonLink>
         </div>
       </section>
     </>

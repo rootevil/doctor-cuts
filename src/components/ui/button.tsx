@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "brass";
+type Variant = "primary" | "secondary" | "ghost" | "brass" | "book";
 type Size = "default" | "sm";
 
 const variantClass: Record<Variant, string> = {
@@ -9,12 +9,24 @@ const variantClass: Record<Variant, string> = {
   secondary: "btn-secondary",
   ghost: "btn-ghost",
   brass: "btn-brass",
+  book: "btn-book",
 };
 
 const sizeClass: Record<Size, string> = {
   default: "",
   sm: "btn-sm",
 };
+
+function BookLines() {
+  return (
+    <>
+      <span aria-hidden className="btn-book-line btn-book-line-t" />
+      <span aria-hidden className="btn-book-line btn-book-line-r" />
+      <span aria-hidden className="btn-book-line btn-book-line-b" />
+      <span aria-hidden className="btn-book-line btn-book-line-l" />
+    </>
+  );
+}
 
 type ButtonProps = ComponentPropsWithoutRef<"button"> & {
   variant?: Variant;
@@ -31,18 +43,33 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
+  const isBook = variant === "book";
   return (
     <button
       type="button"
       className={`${variantClass[variant]} ${sizeClass[size]} ${className}`.trim()}
       {...props}
     >
-      <span>{children}</span>
-      {arrow ? (
-        <span aria-hidden className="btn-arrow">
-          →
+      {isBook ? <BookLines /> : null}
+      {isBook ? (
+        <span className="btn-book-label">
+          {children}
+          {arrow ? (
+            <span aria-hidden className="btn-arrow">
+              →
+            </span>
+          ) : null}
         </span>
-      ) : null}
+      ) : (
+        <>
+          {children}
+          {arrow ? (
+            <span aria-hidden className="btn-arrow">
+              →
+            </span>
+          ) : null}
+        </>
+      )}
     </button>
   );
 }
@@ -62,17 +89,32 @@ export function ButtonLink({
   children,
   ...props
 }: ButtonLinkProps) {
+  const isBook = variant === "book";
   return (
     <Link
       className={`${variantClass[variant]} ${sizeClass[size]} ${className}`.trim()}
       {...props}
     >
-      <span>{children}</span>
-      {arrow ? (
-        <span aria-hidden className="btn-arrow">
-          →
+      {isBook ? <BookLines /> : null}
+      {isBook ? (
+        <span className="btn-book-label">
+          {children}
+          {arrow ? (
+            <span aria-hidden className="btn-arrow">
+              →
+            </span>
+          ) : null}
         </span>
-      ) : null}
+      ) : (
+        <>
+          {children}
+          {arrow ? (
+            <span aria-hidden className="btn-arrow">
+              →
+            </span>
+          ) : null}
+        </>
+      )}
     </Link>
   );
 }

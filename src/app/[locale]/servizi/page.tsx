@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHero } from "@/components/layout/page-hero";
 import { ServiceRow } from "@/components/services/service-row";
 import { RevealFade } from "@/components/motion/reveal-fade";
+import { Kicker } from "@/components/ui/kicker";
 import { formatPrice, services as staticServices, type ServiceSlug } from "@/lib/site";
 import { getActiveServices } from "@/lib/data/services";
 import { routes } from "@/lib/routes";
@@ -47,6 +47,7 @@ export default async function ServiziPage({
   if (!isLocale(raw)) notFound();
   const locale = raw;
   const t = getDictionary(locale);
+  const page = t.pages.servizi;
   const r = routes(locale);
   const dbServices = await getActiveServices();
 
@@ -54,15 +55,12 @@ export default async function ServiziPage({
     dbServices.length > 0
       ? dbServices.map((s, i) => {
           const dict = t.services.items[s.slug as ServiceSlug];
-          const fallback = staticServices.find((x) => x.slug === s.slug);
           return {
             slug: s.slug,
             id: padId(i),
             name: dict?.name ?? s.name,
             blurb: dict?.blurb ?? s.description ?? "",
             price: formatPrice(Number(s.price), locale),
-            duration: `${s.duration_minutes} ${t.services.minutes}`,
-            image: s.image_url || fallback?.image || "/images/cut-detail.jpg",
           };
         })
       : staticServices.map((service) => {
@@ -73,56 +71,57 @@ export default async function ServiziPage({
             name: copy.name,
             blurb: copy.blurb,
             price: formatPrice(service.price, locale),
-            duration: `${service.duration} ${t.services.minutes}`,
-            image: service.image,
           };
         });
 
   return (
     <>
-      <PageHero
-        kicker={t.pages.servizi.kicker}
-        title={t.pages.servizi.title}
-        lead={t.pages.servizi.intro}
-        action={{ href: r.book, label: t.nav.book, primary: true }}
-      />
+      {/* Compact header */}
+      <header className="border-b border-border bg-surface">
+        <div className="site-wrap-mid page-top-spacious pb-10 md:pb-12">
+          <Kicker accent>{page.kicker}</Kicker>
+          <h1 className="type-display-title mt-5 text-foreground">
+            {page.title.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
+          </h1>
+          <p className="mt-4 max-w-2xl text-base text-body md:text-lg">
+            {page.intro}
+          </p>
+        </div>
+      </header>
 
-      <section className="bg-background">
-        <div className="mx-auto max-w-[1600px] px-6 md:px-10">
+      {/* Service menu */}
+      <section className="bg-background" aria-labelledby="services-list-heading">
+        <div className="site-wrap-mid py-10 md:py-14">
+          <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
+            <h2
+              id="services-list-heading"
+              className="text-[11px] tracking-[0.28em] text-muted uppercase"
+            >
+              {page.listLabel}
+              <span className="ml-2 text-brass">({list.length})</span>
+            </h2>
+          </div>
+
           <ul className="divide-y divide-border border-b border-border">
-            {list.map((service) => (
+            {list.map((service, index) => (
               <li key={service.slug}>
-                <RevealFade>
+                <RevealFade delay={index * 0.04}>
                   <ServiceRow
-                    href={r.service(service.slug)}
+                    href={r.bookService(service.slug)}
                     id={service.id}
                     name={service.name}
                     blurb={service.blurb}
                     price={service.price}
-                    duration={service.duration}
-                    image={service.image}
+                    detailsHint={page.detailsHint}
                   />
                 </RevealFade>
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-background">
-        <div className="mx-auto flex max-w-[1600px] flex-col items-start gap-6 px-6 py-24 md:flex-row md:items-end md:justify-between md:px-10">
-          <p className="max-w-md font-display text-3xl leading-tight md:text-5xl">
-            {t.cta.lines.join(" ")}
-          </p>
-          <a
-            href={r.book}
-            className="group inline-flex items-center gap-3 bg-foreground px-6 py-3 text-[11px] tracking-[0.28em] text-background uppercase transition hover:opacity-90"
-          >
-            <span>{t.cta.button}</span>
-            <span aria-hidden className="transition-transform group-hover:translate-x-1">
-              →
-            </span>
-          </a>
         </div>
       </section>
     </>

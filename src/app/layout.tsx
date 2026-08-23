@@ -1,21 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { preconnect, prefetchDNS } from "react-dom";
-import { Geist, Instrument_Serif } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/site-url";
 import { supabaseUrl } from "@/lib/supabase/env";
 
-const geist = Geist({
-  variable: "--font-geist",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin", "latin-ext"],
   display: "swap",
-});
-
-const instrument = Instrument_Serif({
-  variable: "--font-instrument",
-  subsets: ["latin", "latin-ext"],
-  weight: "400",
-  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -70,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="it"
       data-scroll-behavior="smooth"
-      className={`${geist.variable} ${instrument.variable} h-full antialiased`}
+      className={`${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">

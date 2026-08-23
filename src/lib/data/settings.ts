@@ -13,12 +13,13 @@ export const DEFAULT_SETTINGS: SettingsRow = {
   phone: "+393481748052",
   email: null,
   instagram: "https://www.instagram.com/dr_barbiere/",
-  facebook: null,
+  facebook: "https://www.facebook.com/206368819943168",
   whatsapp: "https://wa.me/393481748052",
   booking_notice_hours: 2,
   max_booking_days: 30,
   cancellation_hours: 12,
   require_confirmation: false,
+  bookings_enabled: true,
   slot_interval_minutes: 15,
   updated_at: new Date().toISOString(),
 };
@@ -31,5 +32,12 @@ export async function getSettings(): Promise<SettingsRow> {
     if (error) console.warn("[settings] fetch failed:", error.message);
     return DEFAULT_SETTINGS;
   }
-  return data as SettingsRow;
+  const row = data as SettingsRow;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...row,
+    // Graceful if migration not applied yet
+    bookings_enabled: row.bookings_enabled ?? true,
+    require_confirmation: row.require_confirmation ?? false,
+  };
 }

@@ -17,7 +17,7 @@ type Props = {
 export function PageHero({ kicker, title, lead, crumb, action }: Props) {
   return (
     <section className="section-alt border-b border-border">
-      <div className="mx-auto max-w-[1600px] px-6 pb-16 pt-40 md:px-10 md:pb-24 md:pt-48">
+      <div className="site-wrap-wide pb-16 page-top-spacious md:pb-24">
         {crumb ? (
           <Link
             href={crumb.href}
@@ -28,7 +28,7 @@ export function PageHero({ kicker, title, lead, crumb, action }: Props) {
           </Link>
         ) : null}
         <Kicker accent>{kicker}</Kicker>
-        <h1 className="mt-6 font-display text-6xl leading-[0.9] tracking-tight text-foreground sm:text-7xl md:text-[9rem] lg:text-[11rem]">
+        <h1 className="type-display-page mt-6 text-foreground">
           {title.map((line) => (
             <span key={line} className="block">
               {line}
@@ -40,7 +40,7 @@ export function PageHero({ kicker, title, lead, crumb, action }: Props) {
           {action ? (
             <ButtonLink
               href={action.href}
-              variant={action.primary ? "primary" : "secondary"}
+              variant={action.primary ? "book" : "secondary"}
               arrow
             >
               {action.label}

@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 type LabelProps = {
   htmlFor?: string;
@@ -18,17 +18,24 @@ type InputProps = ComponentPropsWithoutRef<"input"> & {
   underline?: boolean;
 };
 
-export function FieldInput({ underline, className = "", ...props }: InputProps) {
-  return (
-    <input
-      className={`${underline ? "field-input-underline" : "field-input"} ${className}`.trim()}
-      {...props}
-    />
-  );
-}
+export const FieldInput = forwardRef<HTMLInputElement, InputProps>(
+  function FieldInput({ underline, className = "", ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        className={`${underline ? "field-input-underline" : "field-input"} ${className}`.trim()}
+        {...props}
+      />
+    );
+  },
+);
 
 type TextareaProps = ComponentPropsWithoutRef<"textarea">;
 
-export function FieldTextarea({ className = "", ...props }: TextareaProps) {
-  return <textarea className={`field-textarea ${className}`.trim()} {...props} />;
-}
+export const FieldTextarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function FieldTextarea({ className = "", ...props }, ref) {
+    return (
+      <textarea ref={ref} className={`field-textarea ${className}`.trim()} {...props} />
+    );
+  },
+);

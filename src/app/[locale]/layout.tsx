@@ -70,13 +70,13 @@ export default async function LocaleLayout({
       {/* Skip-to-content link. Invisible until focused by keyboard users. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-foreground focus:px-4 focus:py-2 focus:text-[11px] focus:tracking-[0.28em] focus:text-background focus:uppercase"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:z-[100] focus:bg-foreground focus:px-4 focus:py-2 focus:text-[11px] focus:tracking-[0.28em] focus:text-background focus:uppercase focus:top-[calc(0.75rem+var(--safe-top))]"
       >
         {locale === "it" ? "Vai al contenuto" : "Skip to content"}
       </a>
       {/* SiteHeader is async — resolves the current session for the header link. */}
       <SiteHeader locale={locale} t={t} />
-      <main id="main" className="flex-1">
+      <main id="main" className="flex min-w-0 flex-1 flex-col overflow-x-clip">
         {children}
       </main>
       <SiteFooter locale={locale} t={t} />

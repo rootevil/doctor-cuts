@@ -32,16 +32,37 @@ export function StatCard({
   label,
   value,
   hint,
+  href,
+  emphasize,
 }: {
   label: string;
   value: string | number;
   hint?: string;
+  href?: string;
+  emphasize?: boolean;
 }) {
-  return (
-    <div className="admin-stat">
+  const body = (
+    <>
       <span className="text-label">{label}</span>
       <span className="admin-stat-value">{value}</span>
-      {hint ? <span className="text-xs text-caption normal-case tracking-normal">{hint}</span> : null}
-    </div>
+      {hint ? (
+        <span className="text-xs text-caption normal-case tracking-normal">{hint}</span>
+      ) : null}
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className={`admin-stat admin-stat-link ${emphasize ? "is-emphasize" : ""}`}
+      >
+        {body}
+      </a>
+    );
+  }
+
+  return (
+    <div className={`admin-stat ${emphasize ? "is-emphasize" : ""}`}>{body}</div>
   );
 }

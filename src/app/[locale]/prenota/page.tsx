@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageHero } from "@/components/layout/page-hero";
 import { BookingFlow } from "@/components/booking/booking-flow";
+import { Kicker } from "@/components/ui/kicker";
 import { getActiveServices } from "@/lib/data/services";
 import { getSettings } from "@/lib/data/settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,12 +48,15 @@ async function currentUserId() {
 
 export default async function PrenotaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ service?: string }>;
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale = raw;
+  const { service: serviceSlug } = await searchParams;
   const t = getDictionary(locale);
   const copy = t.pages.prenota;
   const r = routes(locale);
@@ -66,12 +69,29 @@ export default async function PrenotaPage({
 
   return (
     <>
-      <PageHero kicker={copy.kicker} title={copy.title} lead={copy.lead} />
+      <header className="border-b border-border bg-surface">
+        <div className="site-wrap-narrow page-top pb-5 md:pb-6">
+          <Kicker accent>{copy.kicker}</Kicker>
+          <h1 className="mt-3 font-display text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-[2rem]">
+            {copy.title.join(" ")}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-body">{copy.lead}</p>
+          <p className="mt-1.5 text-[10px] tracking-[0.18em] text-muted uppercase">
+            {copy.note}
+          </p>
+        </div>
+      </header>
 
       {!supabaseConfigured ? (
         <EmptyState
           title={copy.states.notConfiguredTitle}
           lead={copy.states.notConfiguredLead}
+          ctas={<FallbackContacts copy={copy} />}
+        />
+      ) : !settings.bookings_enabled ? (
+        <EmptyState
+          title={copy.states.closedTitle}
+          lead={copy.states.closedLead}
           ctas={<FallbackContacts copy={copy} />}
         />
       ) : services.length === 0 ? (
@@ -89,25 +109,26 @@ export default async function PrenotaPage({
             maxDays={settings.max_booking_days}
             timezone={SHOP_TZ}
             isAuthenticated={Boolean(userId)}
+            initialServiceSlug={serviceSlug?.trim() || null}
           />
         </section>
       )}
 
-      <section className="border-t border-border bg-background">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-6 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-10">
+      <section className="border-t border-border bg-surface">
+        <div className="site-wrap-narrow flex flex-col gap-2 py-4 text-xs text-muted md:flex-row md:items-center md:justify-between">
           <p>
-            {copy.assist.lead} ·{" "}
-            <a href={site.whatsapp} className="text-foreground underline underline-offset-4">
+            {copy.assist.lead}{" "}
+            <a href={site.whatsapp} className="link-brass">
               WhatsApp
-            </a>{" "}
-            /{" "}
-            <a href={site.telHref} className="text-foreground underline underline-offset-4">
+            </a>
+            {" · "}
+            <a href={site.telHref} className="link-brass">
               {site.phoneDisplay}
             </a>
           </p>
           <Link
             href={r.services}
-            className="inline-flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase transition hover:text-foreground"
+            className="inline-flex items-center gap-2 text-[11px] tracking-[0.22em] uppercase transition hover:text-foreground"
           >
             <span aria-hidden>↳</span>
             {t.services.viewAll}
@@ -128,8 +149,8 @@ function EmptyState({
   ctas: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-border bg-background">
-      <div className="mx-auto flex max-w-3xl flex-col items-start gap-6 px-6 py-20 md:px-10 md:py-28">
+    <section className="bg-background">
+      <div className="mx-auto flex max-w-3xl flex-col items-start gap-6 px-6 py-16 md:px-10 md:py-20">
         <h2 className="font-display text-3xl leading-tight md:text-4xl">{title}</h2>
         <p className="max-w-xl text-lg text-muted">{lead}</p>
         {ctas}

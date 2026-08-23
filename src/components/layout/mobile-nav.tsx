@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { site } from "@/lib/site";
 import { routes } from "@/lib/routes";
 import { LanguageToggle } from "@/components/layout/language-toggle";
+import { ButtonLink } from "@/components/ui/button";
 
 type Props = {
   locale: Locale;
   t: Dictionary;
-  items: { href: string; label: string }[];
+  items: { href: string; label: string; hash?: string }[];
   bookHref: string;
   accountHref: string;
   accountLabel: string;
@@ -27,7 +29,12 @@ export function MobileNav({
   accountLabel,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const r = routes(locale);
+  const onHome =
+    pathname === r.home ||
+    pathname === `/${locale}` ||
+    pathname === `/${locale}/`;
 
   useEffect(() => {
     if (!open) return;
@@ -51,7 +58,7 @@ export function MobileNav({
         aria-controls="mobile-menu"
         aria-label={open ? t.nav.close : t.nav.menu}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-11 min-w-11 items-center gap-2 text-[11px] tracking-[0.22em] uppercase"
+        className="inline-flex min-h-11 min-w-11 items-center gap-2 text-[11px] tracking-[0.28em] uppercase"
       >
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         <span>{open ? t.nav.close : t.nav.menu}</span>
@@ -75,7 +82,7 @@ export function MobileNav({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex min-h-11 min-w-11 items-center gap-2 text-[11px] tracking-[0.22em] uppercase"
+              className="inline-flex min-h-11 min-w-11 items-center gap-2 text-[11px] tracking-[0.28em] uppercase"
               aria-label={t.nav.close}
             >
               <X className="h-4 w-4" />
@@ -88,21 +95,30 @@ export function MobileNav({
             className="flex h-[calc(100dvh-4rem)] flex-col justify-between px-6 pb-10"
           >
             <ul className="mt-8 flex flex-col gap-6 font-display text-4xl leading-none tracking-tight">
-              {items.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className="text-display transition hover:text-foreground-soft"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+              {items.map((item) => {
+                const href =
+                  onHome && item.hash ? `${r.home}${item.hash}` : item.href;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={href}
+                      onClick={() => setOpen(false)}
+                      className="text-display transition hover:text-foreground-soft"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
               <li>
-                <Link href={bookHref} onClick={() => setOpen(false)} className="text-brass">
+                <ButtonLink
+                  href={bookHref}
+                  variant="book"
+                  onClick={() => setOpen(false)}
+                  className="mt-2"
+                >
                   {t.nav.book}
-                </Link>
+                </ButtonLink>
               </li>
               <li>
                 <Link
@@ -115,16 +131,20 @@ export function MobileNav({
               </li>
             </ul>
 
-            <div className="flex flex-col gap-6 border-t border-border pt-6 text-[11px] tracking-[0.22em] uppercase">
+            <div className="flex flex-col gap-6 border-t border-border pt-6 text-[11px] tracking-[0.28em] uppercase">
               <LanguageToggle
                 locale={locale}
                 label={t.nav.language}
                 labels={t.lang}
                 variant="stacked"
+                onSwitch={() => setOpen(false)}
               />
               <div className="flex flex-wrap gap-4 text-nav">
                 <a href={site.instagram} className="hover:text-foreground">
                   Instagram
+                </a>
+                <a href={site.facebook} className="hover:text-foreground">
+                  Facebook
                 </a>
                 <a href={site.whatsapp} className="hover:text-foreground">
                   WhatsApp

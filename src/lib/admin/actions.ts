@@ -414,6 +414,7 @@ export async function saveSettings(
     max_booking_days: v.max_booking_days,
     cancellation_hours: v.cancellation_hours,
     require_confirmation: v.require_confirmation === "on",
+    bookings_enabled: v.bookings_enabled === "on",
     slot_interval_minutes: v.slot_interval_minutes,
   };
 

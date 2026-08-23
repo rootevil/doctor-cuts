@@ -107,14 +107,33 @@ export function SettingsForm({
           defaultValue={settings.slot_interval_minutes}
           hint={copy.slotHint}
         />
-        <label className="flex items-center gap-3 md:col-span-4 text-[11px] tracking-[0.22em] text-foreground uppercase">
-          <input
-            type="checkbox"
-            name="require_confirmation"
-            defaultChecked={settings.require_confirmation}
-            className="h-4 w-4 accent-brass"
-          />
-          {copy.requireConfirm}
+        <label className="flex flex-col gap-2 md:col-span-4">
+          <span className="inline-flex items-center gap-3 text-[11px] tracking-[0.22em] text-foreground uppercase">
+            <input
+              type="checkbox"
+              name="bookings_enabled"
+              defaultChecked={settings.bookings_enabled}
+              className="h-4 w-4 accent-brass"
+            />
+            {copy.bookingsEnabled}
+          </span>
+          <span className="text-xs tracking-normal text-muted normal-case">
+            {copy.bookingsEnabledHint}
+          </span>
+        </label>
+        <label className="flex flex-col gap-2 md:col-span-4">
+          <span className="inline-flex items-center gap-3 text-[11px] tracking-[0.22em] text-foreground uppercase">
+            <input
+              type="checkbox"
+              name="require_confirmation"
+              defaultChecked={settings.require_confirmation}
+              className="h-4 w-4 accent-brass"
+            />
+            {copy.requireConfirm}
+          </span>
+          <span className="text-xs tracking-normal text-muted normal-case">
+            {copy.requireConfirmHint}
+          </span>
         </label>
       </fieldset>
 
