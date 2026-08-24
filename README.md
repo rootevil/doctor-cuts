@@ -42,7 +42,7 @@ npm run supabase:reset     # re-applies all migrations and re-seeds
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<from `supabase status`>
 SUPABASE_SERVICE_ROLE_KEY=<from `supabase status`>
-SEED_ADMIN_EMAIL=you@doctorcuts.it
+SEED_ADMIN_EMAIL=admin@dr-cuts.com
 ```
 
 ### Cloud (Supabase.com free tier)
@@ -51,14 +51,11 @@ SEED_ADMIN_EMAIL=you@doctorcuts.it
 2. Link this repo: `npx supabase link --project-ref <ref>`.
 3. Push migrations: `npx supabase db push`.
 4. Copy Project URL, `anon` key, and `service_role` key from Project Settings → API into `.env.local`.
-5. (Optional) Set `SEED_ADMIN_EMAIL` before your first sign-up to auto-promote that user.
+5. Sign up as `admin@dr-cuts.com` (or sign in if already registered). That mailbox is the only one promoted to `role = 'admin'`. Other signups stay customers.
 
 ### Admin bootstrap
 
-Two options — both use `SUPABASE_SERVICE_ROLE_KEY` server-side, never the browser:
-
-- Set `SEED_ADMIN_EMAIL` in `.env.local` **before** signing up. On sign-up, the server action promotes that profile row to `role = 'admin'`.
-- Or after the fact: `npm run seed:admin -- owner@doctorcuts.it`.
+Admin access is hardcoded to `admin@dr-cuts.com` (see `site.emails.admin`). Sign-in / sign-up syncs `profiles.role` to match. To recover a stuck profile: `npm run seed:admin -- admin@dr-cuts.com`.
 
 ## Database
 

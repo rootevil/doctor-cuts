@@ -19,6 +19,7 @@ import {
   settingsSchema,
 } from "@/lib/security/schemas";
 import { getDictionary } from "@/i18n/dictionaries";
+import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 
 function coerceLocale(value: FormDataEntryValue | null): Locale {
   const raw = typeof value === "string" ? value : "";
@@ -32,6 +33,7 @@ async function requireAdminClient() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+  if (!isAllowedAdminEmail(user.email)) throw new Error("Not authorised");
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")

@@ -12,6 +12,7 @@ import { listAppointmentsForCurrentUser } from "@/lib/data/appointments";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
 import { routes } from "@/lib/routes";
+import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,9 @@ export default async function AccountPage({
 
   const displayName =
     profile?.full_name?.trim() || user.email?.split("@")[0] || "";
-  const isAdmin = profile?.role === "admin";
+  const isAdmin =
+    profile?.role === "admin" &&
+    isAllowedAdminEmail(profile?.email || user.email);
   const joined = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(
         locale === "it" ? "it-IT" : "en-GB",

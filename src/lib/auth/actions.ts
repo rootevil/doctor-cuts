@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
+import { supabaseConfigured } from "@/lib/supabase/env";
 import { isLocale, type Locale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -14,18 +13,7 @@ import {
   signUpSchema,
 } from "@/lib/security/schemas";
 import { limitByIp, limitByKey } from "@/lib/security/rate-limit";
-
-async function maybePromoteAdmin(userId: string, email: string) {
-  const target = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!target || !supabaseServiceRoleKey) return;
-  if (target !== email.toLowerCase()) return;
-  try {
-    const admin = createSupabaseAdminClient();
-    await admin.from("profiles").update({ role: "admin" }).eq("id", userId);
-  } catch (err) {
-    console.warn("[auth] admin promotion skipped:", err);
-  }
-}
+import { syncAdminRole } from "@/lib/auth/admin-email";
 
 export type AuthState = { error?: string; success?: string };
 
@@ -67,9 +55,18 @@ export async function signInAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) {
     return { error: t.pages.auth.errors.genericSignIn };
+  }
+
+  // Re-assert role on every login so a stale `admin` row cannot linger
+  // for a non-allowlisted mailbox.
+  if (data.user) {
+    await syncAdminRole(data.user.id, data.user.email ?? email);
   }
 
   revalidatePath(`/${locale}`, "layout");
@@ -115,7 +112,7 @@ export async function signUpAction(
   }
 
   if (data.user) {
-    await maybePromoteAdmin(data.user.id, email);
+    await syncAdminRole(data.user.id, data.user.email ?? email);
   }
 
   if (data.session) {

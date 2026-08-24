@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Optional helper: promote a user to admin by email using the service role.
+ * Promote a user to admin by email using the service role.
  * Run with:
- *   node scripts/seed-admin.mjs owner@doctorcuts.it
+ *   node scripts/seed-admin.mjs admin@dr-cuts.com
  * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the env.
- * On sign-up, the trigger in migration 3 already handles SEED_ADMIN_EMAIL,
- * so this script is only needed to promote an already-existing user.
+ * Prefer signing in as admin@dr-cuts.com after deploy — syncAdminRole promotes
+ * that mailbox automatically. This script is for recovering a stuck profile.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -34,6 +34,14 @@ loadDotenv();
 const email = process.argv[2];
 if (!email) {
   console.error("Usage: node scripts/seed-admin.mjs <email>");
+  process.exit(1);
+}
+
+const ALLOWED = "admin@dr-cuts.com";
+if (email.trim().toLowerCase() !== ALLOWED) {
+  console.error(
+    `Refusing to promote "${email}". Only ${ALLOWED} may be admin.`,
+  );
   process.exit(1);
 }
 

@@ -16,6 +16,7 @@ import { defaultLocale, isLocale, localeCookie } from "@/i18n/config";
 import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { routes } from "@/lib/routes";
 import { applySecurityHeaders } from "@/lib/security/headers";
+import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 
 function localeFromHeader(header: string | null) {
   if (!header) return defaultLocale;
@@ -79,7 +80,8 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("next", pathname);
       return applySecurityHeaders(NextResponse.redirect(url), request);
     }
-    if (role !== "admin") {
+    // Role alone is not enough — email must match the allowlisted admin.
+    if (role !== "admin" || !isAllowedAdminEmail(user.email)) {
       const url = request.nextUrl.clone();
       url.pathname = r.home;
       return applySecurityHeaders(NextResponse.redirect(url), request);

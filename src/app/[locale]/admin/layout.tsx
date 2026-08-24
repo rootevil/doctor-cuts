@@ -1,11 +1,16 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AdminMobileNav, AdminNav } from "@/components/admin/nav";
 import { AdminShell } from "@/components/admin/shell";
 import { AdminTopbar } from "@/components/admin/topbar";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseConfigured } from "@/lib/supabase/env";
+import { routes } from "@/lib/routes";
 
-// Middleware already guarantees the caller is authenticated + admin.
+// Proxy already gates /admin, but we re-check here so a stale session or
+// mis-marked profile cannot render the shell.
 export default async function AdminLayout({
   children,
   params,
@@ -17,6 +22,27 @@ export default async function AdminLayout({
   if (!isLocale(raw)) notFound();
   const locale = raw;
   const t = getDictionary(locale);
+  const r = routes(locale);
+
+  if (supabaseConfigured) {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || !isAllowedAdminEmail(user.email)) {
+      redirect(r.home);
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role !== "admin") {
+      redirect(r.home);
+    }
+  } else {
+    redirect(r.home);
+  }
 
   return (
     <AdminShell>
