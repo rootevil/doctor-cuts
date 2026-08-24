@@ -321,3 +321,73 @@ export function cancellationEmail(
 
   return { subject, html: shell(body, ctx.locale), text };
 }
+
+export type ShopCancellationAlertCtx = {
+  customerName: string | null;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceNameIt: string;
+  serviceNameEn: string;
+  startsAt: string;
+  durationMinutes: number;
+  referenceCode: string;
+  price: number;
+  adminUrl: string;
+};
+
+/** Shop inbox — bilingual cancellation notice. */
+export function shopCancellationAlertEmail(
+  ctx: ShopCancellationAlertCtx,
+): { subject: string; html: string; text: string } {
+  const name =
+    (ctx.customerName ?? "").trim().replace(/\s+/g, " ") ||
+    resolveCustomerDisplayName({ email: ctx.customerEmail });
+
+  const whenIt = fmtDate(ctx.startsAt, "it");
+  const whenEn = fmtDate(ctx.startsAt, "en");
+  const whenShort = fmtDateShort(ctx.startsAt, "en");
+  const price = fmtPrice(ctx.price, "it");
+  const serviceLine =
+    ctx.serviceNameIt === ctx.serviceNameEn
+      ? ctx.serviceNameIt
+      : `${ctx.serviceNameIt} / ${ctx.serviceNameEn}`;
+
+  const subject = `Cancelled · ${name} · ${whenShort} · ${ctx.referenceCode}`;
+
+  const body = `
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert · Avviso studio</p>
+    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">Booking cancelled · Prenotazione annullata</p>
+    <p style="margin:0;color:#cfcfcf;" translate="no">
+      <strong style="color:#f4f4f4;">${escapeHtml(name)}</strong>
+      cancelled · ha annullato — ${escapeHtml(whenEn)}
+    </p>
+    ${detailsTable([
+      ["Customer · Cliente", name, { noTranslate: true }],
+      ["Email", ctx.customerEmail, { noTranslate: true }],
+      ["Phone · Telefono", ctx.customerPhone, { noTranslate: true }],
+      ["Service · Servizio", serviceLine],
+      ["Was · Era", `${whenEn}  ·  ${whenIt}`],
+      ["Duration · Durata", `${ctx.durationMinutes} min`],
+      ["Price · Prezzo", price],
+      ["Reference · Riferimento", ctx.referenceCode, { noTranslate: true }],
+    ])}
+    ${cta(ctx.adminUrl, "Open in admin · Apri in admin")}
+  `;
+
+  const text = [
+    "Doctor Cuts — Booking cancelled / Prenotazione annullata",
+    "",
+    `Customer: ${name}`,
+    `Email: ${ctx.customerEmail}`,
+    ctx.customerPhone?.trim() ? `Phone: ${ctx.customerPhone.trim()}` : null,
+    `Service: ${serviceLine}`,
+    `Was: ${whenEn}`,
+    `Reference: ${ctx.referenceCode}`,
+    "",
+    ctx.adminUrl,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, html: shell(body, "en"), text };
+}

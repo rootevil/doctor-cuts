@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { supabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 import type { ExistingBooking } from "@/lib/booking/availability";
 import { shopDateBoundsUtc } from "@/lib/booking/timezone";
@@ -26,19 +27,30 @@ export type AppointmentSummary = {
 
 const BLOCKING_STATUSES: AppointmentStatus[] = ["pending", "confirmed", "arrived"];
 
-/** Bookings that overlap a given shop-local calendar date, in UTC. */
+/**
+ * Busy ranges for a shop-local calendar day.
+ * Uses the service-role client so availability sees *everyone's* bookings —
+ * RLS only allows "select own", which made the grid look fully open for
+ * guests / other customers until confirm hit the exclusion constraint.
+ * Only `starts_at` / `ends_at` are read (no customer PII).
+ */
 export async function getBookingsForDate(dateISO: string): Promise<ExistingBooking[]> {
   if (!supabaseConfigured) return [];
-  const supabase = await createSupabaseServerClient();
   const { startUtc, endUtc } = shopDateBoundsUtc(dateISO);
-  const { data, error } = await supabase
+
+  const client = supabaseServiceRoleKey
+    ? createSupabaseAdminClient()
+    : await createSupabaseServerClient();
+
+  const { data, error } = await client
     .from("appointments")
     .select("starts_at, ends_at")
     .in("status", BLOCKING_STATUSES)
     .lt("starts_at", endUtc)
     .gt("ends_at", startUtc);
+
   if (error) {
-    console.warn("[appointments] fetch failed:", error.message);
+    console.warn("[appointments] busy-range fetch failed:", error.message);
     return [];
   }
   return (data ?? []) as ExistingBooking[];

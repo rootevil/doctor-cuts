@@ -21,6 +21,7 @@ import {
   confirmationEmail,
   cancellationEmail,
   shopBookingAlertEmail,
+  shopCancellationAlertEmail,
   resolveCustomerDisplayName,
 } from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
@@ -374,7 +375,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, phone")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -382,23 +383,50 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   const to = profile?.email ?? user.email;
   if (to && service) {
     const origin = await siteOrigin();
-    const meta = user.user_metadata as { full_name?: string } | undefined;
+    const meta = user.user_metadata as
+      | { full_name?: string; phone?: string }
+      | undefined;
+    const customerName = resolveCustomerDisplayName({
+      fullName: profile?.full_name,
+      metaFullName: meta?.full_name,
+      email: to,
+    });
+    const customerPhone =
+      profile?.phone?.trim() ||
+      (typeof meta?.phone === "string" ? meta.phone.trim() : "") ||
+      null;
+    const durationMinutes = BOOKING_SLOT_MINUTES;
+
     const template = cancellationEmail({
       locale,
-      customerName: resolveCustomerDisplayName({
-        fullName: profile?.full_name,
-        metaFullName: meta?.full_name,
-        email: to,
-      }),
+      customerName,
       serviceName: localizedServiceName(locale, service.slug, service.name),
       startsAt: existing.starts_at,
-      durationMinutes: service.duration_minutes,
+      durationMinutes,
       referenceCode: existing.reference_code,
       price: Number(service.price),
       settings,
       manageUrl: `${origin}${routes(locale).account}`,
     });
     await sendEmail({ to, ...template });
+
+    const alert = shopCancellationAlertEmail({
+      customerName,
+      customerEmail: to,
+      customerPhone,
+      serviceNameIt: localizedServiceName("it", service.slug, service.name),
+      serviceNameEn: localizedServiceName("en", service.slug, service.name),
+      startsAt: existing.starts_at,
+      durationMinutes,
+      referenceCode: existing.reference_code,
+      price: Number(service.price),
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+    });
+    await sendEmail({
+      to: bookingAlertAddress(),
+      ...alert,
+      replyTo: to,
+    });
   }
 
   revalidatePath(routes(locale).account);
@@ -415,6 +443,7 @@ export type GuestAppointment = {
   reference_code: string;
   guest_name: string | null;
   guest_email: string | null;
+  guest_phone: string | null;
   service_name: string;
   service_slug: string;
   duration_minutes: number;
@@ -438,7 +467,7 @@ export async function getGuestAppointment(
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, manage_token, service:services ( slug, name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, service:services ( slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -464,6 +493,7 @@ export async function getGuestAppointment(
     reference_code: data.reference_code,
     guest_name: data.guest_name,
     guest_email: data.guest_email,
+    guest_phone: data.guest_phone,
     service_name: service.name,
     service_slug: service.slug,
     duration_minutes: service.duration_minutes,
@@ -502,25 +532,54 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
   const settings = await getSettings();
   if (appointment.guest_email) {
     const origin = await siteOrigin();
+    const customerName = resolveCustomerDisplayName({
+      guestName: appointment.guest_name,
+      email: appointment.guest_email,
+    });
+    const durationMinutes = BOOKING_SLOT_MINUTES;
+
     const template = cancellationEmail({
       locale,
-      customerName: resolveCustomerDisplayName({
-        guestName: appointment.guest_name,
-        email: appointment.guest_email,
-      }),
+      customerName,
       serviceName: localizedServiceName(
         locale,
         appointment.service_slug,
         appointment.service_name,
       ),
       startsAt: appointment.starts_at,
-      durationMinutes: appointment.duration_minutes,
+      durationMinutes,
       referenceCode: appointment.reference_code,
       price: appointment.price,
       settings,
       manageUrl: `${origin}${routes(locale).manageBooking(reference_code, token)}`,
     });
     await sendEmail({ to: appointment.guest_email, ...template });
+
+    const alert = shopCancellationAlertEmail({
+      customerName,
+      customerEmail: appointment.guest_email,
+      customerPhone: appointment.guest_phone,
+      serviceNameIt: localizedServiceName(
+        "it",
+        appointment.service_slug,
+        appointment.service_name,
+      ),
+      serviceNameEn: localizedServiceName(
+        "en",
+        appointment.service_slug,
+        appointment.service_name,
+      ),
+      startsAt: appointment.starts_at,
+      durationMinutes,
+      referenceCode: appointment.reference_code,
+      price: appointment.price,
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+    });
+    await sendEmail({
+      to: bookingAlertAddress(),
+      ...alert,
+      replyTo: appointment.guest_email,
+    });
   }
 
   revalidatePath(routes(locale).admin, "layout");
