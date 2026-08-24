@@ -2,10 +2,10 @@ import { formatInTimeZone } from "date-fns-tz";
 import type { Locale } from "@/i18n/config";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
+import { site } from "@/lib/site";
 import type { SettingsRow } from "@/lib/supabase/types";
 
 type BaseCtx = {
-  /** UI locale used to pick copy variants. */
   locale: Locale;
   customerName: string | null;
   serviceName: string;
@@ -17,10 +17,64 @@ type BaseCtx = {
   manageUrl: string;
 };
 
+export type ShopBookingAlertCtx = {
+  customerName: string | null;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceName: string;
+  startsAt: string;
+  durationMinutes: number;
+  referenceCode: string;
+  price: number;
+  status: "pending" | "confirmed" | string;
+  notes: string | null;
+  adminUrl: string;
+};
+
+/** Prefer profile / metadata / guest name; never leave the shop with a blank. */
+export function resolveCustomerDisplayName(options: {
+  fullName?: string | null;
+  metaFullName?: string | null;
+  guestName?: string | null;
+  email?: string | null;
+}): string {
+  const candidates = [
+    options.fullName,
+    options.metaFullName,
+    options.guestName,
+  ];
+  for (const raw of candidates) {
+    const name = (raw ?? "").trim().replace(/\s+/g, " ");
+    if (name) return name;
+  }
+  const local = (options.email ?? "").split("@")[0]?.trim();
+  if (local) {
+    return local
+      .replace(/[._+-]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return "Cliente";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function fmtDate(iso: string, locale: Locale) {
-  return formatInTimeZone(new Date(iso), SHOP_TZ, "EEEE d MMMM · HH:mm", {
+  return formatInTimeZone(new Date(iso), SHOP_TZ, "EEEE d MMMM yyyy · HH:mm", {
     locale: dateFnsLocale(locale),
   }).replace(/^./, (c) => c.toUpperCase());
+}
+
+function fmtDateShort(iso: string, locale: Locale) {
+  return formatInTimeZone(new Date(iso), SHOP_TZ, "d MMM · HH:mm", {
+    locale: dateFnsLocale(locale),
+  });
 }
 
 function fmtPrice(amount: number, locale: Locale) {
@@ -31,124 +85,166 @@ function fmtPrice(amount: number, locale: Locale) {
   }).format(amount);
 }
 
+function statusLabel(status: string, locale: Locale) {
+  const isIt = locale === "it";
+  if (status === "confirmed") return isIt ? "Confermata" : "Confirmed";
+  if (status === "pending") return isIt ? "In attesa di conferma" : "Pending confirmation";
+  if (status === "cancelled") return isIt ? "Annullata" : "Cancelled";
+  return status;
+}
+
 function shell(inner: string) {
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#0a0a0a;color:#e6e6e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 0;">
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Doctor Cuts</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;color:#e6e6e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:28px 12px;">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111111;border:1px solid #222;">
-        <tr><td style="padding:32px 40px;">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:0.18em;text-transform:uppercase;color:#f4f4f4;">Doctor Cuts</div>
-          <div style="margin-top:32px;color:#e6e6e6;line-height:1.6;font-size:15px;">
-            ${inner}
-          </div>
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#111111;border:1px solid #222222;">
+        <tr><td style="padding:28px 28px 8px;border-bottom:1px solid #222222;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:0.2em;text-transform:uppercase;color:#f4f4f4;">Doctor Cuts</div>
+          <div style="margin-top:6px;font-size:12px;letter-spacing:0.08em;color:#9a9a9a;">${escapeHtml(site.addressLine)}, ${escapeHtml(site.postalCity)}</div>
+        </td></tr>
+        <tr><td style="padding:28px;color:#e6e6e6;line-height:1.55;font-size:15px;">
+          ${inner}
+        </td></tr>
+        <tr><td style="padding:0 28px 28px;color:#7a7a7a;font-size:12px;line-height:1.5;">
+          ${escapeHtml(site.phoneDisplay)} · ${escapeHtml(site.email)}
         </td></tr>
       </table>
     </td></tr>
   </table>
-</body></html>`;
+</body>
+</html>`;
 }
 
-function row(label: string, value: string) {
-  return `<tr><td style="padding:8px 0;color:#9a9a9a;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">${label}</td><td style="padding:8px 0;text-align:right;color:#f4f4f4;font-size:15px;">${value}</td></tr>`;
+/** Stacked rows — more reliable in Gmail than two-column tables. */
+function detail(label: string, value: string) {
+  const safe = escapeHtml(value);
+  return `<tr>
+    <td style="padding:12px 0;border-bottom:1px solid #222222;">
+      <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#9a9a9a;margin:0 0 4px;">${escapeHtml(label)}</div>
+      <div style="font-size:16px;color:#f4f4f4;word-break:break-word;">${safe}</div>
+    </td>
+  </tr>`;
 }
 
-export function confirmationEmail(ctx: BaseCtx): { subject: string; html: string; text: string } {
+function detailsTable(rows: Array<[string, string | null | undefined]>) {
+  const body = rows
+    .filter(([, value]) => Boolean(value && String(value).trim()))
+    .map(([label, value]) => detail(label, String(value).trim()))
+    .join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-top:1px solid #222222;">${body}</table>`;
+}
+
+function cta(href: string, label: string) {
+  return `<p style="margin:24px 0 0;">
+    <a href="${escapeHtml(href)}" style="display:inline-block;background:#f4f4f4;color:#111111;text-decoration:none;padding:12px 18px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">${escapeHtml(label)}</a>
+  </p>`;
+}
+
+export function confirmationEmail(
+  ctx: BaseCtx,
+): { subject: string; html: string; text: string } {
   const isIt = ctx.locale === "it";
-  const greeting = ctx.customerName ? `${isIt ? "Ciao" : "Hi"} ${ctx.customerName},` : isIt ? "Ciao," : "Hi,";
+  const name = ctx.customerName?.trim() || null;
+  const greeting = name
+    ? isIt
+      ? `Ciao ${name},`
+      : `Hi ${name},`
+    : isIt
+      ? "Ciao,"
+      : "Hi,";
+  const when = fmtDate(ctx.startsAt, ctx.locale);
   const subject = isIt
     ? `Prenotazione confermata · ${ctx.referenceCode}`
     : `Booking confirmed · ${ctx.referenceCode}`;
-  const when = fmtDate(ctx.startsAt, ctx.locale);
 
   const body = `
-    <p>${greeting}</p>
-    <p>${isIt
-      ? "la tua prenotazione da Doctor Cuts è stata confermata."
-      : "your booking at Doctor Cuts is confirmed."}</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:1px solid #222;border-bottom:1px solid #222;">
-      ${row(isIt ? "Servizio" : "Service", `${ctx.serviceName}`)}
-      ${row(isIt ? "Data" : "Date", when)}
-      ${row(isIt ? "Durata" : "Duration", `${ctx.durationMinutes} ${isIt ? "min" : "min"}`)}
-      ${row(isIt ? "Prezzo" : "Price", fmtPrice(ctx.price, ctx.locale))}
-      ${row(isIt ? "Riferimento" : "Reference", ctx.referenceCode)}
-    </table>
-    <p>${isIt
-      ? "Ti aspettiamo in Via Antelmo Severini, 4/c, 62100 Macerata MC."
-      : "See you at Via Antelmo Severini, 4/c, 62100 Macerata MC."}</p>
-    <p style="margin-top:24px;">
-      <a href="${ctx.manageUrl}" style="display:inline-block;background:#f4f4f4;color:#111;text-decoration:none;padding:12px 20px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">${isIt ? "Gestisci prenotazione" : "Manage booking"}</a>
-    </p>
-    <p style="margin-top:24px;color:#8a8a8a;font-size:12px;">${isIt
-      ? `Per modifiche o cancellazioni contatta lo studio con almeno ${ctx.settings.cancellation_hours} ore di anticipo.`
-      : `To reschedule or cancel, please give us at least ${ctx.settings.cancellation_hours} hours notice.`}</p>
+    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;">${escapeHtml(greeting)}</p>
+    <p style="margin:0;color:#cfcfcf;">${
+      isIt
+        ? "la tua prenotazione da Doctor Cuts è confermata. Ti aspettiamo in studio."
+        : "your booking at Doctor Cuts is confirmed. We look forward to seeing you."
+    }</p>
+    ${detailsTable([
+      [isIt ? "Servizio" : "Service", ctx.serviceName],
+      [isIt ? "Data e ora" : "Date & time", when],
+      [isIt ? "Durata" : "Duration", `${ctx.durationMinutes} min`],
+      [isIt ? "Prezzo" : "Price", fmtPrice(ctx.price, ctx.locale)],
+      [isIt ? "Riferimento" : "Reference", ctx.referenceCode],
+    ])}
+    ${cta(ctx.manageUrl, isIt ? "Gestisci prenotazione" : "Manage booking")}
+    <p style="margin:20px 0 0;color:#8a8a8a;font-size:12px;">${
+      isIt
+        ? `Per modifiche o cancellazioni avvisaci con almeno ${ctx.settings.cancellation_hours} ore di anticipo.`
+        : `To reschedule or cancel, please give us at least ${ctx.settings.cancellation_hours} hours notice.`
+    }</p>
   `;
 
-  const text = `${greeting}\n\n${isIt ? "Prenotazione confermata" : "Booking confirmed"}\n${ctx.serviceName} · ${when}\n${ctx.durationMinutes} min · ${fmtPrice(ctx.price, ctx.locale)}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}\n\n${ctx.manageUrl}`;
+  const text = [
+    greeting,
+    "",
+    isIt ? "Prenotazione confermata" : "Booking confirmed",
+    `${ctx.serviceName}`,
+    when,
+    `${ctx.durationMinutes} min · ${fmtPrice(ctx.price, ctx.locale)}`,
+    `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
+    "",
+    ctx.manageUrl,
+  ].join("\n");
 
   return { subject, html: shell(body), text };
 }
 
-export type ShopBookingAlertCtx = {
-  customerName: string | null;
-  customerEmail: string;
-  customerPhone: string | null;
-  serviceName: string;
-  startsAt: string; // ISO UTC
-  durationMinutes: number;
-  referenceCode: string;
-  price: number;
-  depositEur: number;
-  status: string;
-  notes: string | null;
-  adminUrl: string;
-};
-
-/** Internal alert for the shop — Italian copy (studio in Macerata). */
 export function shopBookingAlertEmail(
   ctx: ShopBookingAlertCtx,
 ): { subject: string; html: string; text: string } {
   const when = fmtDate(ctx.startsAt, "it");
-  const deposit = fmtPrice(ctx.depositEur, "it");
-  const total = fmtPrice(ctx.price, "it");
-  const subject = `Nuova prenotazione · ${ctx.referenceCode} · ${when}`;
+  const whenShort = fmtDateShort(ctx.startsAt, "it");
+  const name = resolveCustomerDisplayName({
+    fullName: ctx.customerName,
+    email: ctx.customerEmail,
+  });
+  const status = statusLabel(ctx.status, "it");
+  const subject = `Nuova prenotazione · ${name} · ${whenShort}`;
 
   const body = `
-    <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Avviso studio</p>
-    <p style="margin:0 0 20px;font-size:18px;color:#f4f4f4;">Nuova prenotazione ricevuta</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-top:1px solid #222;border-bottom:1px solid #222;">
-      ${row("Cliente", ctx.customerName?.trim() || "—")}
-      ${row("Email", ctx.customerEmail)}
-      ${row("Telefono", ctx.customerPhone?.trim() || "—")}
-      ${row("Servizio", ctx.serviceName)}
-      ${row("Data e ora", when)}
-      ${row("Durata", `${ctx.durationMinutes} min`)}
-      ${row("Prezzo servizio", total)}
-      ${row("Acconto €5", `${deposit} — ricevuto`)}
-      ${row("Stato", ctx.status)}
-      ${row("Riferimento", ctx.referenceCode)}
-      ${ctx.notes?.trim() ? row("Note cliente", ctx.notes.trim()) : ""}
-    </table>
-    <p style="margin:0 0 20px;color:#cfcfcf;font-size:14px;">
-      Acconto di ${deposit} segnato come ricevuto per questa prenotazione.
-    </p>
-    <p style="margin:0;">
-      <a href="${ctx.adminUrl}" style="display:inline-block;background:#f4f4f4;color:#111;text-decoration:none;padding:12px 20px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">Apri in admin</a>
-    </p>
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Avviso studio</p>
+    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">Nuova prenotazione</p>
+    <p style="margin:0;color:#cfcfcf;"><strong style="color:#f4f4f4;">${escapeHtml(name)}</strong> ha prenotato per <strong style="color:#f4f4f4;">${escapeHtml(when)}</strong>.</p>
+    ${detailsTable([
+      ["Cliente", name],
+      ["Email", ctx.customerEmail],
+      ["Telefono", ctx.customerPhone],
+      ["Servizio", ctx.serviceName],
+      ["Data e ora", when],
+      ["Durata", `${ctx.durationMinutes} min`],
+      ["Prezzo", fmtPrice(ctx.price, "it")],
+      ["Stato", status],
+      ["Riferimento", ctx.referenceCode],
+      ["Note", ctx.notes],
+    ])}
+    ${cta(ctx.adminUrl, "Apri in admin")}
   `;
 
   const text = [
     "Nuova prenotazione — Doctor Cuts",
-    `Cliente: ${ctx.customerName?.trim() || "—"}`,
+    "",
+    `Cliente: ${name}`,
     `Email: ${ctx.customerEmail}`,
-    `Telefono: ${ctx.customerPhone?.trim() || "—"}`,
+    ctx.customerPhone?.trim() ? `Telefono: ${ctx.customerPhone.trim()}` : null,
     `Servizio: ${ctx.serviceName}`,
     `Quando: ${when}`,
-    `Prezzo: ${total}`,
-    `Acconto: ${deposit} — ricevuto`,
-    `Stato: ${ctx.status}`,
+    `Prezzo: ${fmtPrice(ctx.price, "it")}`,
+    `Stato: ${status}`,
     `Riferimento: ${ctx.referenceCode}`,
     ctx.notes?.trim() ? `Note: ${ctx.notes.trim()}` : null,
+    "",
     ctx.adminUrl,
   ]
     .filter(Boolean)
@@ -157,24 +253,46 @@ export function shopBookingAlertEmail(
   return { subject, html: shell(body), text };
 }
 
-export function cancellationEmail(ctx: BaseCtx): { subject: string; html: string; text: string } {
+export function cancellationEmail(
+  ctx: BaseCtx,
+): { subject: string; html: string; text: string } {
   const isIt = ctx.locale === "it";
+  const name = ctx.customerName?.trim() || null;
+  const greeting = name
+    ? isIt
+      ? `Ciao ${name},`
+      : `Hi ${name},`
+    : isIt
+      ? "Ciao,"
+      : "Hi,";
+  const when = fmtDate(ctx.startsAt, ctx.locale);
   const subject = isIt
     ? `Prenotazione annullata · ${ctx.referenceCode}`
     : `Booking cancelled · ${ctx.referenceCode}`;
-  const when = fmtDate(ctx.startsAt, ctx.locale);
+
   const body = `
-    <p>${isIt ? "Ciao" : "Hi"} ${ctx.customerName ?? ""},</p>
-    <p>${isIt
-      ? "la tua prenotazione è stata annullata."
-      : "your booking has been cancelled."}</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:1px solid #222;border-bottom:1px solid #222;">
-      ${row(isIt ? "Servizio" : "Service", ctx.serviceName)}
-      ${row(isIt ? "Data" : "Date", when)}
-      ${row(isIt ? "Riferimento" : "Reference", ctx.referenceCode)}
-    </table>
-    <p>${isIt ? "A presto." : "See you soon."}</p>
+    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;">${escapeHtml(greeting)}</p>
+    <p style="margin:0;color:#cfcfcf;">${
+      isIt
+        ? "la tua prenotazione è stata annullata."
+        : "your booking has been cancelled."
+    }</p>
+    ${detailsTable([
+      [isIt ? "Servizio" : "Service", ctx.serviceName],
+      [isIt ? "Data e ora" : "Date & time", when],
+      [isIt ? "Riferimento" : "Reference", ctx.referenceCode],
+    ])}
+    <p style="margin:8px 0 0;color:#cfcfcf;">${isIt ? "A presto." : "See you soon."}</p>
   `;
-  const text = `${isIt ? "Prenotazione annullata" : "Booking cancelled"}\n${ctx.serviceName} · ${when}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`;
+
+  const text = [
+    greeting,
+    "",
+    isIt ? "Prenotazione annullata" : "Booking cancelled",
+    ctx.serviceName,
+    when,
+    `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
+  ].join("\n");
+
   return { subject, html: shell(body), text };
 }

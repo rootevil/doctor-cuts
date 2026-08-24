@@ -21,11 +21,11 @@ import {
   confirmationEmail,
   cancellationEmail,
   shopBookingAlertEmail,
+  resolveCustomerDisplayName,
 } from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
 import { localizedServiceName } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
-import { site } from "@/lib/site";
 import {
   bookingInputSchema,
   cancelBookingSchema,
@@ -248,11 +248,24 @@ export async function createBooking(
       .eq("id", user.id)
       .maybeSingle();
     to = profile?.email ?? user.email ?? null;
-    customerName = profile?.full_name?.trim() || null;
-    customerPhone = profile?.phone?.trim() || null;
+    const meta = user.user_metadata as
+      | { full_name?: string; phone?: string }
+      | undefined;
+    customerName = resolveCustomerDisplayName({
+      fullName: profile?.full_name,
+      metaFullName: meta?.full_name,
+      email: to,
+    });
+    customerPhone =
+      profile?.phone?.trim() ||
+      (typeof meta?.phone === "string" ? meta.phone.trim() : "") ||
+      null;
   } else if (guest) {
     to = guest.email;
-    customerName = guest.name;
+    customerName = resolveCustomerDisplayName({
+      guestName: guest.name,
+      email: guest.email,
+    });
     customerPhone = guest.phone?.trim() || null;
   }
 
@@ -276,10 +289,7 @@ export async function createBooking(
       manageUrl: `${origin}${managePath}`,
     });
     await sendEmail({ to, ...template });
-  }
 
-  // Shop alert → bookings@ (forward to Gmail via Cloudflare Email Routing).
-  if (to) {
     const alert = shopBookingAlertEmail({
       customerName,
       customerEmail: to,
@@ -289,7 +299,6 @@ export async function createBooking(
       durationMinutes: BOOKING_SLOT_MINUTES,
       referenceCode: data.reference_code,
       price: Number(service.price),
-      depositEur: site.bookingDepositEur,
       status: initialStatus,
       notes: validated.notes?.trim() || null,
       adminUrl: `${origin}${routes("it").adminAppointments}`,
@@ -372,9 +381,14 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   const to = profile?.email ?? user.email;
   if (to && service) {
     const origin = await siteOrigin();
+    const meta = user.user_metadata as { full_name?: string } | undefined;
     const template = cancellationEmail({
       locale,
-      customerName: profile?.full_name?.trim() || null,
+      customerName: resolveCustomerDisplayName({
+        fullName: profile?.full_name,
+        metaFullName: meta?.full_name,
+        email: to,
+      }),
       serviceName: localizedServiceName(locale, service.slug, service.name),
       startsAt: existing.starts_at,
       durationMinutes: service.duration_minutes,
@@ -489,7 +503,10 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
     const origin = await siteOrigin();
     const template = cancellationEmail({
       locale,
-      customerName: appointment.guest_name,
+      customerName: resolveCustomerDisplayName({
+        guestName: appointment.guest_name,
+        email: appointment.guest_email,
+      }),
       serviceName: localizedServiceName(
         locale,
         appointment.service_slug,

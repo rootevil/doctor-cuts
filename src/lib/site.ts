@@ -12,8 +12,6 @@ export const site = {
     admin: "admin@dr-cuts.com",
     info: "info@dr-cuts.com",
   },
-  /** Advance held against the appointment (shown on shop booking alerts). */
-  bookingDepositEur: 5,
   instagram: "https://www.instagram.com/dr_barbiere/",
   instagramHandle: "dr_barbiere",
   facebook: "https://www.facebook.com/206368819943168",
