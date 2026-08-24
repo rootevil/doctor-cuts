@@ -147,7 +147,7 @@ function detailsTable(
 
 function cta(href: string, label: string) {
   return `<p style="margin:24px 0 0;">
-    <a href="${escapeHtml(href)}" style="display:inline-block;background:#f4f4f4;color:#111111;text-decoration:none;padding:12px 18px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">${escapeHtml(label)}</a>
+    <a href="${escapeHtml(href)}" class="notranslate" translate="no" style="display:inline-block;background:#f4f4f4;color:#111111;text-decoration:none;padding:14px 22px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;">${escapeHtml(label)}</a>
   </p>`;
 }
 
@@ -243,7 +243,7 @@ export function shopBookingAlertEmail(
       ["Reference", ctx.referenceCode, { noTranslate: true }],
       ["Notes", ctx.notes],
     ])}
-    ${cta(ctx.adminUrl, "Open in admin")}
+    ${cta(ctx.adminUrl, "View in admin")}
   `;
 
   const text = [
@@ -260,7 +260,7 @@ export function shopBookingAlertEmail(
     `Reference: ${ctx.referenceCode}`,
     ctx.notes?.trim() ? `Notes: ${ctx.notes.trim()}` : null,
     "",
-    ctx.adminUrl,
+    `View in admin: ${ctx.adminUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -353,7 +353,7 @@ export function shopCancellationAlertEmail(
       ["Price", price],
       ["Reference", ctx.referenceCode, { noTranslate: true }],
     ])}
-    ${cta(ctx.adminUrl, "Open in admin")}
+    ${cta(ctx.adminUrl, "View in admin")}
   `;
 
   const text = [
@@ -366,7 +366,7 @@ export function shopCancellationAlertEmail(
     `Was scheduled: ${when}`,
     `Reference: ${ctx.referenceCode}`,
     "",
-    ctx.adminUrl,
+    `View in admin: ${ctx.adminUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
