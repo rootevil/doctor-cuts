@@ -21,7 +21,10 @@ export type ShopBookingAlertCtx = {
   customerName: string | null;
   customerEmail: string;
   customerPhone: string | null;
-  serviceName: string;
+  /** Italian catalog / dictionary name */
+  serviceNameIt: string;
+  /** English dictionary name */
+  serviceNameEn: string;
   startsAt: string;
   durationMinutes: number;
   referenceCode: string;
@@ -93,12 +96,13 @@ function statusLabel(status: string, locale: Locale) {
   return status;
 }
 
-function shell(inner: string) {
+function shell(inner: string, lang: Locale = "it") {
   return `<!doctype html>
-<html lang="it">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
   <title>Doctor Cuts</title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;color:#e6e6e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -107,13 +111,13 @@ function shell(inner: string) {
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#111111;border:1px solid #222222;">
         <tr><td style="padding:28px 28px 8px;border-bottom:1px solid #222222;">
           <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:0.2em;text-transform:uppercase;color:#f4f4f4;">Doctor Cuts</div>
-          <div style="margin-top:6px;font-size:12px;letter-spacing:0.08em;color:#9a9a9a;">${escapeHtml(site.addressLine)}, ${escapeHtml(site.postalCity)}</div>
+          <div style="margin-top:6px;font-size:12px;letter-spacing:0.04em;color:#9a9a9a;">${escapeHtml(site.addressLine)}, ${escapeHtml(site.postalCity)}</div>
         </td></tr>
         <tr><td style="padding:28px;color:#e6e6e6;line-height:1.55;font-size:15px;">
           ${inner}
         </td></tr>
         <tr><td style="padding:0 28px 28px;color:#7a7a7a;font-size:12px;line-height:1.5;">
-          ${escapeHtml(site.phoneDisplay)} · ${escapeHtml(site.email)}
+          ${escapeHtml(site.phoneDisplay)} · <a href="mailto:${escapeHtml(site.email)}" style="color:#7a7a7a;text-decoration:none;">${escapeHtml(site.email)}</a>
         </td></tr>
       </table>
     </td></tr>
@@ -122,21 +126,23 @@ function shell(inner: string) {
 </html>`;
 }
 
-/** Stacked rows — more reliable in Gmail than two-column tables. */
-function detail(label: string, value: string) {
-  const safe = escapeHtml(value);
+/** Stacked rows — more reliable in Gmail than side-by-side columns. */
+function detail(label: string, value: string, opts?: { noTranslate?: boolean }) {
+  const valueAttr = opts?.noTranslate ? ' translate="no"' : "";
   return `<tr>
     <td style="padding:12px 0;border-bottom:1px solid #222222;">
       <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#9a9a9a;margin:0 0 4px;">${escapeHtml(label)}</div>
-      <div style="font-size:16px;color:#f4f4f4;word-break:break-word;">${safe}</div>
+      <div${valueAttr} style="font-size:16px;color:#f4f4f4;word-break:break-word;">${escapeHtml(value)}</div>
     </td>
   </tr>`;
 }
 
-function detailsTable(rows: Array<[string, string | null | undefined]>) {
+function detailsTable(
+  rows: Array<[string, string | null | undefined, { noTranslate?: boolean }?]>,
+) {
   const body = rows
     .filter(([, value]) => Boolean(value && String(value).trim()))
-    .map(([label, value]) => detail(label, String(value).trim()))
+    .map(([label, value, opts]) => detail(label, String(value).trim(), opts))
     .join("");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-top:1px solid #222222;">${body}</table>`;
 }
@@ -164,19 +170,19 @@ export function confirmationEmail(
     ? `Prenotazione confermata · ${ctx.referenceCode}`
     : `Booking confirmed · ${ctx.referenceCode}`;
 
+  const lead = isIt
+    ? "La tua prenotazione da Doctor Cuts è confermata. Ti aspettiamo in studio."
+    : "Your booking at Doctor Cuts is confirmed. We look forward to seeing you.";
+
   const body = `
-    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;">${escapeHtml(greeting)}</p>
-    <p style="margin:0;color:#cfcfcf;">${
-      isIt
-        ? "la tua prenotazione da Doctor Cuts è confermata. Ti aspettiamo in studio."
-        : "your booking at Doctor Cuts is confirmed. We look forward to seeing you."
-    }</p>
+    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;" translate="no">${escapeHtml(greeting)}</p>
+    <p style="margin:0;color:#cfcfcf;">${escapeHtml(lead)}</p>
     ${detailsTable([
       [isIt ? "Servizio" : "Service", ctx.serviceName],
       [isIt ? "Data e ora" : "Date & time", when],
       [isIt ? "Durata" : "Duration", `${ctx.durationMinutes} min`],
       [isIt ? "Prezzo" : "Price", fmtPrice(ctx.price, ctx.locale)],
-      [isIt ? "Riferimento" : "Reference", ctx.referenceCode],
+      [isIt ? "Riferimento" : "Reference", ctx.referenceCode, { noTranslate: true }],
     ])}
     ${cta(ctx.manageUrl, isIt ? "Gestisci prenotazione" : "Manage booking")}
     <p style="margin:20px 0 0;color:#8a8a8a;font-size:12px;">${
@@ -189,68 +195,88 @@ export function confirmationEmail(
   const text = [
     greeting,
     "",
-    isIt ? "Prenotazione confermata" : "Booking confirmed",
-    `${ctx.serviceName}`,
-    when,
-    `${ctx.durationMinutes} min · ${fmtPrice(ctx.price, ctx.locale)}`,
+    lead,
+    "",
+    `${isIt ? "Servizio" : "Service"}: ${ctx.serviceName}`,
+    `${isIt ? "Data e ora" : "Date & time"}: ${when}`,
+    `${isIt ? "Durata" : "Duration"}: ${ctx.durationMinutes} min`,
+    `${isIt ? "Prezzo" : "Price"}: ${fmtPrice(ctx.price, ctx.locale)}`,
     `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
     "",
     ctx.manageUrl,
   ].join("\n");
 
-  return { subject, html: shell(body), text };
+  return { subject, html: shell(body, ctx.locale), text };
 }
 
+/**
+ * Shop inbox alert — bilingual (IT + EN) so Gmail auto-translate does not
+ * scramble names or turn "Taglio" into "Cut" / "Avviso studio" into "Study Notice".
+ */
 export function shopBookingAlertEmail(
   ctx: ShopBookingAlertCtx,
 ): { subject: string; html: string; text: string } {
-  const when = fmtDate(ctx.startsAt, "it");
-  const whenShort = fmtDateShort(ctx.startsAt, "it");
-  const name = resolveCustomerDisplayName({
-    fullName: ctx.customerName,
-    email: ctx.customerEmail,
-  });
-  const status = statusLabel(ctx.status, "it");
-  const subject = `Nuova prenotazione · ${name} · ${whenShort}`;
+  // Exact name from the booking — do not re-derive from email (Gmail contacts
+  // / profile rows must never override what the customer typed).
+  const name =
+    (ctx.customerName ?? "").trim().replace(/\s+/g, " ") ||
+    resolveCustomerDisplayName({ email: ctx.customerEmail });
+
+  const whenIt = fmtDate(ctx.startsAt, "it");
+  const whenEn = fmtDate(ctx.startsAt, "en");
+  const whenShort = fmtDateShort(ctx.startsAt, "en");
+  const statusIt = statusLabel(ctx.status, "it");
+  const statusEn = statusLabel(ctx.status, "en");
+  const price = fmtPrice(ctx.price, "it");
+  const serviceLine =
+    ctx.serviceNameIt === ctx.serviceNameEn
+      ? ctx.serviceNameIt
+      : `${ctx.serviceNameIt} / ${ctx.serviceNameEn}`;
+
+  const subject = `New booking · ${name} · ${whenShort} · ${ctx.referenceCode}`;
 
   const body = `
-    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Avviso studio</p>
-    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">Nuova prenotazione</p>
-    <p style="margin:0;color:#cfcfcf;"><strong style="color:#f4f4f4;">${escapeHtml(name)}</strong> ha prenotato per <strong style="color:#f4f4f4;">${escapeHtml(when)}</strong>.</p>
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert · Avviso studio</p>
+    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">New booking · Nuova prenotazione</p>
+    <p style="margin:0;color:#cfcfcf;" translate="no">
+      <strong style="color:#f4f4f4;">${escapeHtml(name)}</strong>
+      — ${escapeHtml(whenEn)}
+    </p>
     ${detailsTable([
-      ["Cliente", name],
-      ["Email", ctx.customerEmail],
-      ["Telefono", ctx.customerPhone],
-      ["Servizio", ctx.serviceName],
-      ["Data e ora", when],
-      ["Durata", `${ctx.durationMinutes} min`],
-      ["Prezzo", fmtPrice(ctx.price, "it")],
-      ["Stato", status],
-      ["Riferimento", ctx.referenceCode],
-      ["Note", ctx.notes],
+      ["Customer · Cliente", name, { noTranslate: true }],
+      ["Email", ctx.customerEmail, { noTranslate: true }],
+      ["Phone · Telefono", ctx.customerPhone, { noTranslate: true }],
+      ["Service · Servizio", serviceLine],
+      ["When · Quando", `${whenEn}  ·  ${whenIt}`],
+      ["Duration · Durata", `${ctx.durationMinutes} min`],
+      ["Price · Prezzo", price],
+      ["Status · Stato", `${statusEn} · ${statusIt}`],
+      ["Reference · Riferimento", ctx.referenceCode, { noTranslate: true }],
+      ["Notes · Note", ctx.notes],
     ])}
-    ${cta(ctx.adminUrl, "Apri in admin")}
+    ${cta(ctx.adminUrl, "Open in admin · Apri in admin")}
   `;
 
   const text = [
-    "Nuova prenotazione — Doctor Cuts",
+    "Doctor Cuts — New booking / Nuova prenotazione",
     "",
-    `Cliente: ${name}`,
+    `Customer: ${name}`,
     `Email: ${ctx.customerEmail}`,
-    ctx.customerPhone?.trim() ? `Telefono: ${ctx.customerPhone.trim()}` : null,
-    `Servizio: ${ctx.serviceName}`,
-    `Quando: ${when}`,
-    `Prezzo: ${fmtPrice(ctx.price, "it")}`,
-    `Stato: ${status}`,
-    `Riferimento: ${ctx.referenceCode}`,
-    ctx.notes?.trim() ? `Note: ${ctx.notes.trim()}` : null,
+    ctx.customerPhone?.trim() ? `Phone: ${ctx.customerPhone.trim()}` : null,
+    `Service: ${serviceLine}`,
+    `When: ${whenEn}`,
+    `Duration: ${ctx.durationMinutes} min`,
+    `Price: ${price}`,
+    `Status: ${statusEn}`,
+    `Reference: ${ctx.referenceCode}`,
+    ctx.notes?.trim() ? `Notes: ${ctx.notes.trim()}` : null,
     "",
     ctx.adminUrl,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return { subject, html: shell(body), text };
+  return { subject, html: shell(body, "en"), text };
 }
 
 export function cancellationEmail(
@@ -269,18 +295,17 @@ export function cancellationEmail(
   const subject = isIt
     ? `Prenotazione annullata · ${ctx.referenceCode}`
     : `Booking cancelled · ${ctx.referenceCode}`;
+  const lead = isIt
+    ? "La tua prenotazione è stata annullata."
+    : "Your booking has been cancelled.";
 
   const body = `
-    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;">${escapeHtml(greeting)}</p>
-    <p style="margin:0;color:#cfcfcf;">${
-      isIt
-        ? "la tua prenotazione è stata annullata."
-        : "your booking has been cancelled."
-    }</p>
+    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;" translate="no">${escapeHtml(greeting)}</p>
+    <p style="margin:0;color:#cfcfcf;">${escapeHtml(lead)}</p>
     ${detailsTable([
       [isIt ? "Servizio" : "Service", ctx.serviceName],
       [isIt ? "Data e ora" : "Date & time", when],
-      [isIt ? "Riferimento" : "Reference", ctx.referenceCode],
+      [isIt ? "Riferimento" : "Reference", ctx.referenceCode, { noTranslate: true }],
     ])}
     <p style="margin:8px 0 0;color:#cfcfcf;">${isIt ? "A presto." : "See you soon."}</p>
   `;
@@ -288,11 +313,11 @@ export function cancellationEmail(
   const text = [
     greeting,
     "",
-    isIt ? "Prenotazione annullata" : "Booking cancelled",
-    ctx.serviceName,
-    when,
+    lead,
+    "",
+    `${ctx.serviceName} · ${when}`,
     `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
   ].join("\n");
 
-  return { subject, html: shell(body), text };
+  return { subject, html: shell(body, ctx.locale), text };
 }
