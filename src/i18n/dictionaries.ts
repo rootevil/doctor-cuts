@@ -273,6 +273,8 @@ export type Dictionary = {
         pendingSubmit: string;
         noAccountPrompt: string;
         noAccountLink: string;
+        showPassword: string;
+        hidePassword: string;
         metaTitle: string;
         metaDescription: string;
       };
@@ -289,6 +291,8 @@ export type Dictionary = {
         haveAccountPrompt: string;
         haveAccountLink: string;
         checkEmail: string;
+        showPassword: string;
+        hidePassword: string;
         metaTitle: string;
         metaDescription: string;
       };
@@ -962,20 +966,22 @@ const it: Dictionary = {
       signIn: {
         kicker: "Accedi",
         title: ["BENTORNATO.", ""],
-        lead: "Accedi con la tua email per gestire i tuoi appuntamenti.",
+        lead: "Inserisci email e password per vedere e gestire i tuoi appuntamenti.",
         emailLabel: "Email",
         passwordLabel: "Password",
         submit: "Accedi",
         pendingSubmit: "Accesso in corso…",
         noAccountPrompt: "Non hai ancora un account?",
-        noAccountLink: "Registrati",
+        noAccountLink: "Crea un account",
+        showPassword: "Mostra password",
+        hidePassword: "Nascondi password",
         metaTitle: "Accedi — Doctor Cuts",
         metaDescription: "Accedi all’area personale di Doctor Cuts.",
       },
       signUp: {
         kicker: "Registrati",
         title: ["CREA IL", "TUO ACCOUNT."],
-        lead: "Bastano nome, email e una password. Il numero di telefono ci serve solo per contattarti in caso di modifiche all’appuntamento.",
+        lead: "Compila i campi qui sotto. Ti serve per prenotare e gestire gli appuntamenti.",
         nameLabel: "Nome e cognome",
         phoneLabel: "Telefono",
         emailLabel: "Email",
@@ -985,6 +991,8 @@ const it: Dictionary = {
         haveAccountPrompt: "Hai già un account?",
         haveAccountLink: "Accedi",
         checkEmail: "Controlla la casella email per confermare la registrazione.",
+        showPassword: "Mostra password",
+        hidePassword: "Nascondi password",
         metaTitle: "Registrati — Doctor Cuts",
         metaDescription: "Crea il tuo account Doctor Cuts.",
       },
@@ -1660,20 +1668,22 @@ const en: Dictionary = {
       signIn: {
         kicker: "Sign in",
         title: ["WELCOME", "BACK."],
-        lead: "Sign in with your email to manage your appointments.",
+        lead: "Enter your email and password to view and manage your appointments.",
         emailLabel: "Email",
         passwordLabel: "Password",
         submit: "Sign in",
         pendingSubmit: "Signing in…",
-        noAccountPrompt: "Don’t have an account yet?",
-        noAccountLink: "Create one",
+        noAccountPrompt: "Don’t have an account?",
+        noAccountLink: "Create an account",
+        showPassword: "Show password",
+        hidePassword: "Hide password",
         metaTitle: "Sign in — Doctor Cuts",
         metaDescription: "Access your Doctor Cuts account.",
       },
       signUp: {
         kicker: "Create account",
         title: ["CREATE YOUR", "ACCOUNT."],
-        lead: "Name, email, a password. Phone number stays with us and is only used if we need to reach you about an appointment.",
+        lead: "Fill in the fields below. You’ll use this to book and manage appointments.",
         nameLabel: "Full name",
         phoneLabel: "Phone",
         emailLabel: "Email",
@@ -1683,6 +1693,8 @@ const en: Dictionary = {
         haveAccountPrompt: "Already have an account?",
         haveAccountLink: "Sign in",
         checkEmail: "Check your inbox to confirm your address.",
+        showPassword: "Show password",
+        hidePassword: "Hide password",
         metaTitle: "Create account — Doctor Cuts",
         metaDescription: "Create your Doctor Cuts account.",
       },

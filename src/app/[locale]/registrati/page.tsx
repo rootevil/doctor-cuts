@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHero } from "@/components/layout/page-hero";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { SignUpForm } from "@/components/auth/sign-up-form";
-import { ButtonLink } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, locales } from "@/i18n/config";
 import { routes } from "@/lib/routes";
@@ -42,21 +41,20 @@ export default async function RegistratiPage({
   const copy = t.pages.auth.signUp;
 
   return (
-    <>
-      <PageHero kicker={copy.kicker} title={copy.title} lead={copy.lead} />
-      <section className="bg-background">
-        <div className="site-wrap-wide grid grid-cols-1 gap-10 py-16 md:grid-cols-[minmax(0,36rem)_1fr] md:gap-24 md:py-24">
-          <SignUpForm locale={locale} t={t} />
-          <aside className="flex flex-col justify-end gap-4 border-t border-border pt-8 md:border-l md:border-t-0 md:pl-16 md:pt-0">
-            <p className="text-[11px] tracking-[0.28em] text-muted uppercase">
-              {copy.haveAccountPrompt}
-            </p>
-            <ButtonLink href={r.signIn} variant="secondary" arrow>
-              {copy.haveAccountLink}
-            </ButtonLink>
-          </aside>
-        </div>
-      </section>
-    </>
+    <AuthShell
+      kicker={copy.kicker}
+      title={copy.title}
+      lead={copy.lead}
+      switchPrompt={copy.haveAccountPrompt}
+      switchHref={r.signIn}
+      switchLabel={copy.haveAccountLink}
+    >
+      <SignUpForm
+        locale={locale}
+        t={t}
+        showPasswordLabel={copy.showPassword}
+        hidePasswordLabel={copy.hidePassword}
+      />
+    </AuthShell>
   );
 }
