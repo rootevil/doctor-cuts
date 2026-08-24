@@ -16,11 +16,16 @@ import {
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
 import { getServiceById } from "@/lib/data/services";
-import { sendEmail } from "@/lib/email/send";
-import { confirmationEmail, cancellationEmail } from "@/lib/email/templates";
+import { bookingAlertAddress, sendEmail } from "@/lib/email/send";
+import {
+  confirmationEmail,
+  cancellationEmail,
+  shopBookingAlertEmail,
+} from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
 import { localizedServiceName } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
+import { site } from "@/lib/site";
 import {
   bookingInputSchema,
   cancelBookingSchema,
@@ -234,26 +239,35 @@ export async function createBooking(
 
   let to: string | null = null;
   let customerName: string | null = null;
+  let customerPhone: string | null = null;
 
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, email")
+      .select("full_name, email, phone")
       .eq("id", user.id)
       .maybeSingle();
     to = profile?.email ?? user.email ?? null;
     customerName = profile?.full_name?.trim() || null;
+    customerPhone = profile?.phone?.trim() || null;
   } else if (guest) {
     to = guest.email;
     customerName = guest.name;
+    customerPhone = guest.phone?.trim() || null;
   }
 
+  const origin = await siteOrigin();
+  const serviceLabel = localizedServiceName(
+    validated.locale,
+    service.slug,
+    service.name,
+  );
+
   if (to) {
-    const origin = await siteOrigin();
     const template = confirmationEmail({
       locale: validated.locale,
       customerName,
-      serviceName: localizedServiceName(validated.locale, service.slug, service.name),
+      serviceName: serviceLabel,
       startsAt: startsAt.toISOString(),
       durationMinutes: BOOKING_SLOT_MINUTES,
       referenceCode: data.reference_code,
@@ -262,6 +276,29 @@ export async function createBooking(
       manageUrl: `${origin}${managePath}`,
     });
     await sendEmail({ to, ...template });
+  }
+
+  // Shop alert → bookings@ (forward to Gmail via Cloudflare Email Routing).
+  if (to) {
+    const alert = shopBookingAlertEmail({
+      customerName,
+      customerEmail: to,
+      customerPhone,
+      serviceName: localizedServiceName("it", service.slug, service.name),
+      startsAt: startsAt.toISOString(),
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: data.reference_code,
+      price: Number(service.price),
+      depositEur: site.bookingDepositEur,
+      status: initialStatus,
+      notes: validated.notes?.trim() || null,
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+    });
+    await sendEmail({
+      to: bookingAlertAddress(),
+      ...alert,
+      replyTo: to,
+    });
   }
 
   revalidatePath(routes(validated.locale).account);

@@ -89,6 +89,74 @@ export function confirmationEmail(ctx: BaseCtx): { subject: string; html: string
   return { subject, html: shell(body), text };
 }
 
+export type ShopBookingAlertCtx = {
+  customerName: string | null;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceName: string;
+  startsAt: string; // ISO UTC
+  durationMinutes: number;
+  referenceCode: string;
+  price: number;
+  depositEur: number;
+  status: string;
+  notes: string | null;
+  adminUrl: string;
+};
+
+/** Internal alert for the shop — Italian copy (studio in Macerata). */
+export function shopBookingAlertEmail(
+  ctx: ShopBookingAlertCtx,
+): { subject: string; html: string; text: string } {
+  const when = fmtDate(ctx.startsAt, "it");
+  const deposit = fmtPrice(ctx.depositEur, "it");
+  const total = fmtPrice(ctx.price, "it");
+  const subject = `Nuova prenotazione · ${ctx.referenceCode} · ${when}`;
+
+  const body = `
+    <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Avviso studio</p>
+    <p style="margin:0 0 20px;font-size:18px;color:#f4f4f4;">Nuova prenotazione ricevuta</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-top:1px solid #222;border-bottom:1px solid #222;">
+      ${row("Cliente", ctx.customerName?.trim() || "—")}
+      ${row("Email", ctx.customerEmail)}
+      ${row("Telefono", ctx.customerPhone?.trim() || "—")}
+      ${row("Servizio", ctx.serviceName)}
+      ${row("Data e ora", when)}
+      ${row("Durata", `${ctx.durationMinutes} min`)}
+      ${row("Prezzo servizio", total)}
+      ${row("Acconto €5", `${deposit} — ricevuto`)}
+      ${row("Stato", ctx.status)}
+      ${row("Riferimento", ctx.referenceCode)}
+      ${ctx.notes?.trim() ? row("Note cliente", ctx.notes.trim()) : ""}
+    </table>
+    <p style="margin:0 0 20px;color:#cfcfcf;font-size:14px;">
+      Acconto di ${deposit} segnato come ricevuto per questa prenotazione.
+    </p>
+    <p style="margin:0;">
+      <a href="${ctx.adminUrl}" style="display:inline-block;background:#f4f4f4;color:#111;text-decoration:none;padding:12px 20px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">Apri in admin</a>
+    </p>
+  `;
+
+  const text = [
+    "Nuova prenotazione — Doctor Cuts",
+    `Cliente: ${ctx.customerName?.trim() || "—"}`,
+    `Email: ${ctx.customerEmail}`,
+    `Telefono: ${ctx.customerPhone?.trim() || "—"}`,
+    `Servizio: ${ctx.serviceName}`,
+    `Quando: ${when}`,
+    `Prezzo: ${total}`,
+    `Acconto: ${deposit} — ricevuto`,
+    `Stato: ${ctx.status}`,
+    `Riferimento: ${ctx.referenceCode}`,
+    ctx.notes?.trim() ? `Note: ${ctx.notes.trim()}` : null,
+    ctx.adminUrl,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, html: shell(body), text };
+}
+
 export function cancellationEmail(ctx: BaseCtx): { subject: string; html: string; text: string } {
   const isIt = ctx.locale === "it";
   const subject = isIt

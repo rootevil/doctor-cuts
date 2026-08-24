@@ -1,10 +1,17 @@
 import "server-only";
 
 import { Resend } from "resend";
+import { site } from "@/lib/site";
 
 const apiKey = process.env.RESEND_API_KEY;
 const fromAddress = process.env.EMAIL_FROM || "Doctor Cuts <bookings@dr-cuts.com>";
 const replyToAddress = process.env.EMAIL_REPLY_TO || "bookings@dr-cuts.com";
+
+/** Inbox that receives new-booking alerts (forward this to Gmail via Cloudflare). */
+export function bookingAlertAddress(): string {
+  const fromEnv = process.env.EMAIL_BOOKING_ALERT_TO?.trim();
+  return fromEnv || site.emails.bookings;
+}
 
 const resend = apiKey ? new Resend(apiKey) : null;
 
