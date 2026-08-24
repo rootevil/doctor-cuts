@@ -3,7 +3,8 @@ import "server-only";
 import { Resend } from "resend";
 
 const apiKey = process.env.RESEND_API_KEY;
-const fromAddress = process.env.EMAIL_FROM || "Doctor Cuts <no-reply@doctorcuts.it>";
+const fromAddress = process.env.EMAIL_FROM || "Doctor Cuts <bookings@dr-cuts.com>";
+const replyToAddress = process.env.EMAIL_REPLY_TO || "bookings@dr-cuts.com";
 
 const resend = apiKey ? new Resend(apiKey) : null;
 
@@ -38,7 +39,7 @@ export async function sendEmail(
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
-      replyTo: payload.replyTo,
+      replyTo: payload.replyTo ?? replyToAddress,
     });
     if (error) return { queued: true, delivered: false, error: error.message };
     return { queued: true, delivered: true, id: data?.id };

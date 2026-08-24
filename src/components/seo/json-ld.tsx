@@ -38,6 +38,7 @@ export function LocalBusinessJsonLd({
     name: site.name,
     url: `${siteUrl}/${locale}`,
     telephone: site.phoneE164,
+    email: site.email,
     image: `${siteUrl}/images/portrait.jpg`,
     priceRange: "€€",
     address: {

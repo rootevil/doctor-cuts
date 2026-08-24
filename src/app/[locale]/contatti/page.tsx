@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { Clock, MapPin, Navigation, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -169,6 +169,16 @@ export default async function ContattiPage({
                     <WhatsAppIcon />
                   </span>
                   <span className="btn-channel-label">{contact.phoneDisplay}</span>
+                </a>
+                <a
+                  href={contact.mailtoHref}
+                  className="btn-channel btn-channel-email"
+                  aria-label={`${t.location.email}: ${contact.email}`}
+                >
+                  <span className="btn-channel-mark" aria-hidden>
+                    <Mail className="h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                  <span className="btn-channel-label">{contact.email}</span>
                 </a>
                 <a
                   href={contact.instagram}

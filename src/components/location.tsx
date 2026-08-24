@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Clock, MapPin, Navigation, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { getBusinessHours } from "@/lib/data/hours";
@@ -165,6 +165,16 @@ export async function Location({ locale, t }: { locale: Locale; t: Dictionary })
                       <WhatsAppIcon />
                     </span>
                     <span className="btn-channel-label">{contact.phoneDisplay}</span>
+                  </a>
+                  <a
+                    href={contact.mailtoHref}
+                    className="btn-channel btn-channel-email"
+                    aria-label={`${t.location.email}: ${contact.email}`}
+                  >
+                    <span className="btn-channel-mark" aria-hidden>
+                      <Mail className="h-4 w-4" strokeWidth={1.75} />
+                    </span>
+                    <span className="btn-channel-label">{contact.email}</span>
                   </a>
                   <a
                     href={contact.instagram}

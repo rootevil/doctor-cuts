@@ -22,7 +22,7 @@ insert into public.settings (
   'Doctor Cuts',
   'Via Antelmo Severini, 4/c, 62100 Macerata MC',
   '+393481748052',
-  null,
+  'info@dr-cuts.com',
   'https://www.instagram.com/dr_barbiere/',
   'https://wa.me/393481748052',
   2,
@@ -36,6 +36,7 @@ on conflict (singleton) do update set
   business_name = excluded.business_name,
   address       = excluded.address,
   phone         = excluded.phone,
+  email         = excluded.email,
   instagram     = excluded.instagram,
   whatsapp      = excluded.whatsapp;
 

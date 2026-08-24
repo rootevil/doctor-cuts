@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: SettingsRow = {
   business_name: "Doctor Cuts",
   address: "Via Antelmo Severini, 4/c, 62100 Macerata MC",
   phone: "+393481748052",
-  email: null,
+  email: "info@dr-cuts.com",
   instagram: "https://www.instagram.com/dr_barbiere/",
   facebook: "https://www.facebook.com/206368819943168",
   whatsapp: "https://wa.me/393481748052",

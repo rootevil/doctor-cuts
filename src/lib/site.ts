@@ -5,6 +5,13 @@ export const site = {
   phoneDisplay: "348 174 8052",
   phoneE164: "+393481748052",
   telHref: "tel:+393481748052",
+  /** Public contact shown on Contatti / Find us / SEO. */
+  email: "info@dr-cuts.com",
+  emails: {
+    bookings: "bookings@dr-cuts.com",
+    admin: "admin@dr-cuts.com",
+    info: "info@dr-cuts.com",
+  },
   instagram: "https://www.instagram.com/dr_barbiere/",
   instagramHandle: "dr_barbiere",
   facebook: "https://www.facebook.com/206368819943168",

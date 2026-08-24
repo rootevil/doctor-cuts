@@ -922,7 +922,8 @@ button.text-nav:hover {
 }
 
 .btn-channel-call .btn-channel-label,
-.btn-channel-whatsapp .btn-channel-label {
+.btn-channel-whatsapp .btn-channel-label,
+.btn-channel-email .btn-channel-label {
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
@@ -952,6 +953,28 @@ button.text-nav:hover {
 
 .btn-channel-whatsapp:active {
   box-shadow: 0 0.3em 1em -0.5em rgba(37, 211, 102, 0.85);
+}
+
+/* Email */
+.btn-channel-email {
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--brass));
+  border: 1px solid color-mix(in srgb, var(--brass) 40%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 10%, transparent);
+  color: var(--foreground);
+}
+
+.btn-channel-email::before,
+.btn-channel-email::after {
+  background-color: var(--brass);
+}
+
+.btn-channel-email:hover {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.btn-channel-email:active {
+  opacity: 0.92;
 }
 
 /* Instagram */

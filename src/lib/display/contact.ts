@@ -61,12 +61,15 @@ export function mapsUrlFromAddress(address: string | null | undefined) {
 export function contactFromSettings(settings: SettingsRow) {
   const { line, city } = parseAddress(settings.address);
   const phoneDisplay = formatPhoneDisplay(settings.phone);
+  const email = (settings.email?.trim() || site.email).toLowerCase();
   return {
     businessName: settings.business_name || site.name,
     addressLine: line,
     postalCity: city,
     phoneDisplay,
     telHref: telHrefFrom(settings.phone),
+    email,
+    mailtoHref: `mailto:${email}`,
     whatsapp: settings.whatsapp || site.whatsapp,
     instagram: settings.instagram || site.instagram,
     facebook: settings.facebook || site.facebook,

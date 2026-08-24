@@ -74,6 +74,7 @@ export type Dictionary = {
     directions: string;
     phone: string;
     whatsapp: string;
+    email: string;
     mapReveal: string;
     mapAlt: string;
   };
@@ -740,6 +741,7 @@ const it: Dictionary = {
     directions: "Indicazioni",
     phone: "Telefono",
     whatsapp: "WhatsApp",
+    email: "Email",
     mapReveal: "Mostra mappa",
     mapAlt: "Mappa della sede Doctor Cuts a Macerata",
   },
@@ -1444,6 +1446,7 @@ const en: Dictionary = {
     directions: "Directions",
     phone: "Phone",
     whatsapp: "WhatsApp",
+    email: "Email",
     mapReveal: "Show map",
     mapAlt: "Map showing Doctor Cuts in Macerata",
   },
