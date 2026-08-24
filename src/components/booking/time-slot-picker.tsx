@@ -22,6 +22,7 @@ export type TimeSlotCopy = {
   legendUnavailable: string;
   booked: string;
   unavailable: string;
+  legendLabel: string;
 };
 
 type Props = {
@@ -171,7 +172,7 @@ export function TimeSlotPicker({
         </span>
       </div>
 
-      <ul className="time-slot-legend" aria-label="Slot legend">
+      <ul className="time-slot-legend" aria-label={copy.legendLabel}>
         <li>
           <span className="time-slot-legend-swatch is-available" aria-hidden />
           {copy.legendAvailable}

@@ -7,6 +7,8 @@ import type { AppointmentSummary } from "@/lib/data/appointments";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { SHOP_TZ } from "@/lib/booking/timezone";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
+import { localizedServiceName } from "@/lib/services/localize";
 import { cancelBooking } from "@/lib/booking/actions";
 
 type Props = {
@@ -35,9 +37,15 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
   const dateLabel = formatInTimeZone(
     new Date(appointment.starts_at),
     SHOP_TZ,
-    locale === "it" ? "EEEE d MMMM" : "EEEE d MMMM",
+    "EEEE d MMMM",
+    { locale: dateFnsLocale(locale) },
   );
   const timeLabel = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "HH:mm");
+  const serviceName = localizedServiceName(
+    locale,
+    appointment.service?.slug,
+    appointment.service?.name,
+  );
   const status = statusLabel(appointment.status, copy.statuses);
   const statusTone = statusClass(appointment.status);
   const showCancel = canCancel && appointment.status !== "cancelled";
@@ -80,7 +88,7 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
           </div>
 
           <h3 className="mt-3 font-display text-2xl leading-tight tracking-tight text-foreground md:text-[1.75rem]">
-            {appointment.service?.name ?? "—"}
+            {serviceName}
           </h3>
 
           <p className="mt-2 text-base text-foreground-soft">
@@ -90,7 +98,7 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
           </p>
 
           <p className="mt-1.5 text-sm text-muted">
-            {appointment.service?.duration_minutes ?? 0} min
+            {appointment.service?.duration_minutes ?? 0} {t.services.minutes}
             <span className="mx-2 text-border-strong">·</span>
             {appointment.service
               ? fmtCurrency(Number(appointment.service.price), locale)

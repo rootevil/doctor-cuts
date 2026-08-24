@@ -3,8 +3,12 @@ import { notFound } from "next/navigation";
 import { ServiceRow } from "@/components/services/service-row";
 import { RevealFade } from "@/components/motion/reveal-fade";
 import { Kicker } from "@/components/ui/kicker";
-import { formatPrice, services as staticServices, type ServiceSlug } from "@/lib/site";
+import { formatPrice, services as staticServices } from "@/lib/site";
 import { getActiveServices } from "@/lib/data/services";
+import {
+  localizedServiceBlurb,
+  localizedServiceName,
+} from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, locales } from "@/i18n/config";
@@ -53,16 +57,13 @@ export default async function ServiziPage({
 
   const list =
     dbServices.length > 0
-      ? dbServices.map((s, i) => {
-          const dict = t.services.items[s.slug as ServiceSlug];
-          return {
-            slug: s.slug,
-            id: padId(i),
-            name: dict?.name ?? s.name,
-            blurb: dict?.blurb ?? s.description ?? "",
-            price: formatPrice(Number(s.price), locale),
-          };
-        })
+      ? dbServices.map((s, i) => ({
+          slug: s.slug,
+          id: padId(i),
+          name: localizedServiceName(locale, s.slug, s.name),
+          blurb: localizedServiceBlurb(locale, s.slug, s.description),
+          price: formatPrice(Number(s.price), locale),
+        }))
       : staticServices.map((service) => {
           const copy = t.services.items[service.slug];
           return {

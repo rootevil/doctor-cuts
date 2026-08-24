@@ -171,7 +171,7 @@ export async function Location({ locale, t }: { locale: Locale; t: Dictionary })
                     target="_blank"
                     rel="noreferrer"
                     className="btn-channel btn-channel-instagram"
-                    aria-label="Instagram Dr. Cuts"
+                    aria-label={`Instagram ${contact.businessName}`}
                   >
                     <span className="btn-channel-mark" aria-hidden>
                       <InstagramIcon />
@@ -183,7 +183,7 @@ export async function Location({ locale, t }: { locale: Locale; t: Dictionary })
                     target="_blank"
                     rel="noreferrer"
                     className="btn-channel btn-channel-facebook"
-                    aria-label="Facebook Dr. Cuts"
+                    aria-label={`Facebook ${contact.businessName}`}
                   >
                     <span className="btn-channel-mark" aria-hidden>
                       <FacebookIcon />

@@ -1,6 +1,7 @@
 import { formatInTimeZone } from "date-fns-tz";
 import type { Locale } from "@/i18n/config";
 import { SHOP_TZ } from "@/lib/booking/timezone";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
 import type { SettingsRow } from "@/lib/supabase/types";
 
 type BaseCtx = {
@@ -16,11 +17,10 @@ type BaseCtx = {
   manageUrl: string;
 };
 
-function fmtDate(iso: string) {
-  return formatInTimeZone(new Date(iso), SHOP_TZ, "EEEE d MMMM · HH:mm").replace(
-    /^./,
-    (c) => c.toUpperCase(),
-  );
+function fmtDate(iso: string, locale: Locale) {
+  return formatInTimeZone(new Date(iso), SHOP_TZ, "EEEE d MMMM · HH:mm", {
+    locale: dateFnsLocale(locale),
+  }).replace(/^./, (c) => c.toUpperCase());
 }
 
 function fmtPrice(amount: number, locale: Locale) {
@@ -59,6 +59,7 @@ export function confirmationEmail(ctx: BaseCtx): { subject: string; html: string
   const subject = isIt
     ? `Prenotazione confermata · ${ctx.referenceCode}`
     : `Booking confirmed · ${ctx.referenceCode}`;
+  const when = fmtDate(ctx.startsAt, ctx.locale);
 
   const body = `
     <p>${greeting}</p>
@@ -67,8 +68,8 @@ export function confirmationEmail(ctx: BaseCtx): { subject: string; html: string
       : "your booking at Doctor Cuts is confirmed."}</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:1px solid #222;border-bottom:1px solid #222;">
       ${row(isIt ? "Servizio" : "Service", `${ctx.serviceName}`)}
-      ${row(isIt ? "Data" : "Date", fmtDate(ctx.startsAt))}
-      ${row(isIt ? "Durata" : "Duration", `${ctx.durationMinutes} min`)}
+      ${row(isIt ? "Data" : "Date", when)}
+      ${row(isIt ? "Durata" : "Duration", `${ctx.durationMinutes} ${isIt ? "min" : "min"}`)}
       ${row(isIt ? "Prezzo" : "Price", fmtPrice(ctx.price, ctx.locale))}
       ${row(isIt ? "Riferimento" : "Reference", ctx.referenceCode)}
     </table>
@@ -83,7 +84,7 @@ export function confirmationEmail(ctx: BaseCtx): { subject: string; html: string
       : `To reschedule or cancel, please give us at least ${ctx.settings.cancellation_hours} hours notice.`}</p>
   `;
 
-  const text = `${greeting}\n\n${isIt ? "Prenotazione confermata" : "Booking confirmed"}\n${ctx.serviceName} · ${fmtDate(ctx.startsAt)}\n${ctx.durationMinutes} min · ${fmtPrice(ctx.price, ctx.locale)}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}\n\n${ctx.manageUrl}`;
+  const text = `${greeting}\n\n${isIt ? "Prenotazione confermata" : "Booking confirmed"}\n${ctx.serviceName} · ${when}\n${ctx.durationMinutes} min · ${fmtPrice(ctx.price, ctx.locale)}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}\n\n${ctx.manageUrl}`;
 
   return { subject, html: shell(body), text };
 }
@@ -93,6 +94,7 @@ export function cancellationEmail(ctx: BaseCtx): { subject: string; html: string
   const subject = isIt
     ? `Prenotazione annullata · ${ctx.referenceCode}`
     : `Booking cancelled · ${ctx.referenceCode}`;
+  const when = fmtDate(ctx.startsAt, ctx.locale);
   const body = `
     <p>${isIt ? "Ciao" : "Hi"} ${ctx.customerName ?? ""},</p>
     <p>${isIt
@@ -100,11 +102,11 @@ export function cancellationEmail(ctx: BaseCtx): { subject: string; html: string
       : "your booking has been cancelled."}</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:1px solid #222;border-bottom:1px solid #222;">
       ${row(isIt ? "Servizio" : "Service", ctx.serviceName)}
-      ${row(isIt ? "Data" : "Date", fmtDate(ctx.startsAt))}
+      ${row(isIt ? "Data" : "Date", when)}
       ${row(isIt ? "Riferimento" : "Reference", ctx.referenceCode)}
     </table>
     <p>${isIt ? "A presto." : "See you soon."}</p>
   `;
-  const text = `${isIt ? "Prenotazione annullata" : "Booking cancelled"}\n${ctx.serviceName} · ${fmtDate(ctx.startsAt)}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`;
+  const text = `${isIt ? "Prenotazione annullata" : "Booking cancelled"}\n${ctx.serviceName} · ${when}\n${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`;
   return { subject, html: shell(body), text };
 }

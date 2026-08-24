@@ -65,6 +65,13 @@ export default async function AdminGalleryPage({
                   sortOrder: copy.sortOrder,
                   save: copy.saveItem,
                 }}
+                categoryLabels={{
+                  cuts: t.gallery.filters.cuts,
+                  fade: t.gallery.filters.fade,
+                  beard: t.gallery.filters.beard,
+                  style: t.gallery.filters.style,
+                  studio: t.gallery.filters.studio,
+                }}
               />
             </li>
           ))}

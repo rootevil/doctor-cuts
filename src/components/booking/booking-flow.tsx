@@ -35,6 +35,8 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServiceDTO } from "@/lib/data/services";
 import type { SlotOption } from "@/lib/booking/availability";
 import { createBooking, getAvailableSlots } from "@/lib/booking/actions";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
+import { localizedServiceName } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import { Alert } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -114,6 +116,11 @@ export function BookingFlow({
     () => services.find((s) => s.id === serviceId) ?? null,
     [services, serviceId],
   );
+  const serviceLabel = useCallback(
+    (s: ServiceDTO | null | undefined) =>
+      s ? localizedServiceName(locale, s.slug, s.name) : "—",
+    [locale],
+  );
 
   const slotsRequestRef = useRef(0);
   const fetchSlots = useCallback(
@@ -190,8 +197,10 @@ export function BookingFlow({
 
   const dateLabel = useCallback(
     (iso: string) =>
-      formatInTimeZone(new Date(`${iso}T12:00:00Z`), timezone, "EEE d MMM").toUpperCase(),
-    [timezone],
+      formatInTimeZone(new Date(`${iso}T12:00:00Z`), timezone, "EEE d MMM", {
+        locale: dateFnsLocale(locale),
+      }).toUpperCase(),
+    [timezone, locale],
   );
   const timeLabel = useCallback(
     (iso: string) => formatInTimeZone(new Date(iso), timezone, "HH:mm"),
@@ -274,7 +283,7 @@ export function BookingFlow({
       if (res.ok) {
         setSuccess({
           referenceCode: res.referenceCode,
-          serviceName: service.name,
+          serviceName: serviceLabel(service),
           startsAt: slot,
           managePath: res.managePath,
         });
@@ -328,7 +337,9 @@ export function BookingFlow({
           <div>
             <dt className="text-label uppercase">{copy.success.dateLabel}</dt>
             <dd className="font-display text-lg md:text-xl">
-              {formatInTimeZone(new Date(success.startsAt), timezone, "EEE d MMM · HH:mm")}
+              {formatInTimeZone(new Date(success.startsAt), timezone, "EEE d MMM · HH:mm", {
+                locale: dateFnsLocale(locale),
+              })}
             </dd>
           </div>
           <div>
@@ -351,7 +362,7 @@ export function BookingFlow({
   return (
     <div className="booking-flow site-wrap-narrow pt-5 md:pt-6">
       {/* Status — always visible path through the task */}
-      <nav aria-label="Booking progress" className="booking-progress mb-5">
+      <nav aria-label={copy.a11y.progress} className="booking-progress mb-5">
         <ol className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
           {progress.map((step, index) => {
             const current = index === activeStep;
@@ -414,7 +425,7 @@ export function BookingFlow({
                   >
                     <div className="min-w-0 flex flex-col gap-0.5">
                       <span className="font-display text-[15px] leading-none tracking-tight">
-                        {s.name}
+                        {serviceLabel(s)}
                       </span>
                       <span className="text-[10px] tracking-[0.12em] text-muted uppercase">
                         {formatCurrency(Number(s.price), locale)}
@@ -619,7 +630,7 @@ export function BookingFlow({
               <div className="flex items-baseline gap-1.5">
                 <dt className="text-muted">{copy.summary.service}</dt>
                 <dd className="font-display text-sm tracking-normal text-foreground normal-case">
-                  {service?.name ?? "—"}
+                  {serviceLabel(service)}
                 </dd>
               </div>
               <div className="flex items-baseline gap-1.5">

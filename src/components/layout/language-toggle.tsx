@@ -40,32 +40,34 @@ export function LanguageToggle({
     });
   };
 
-  const inactiveClass =
-    "min-h-11 min-w-11 rounded-sm px-1 text-muted transition hover:text-foreground-soft disabled:opacity-50";
-  const activeClass =
-    "min-h-11 min-w-11 rounded-sm px-1 text-brass disabled:opacity-50";
-
   if (variant === "stacked") {
     return (
       <div className="flex flex-col gap-3" aria-label={label}>
         <span className="text-label">{label}</span>
         <div
-          className="flex gap-2 text-[13px] tracking-[0.22em] uppercase"
+          role="group"
+          aria-label={label}
           aria-busy={pending}
+          className="lang-toggle lang-toggle--stacked"
         >
-          {locales.map((code) => (
-            <button
-              key={code}
-              type="button"
-              onClick={() => switchTo(code)}
-              disabled={pending}
-              aria-pressed={code === locale}
-              aria-label={labels[code]}
-              className={code === locale ? activeClass : inactiveClass}
-            >
-              {labels[code]}
-            </button>
-          ))}
+          {locales.map((code) => {
+            const active = code === locale;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => switchTo(code)}
+                disabled={pending}
+                aria-pressed={active}
+                aria-current={active ? "true" : undefined}
+                aria-label={labels[code]}
+                className={`lang-toggle__btn ${active ? "is-active" : ""}`}
+              >
+                <span className="lang-toggle__code">{code.toUpperCase()}</span>
+                <span className="lang-toggle__name">{labels[code]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -76,27 +78,26 @@ export function LanguageToggle({
       role="group"
       aria-label={label}
       aria-busy={pending}
-      className="flex items-center gap-1 text-[11px] tracking-[0.22em] uppercase"
+      className="lang-toggle"
+      title={labels[locale]}
     >
-      {locales.map((code, idx) => (
-        <span key={code} className="flex items-center gap-1">
+      {locales.map((code) => {
+        const active = code === locale;
+        return (
           <button
+            key={code}
             type="button"
             onClick={() => switchTo(code)}
             disabled={pending}
-            aria-pressed={code === locale}
+            aria-pressed={active}
+            aria-current={active ? "true" : undefined}
             aria-label={labels[code]}
-            className={code === locale ? activeClass : inactiveClass}
+            className={`lang-toggle__btn ${active ? "is-active" : ""}`}
           >
             {code.toUpperCase()}
           </button>
-          {idx === 0 ? (
-            <span className="pointer-events-none text-caption" aria-hidden>
-              /
-            </span>
-          ) : null}
-        </span>
-      ))}
+        );
+      })}
     </div>
   );
 }

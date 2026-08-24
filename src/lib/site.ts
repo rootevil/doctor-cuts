@@ -29,6 +29,7 @@ export const hours = [
   },
 ] as const;
 
+/** Canonical catalog order — hair → beard → kids → threading → wash → treatments. */
 export const services = [
   {
     id: "01",
@@ -48,6 +49,38 @@ export const services = [
   },
   {
     id: "03",
+    slug: "baby-cut",
+    price: 12,
+    duration: 25,
+    image: "/images/cut-detail.jpg",
+    heroImage: "/images/cut-detail.jpg",
+  },
+  {
+    id: "04",
+    slug: "face-threading",
+    price: 10,
+    duration: 20,
+    image: "/images/portrait.jpg",
+    heroImage: "/images/portrait.jpg",
+  },
+  {
+    id: "05",
+    slug: "eyebrows-threading",
+    price: 5,
+    duration: 15,
+    image: "/images/portrait.jpg",
+    heroImage: "/images/portrait.jpg",
+  },
+  {
+    id: "06",
+    slug: "hair-shampoo",
+    price: 3,
+    duration: 10,
+    image: "/images/cut-detail.jpg",
+    heroImage: "/images/cut-detail.jpg",
+  },
+  {
+    id: "07",
     slug: "face-mask",
     price: 10,
     duration: 25,
@@ -55,7 +88,7 @@ export const services = [
     heroImage: "/images/portrait.jpg",
   },
   {
-    id: "04",
+    id: "08",
     slug: "face-massage",
     price: 40,
     duration: 45,
@@ -67,9 +100,9 @@ export const services = [
 export type ServiceSlug = (typeof services)[number]["slug"];
 
 export const galleryItems = [
-  { src: "/images/gallery-01.jpg", category: "studio", title: { it: "In studio", en: "In studio" } },
+  { src: "/images/gallery-01.jpg", category: "studio", title: { it: "In studio", en: "In the studio" } },
   { src: "/images/gallery-02.jpg", category: "cuts", title: { it: "Ritratto", en: "Portrait" } },
-  { src: "/images/gallery-03.jpg", category: "fade", title: { it: "Fade", en: "Fade" } },
+  { src: "/images/gallery-03.jpg", category: "fade", title: { it: "Sfumatura", en: "Fade" } },
   { src: "/images/gallery-04.jpg", category: "studio", title: { it: "Al lavoro", en: "At work" } },
   { src: "/images/gallery-05.jpg", category: "fade", title: { it: "Texture", en: "Texture" } },
   { src: "/images/gallery-06.jpg", category: "style", title: { it: "Design", en: "Design" } },

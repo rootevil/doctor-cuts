@@ -15,10 +15,11 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Doctor Cuts — Barbershop premium",
+    default: "Doctor Cuts — L’arte del taglio · Macerata",
     template: "%s · Doctor Cuts",
   },
-  description: "Premium men’s grooming studio in Macerata.",
+  description:
+    "Doctor Cuts, studio di cura maschile a Macerata. Tagli precisi, dettagli considerati. Via Antelmo Severini, 4/C.",
   applicationName: "Doctor Cuts",
   authors: [{ name: "Doctor Cuts" }],
   creator: "Doctor Cuts",

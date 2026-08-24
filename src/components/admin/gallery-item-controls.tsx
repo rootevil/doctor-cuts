@@ -6,7 +6,7 @@ import {
   deleteGalleryItem,
   updateGalleryItem,
 } from "@/lib/admin/actions";
-import { galleryFilters } from "@/lib/site";
+import { galleryFilters, type GalleryFilter } from "@/lib/site";
 
 export function GalleryItemControls({
   id,
@@ -17,6 +17,7 @@ export function GalleryItemControls({
   defaultTitle,
   defaultCategory,
   labels,
+  categoryLabels,
 }: {
   id: string;
   imageUrl: string;
@@ -33,6 +34,7 @@ export function GalleryItemControls({
     sortOrder: string;
     save: string;
   };
+  categoryLabels: Record<Exclude<GalleryFilter, "all">, string>;
 }) {
   const updateRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
@@ -75,7 +77,7 @@ export function GalleryItemControls({
           >
             {categories.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {categoryLabels[c]}
               </option>
             ))}
           </select>

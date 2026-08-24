@@ -18,6 +18,7 @@ import {
   serviceSchema,
   settingsSchema,
 } from "@/lib/security/schemas";
+import { getDictionary } from "@/i18n/dictionaries";
 
 function coerceLocale(value: FormDataEntryValue | null): Locale {
   const raw = typeof value === "string" ? value : "";
@@ -104,8 +105,10 @@ export async function saveService(
 ): Promise<ServiceFormState> {
   const { supabase } = await requireAdminClient();
   const parsed = serviceSchema.safeParse(fdToObject(formData));
+  const localeHint = coerceLocale(formData.get("locale"));
+  const messages = getDictionary(localeHint).pages.admin.messages;
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+    return { error: parsed.error.issues[0]?.message ?? messages.invalid };
   }
   const v = parsed.data;
 
@@ -126,7 +129,7 @@ export async function saveService(
 
   const humanise = (message: string) =>
     /duplicate key|unique constraint/i.test(message)
-      ? `Slug già in uso: "${slug}". Scegli uno slug diverso.`
+      ? messages.slugTaken.replace("{slug}", slug)
       : message;
 
   if (id) {
@@ -272,8 +275,12 @@ export async function uploadGalleryImage(
   const category = String(formData.get("category") ?? "").trim() || null;
   const sort_order = Number(formData.get("sort_order") ?? 0);
 
-  if (!(file instanceof File) || file.size === 0) return { error: "Seleziona un file immagine." };
-  if (file.size > 10 * 1024 * 1024) return { error: "Immagine troppo grande (max 10 MB)." };
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: getDictionary(locale).pages.admin.messages.selectImage };
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return { error: getDictionary(locale).pages.admin.messages.imageTooLarge };
+  }
 
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -302,7 +309,7 @@ export async function uploadGalleryImage(
 
   revalidatePath(routes(locale).adminGallery);
   revalidatePublic(locale);
-  return { success: "Caricata." };
+  return { success: getDictionary(locale).pages.admin.messages.uploaded };
 }
 
 export async function updateGalleryItem(formData: FormData) {
@@ -397,7 +404,11 @@ export async function saveSettings(
   const { supabase } = await requireAdminClient();
   const parsed = settingsSchema.safeParse(fdToObject(formData));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+    return {
+      error:
+        parsed.error.issues[0]?.message ??
+        getDictionary(coerceLocale(formData.get("locale"))).pages.admin.messages.invalid,
+    };
   }
   const v = parsed.data;
   const locale = v.locale;
@@ -428,5 +439,5 @@ export async function saveSettings(
   }
   revalidatePath(routes(locale).adminSettings, "layout");
   revalidatePublic(locale);
-  return { success: "Salvato." };
+  return { success: getDictionary(locale).pages.admin.messages.saved };
 }

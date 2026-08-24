@@ -7,6 +7,8 @@ import { GuestCancelButton } from "@/components/booking/guest-cancel-button";
 import { ButtonLink } from "@/components/ui/button";
 import { getGuestAppointment } from "@/lib/booking/actions";
 import { SHOP_TZ } from "@/lib/booking/timezone";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
+import { localizedServiceName } from "@/lib/services/localize";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
@@ -60,7 +62,14 @@ export default async function ManageGuestBookingPage({
     );
   }
 
-  const when = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "EEEE d MMMM · HH:mm");
+  const when = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "EEEE d MMMM · HH:mm", {
+    locale: dateFnsLocale(locale),
+  });
+  const serviceName = localizedServiceName(
+    locale,
+    appointment.service_slug,
+    appointment.service_name,
+  );
   const cancelled = appointment.status === "cancelled";
   const statusLabel =
     t.pages.account.appointments.statuses[
@@ -80,7 +89,7 @@ export default async function ManageGuestBookingPage({
             <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
               {t.pages.prenota.summary.service}
             </dt>
-            <dd className="font-display text-2xl">{appointment.service_name}</dd>
+            <dd className="font-display text-2xl">{serviceName}</dd>
           </div>
           <div>
             <dt className="text-[11px] tracking-[0.28em] text-muted uppercase">
@@ -99,7 +108,8 @@ export default async function ManageGuestBookingPage({
               {t.pages.prenota.summary.total}
             </dt>
             <dd className="font-display text-2xl">
-              {formatPrice(appointment.price, locale)} · {appointment.duration_minutes} min
+              {formatPrice(appointment.price, locale)} · {appointment.duration_minutes}{" "}
+              {t.services.minutes}
             </dd>
           </div>
         </dl>

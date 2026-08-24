@@ -37,7 +37,7 @@ export default async function GalleriaPage({
   if (!isLocale(raw)) notFound();
   const locale = raw;
   const t = getDictionary(locale);
-  const items = await getPublicGallery();
+  const items = await getPublicGallery(locale);
 
   return <GalleryFull t={t} locale={locale} items={items} />;
 }

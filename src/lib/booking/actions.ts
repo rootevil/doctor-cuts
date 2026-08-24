@@ -19,6 +19,7 @@ import { getServiceById } from "@/lib/data/services";
 import { sendEmail } from "@/lib/email/send";
 import { confirmationEmail, cancellationEmail } from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
+import { localizedServiceName } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import {
   bookingInputSchema,
@@ -252,7 +253,7 @@ export async function createBooking(
     const template = confirmationEmail({
       locale: validated.locale,
       customerName,
-      serviceName: service.name,
+      serviceName: localizedServiceName(validated.locale, service.slug, service.name),
       startsAt: startsAt.toISOString(),
       durationMinutes: BOOKING_SLOT_MINUTES,
       referenceCode: data.reference_code,
@@ -337,7 +338,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
     const template = cancellationEmail({
       locale,
       customerName: profile?.full_name?.trim() || null,
-      serviceName: service.name,
+      serviceName: localizedServiceName(locale, service.slug, service.name),
       startsAt: existing.starts_at,
       durationMinutes: service.duration_minutes,
       referenceCode: existing.reference_code,
@@ -363,6 +364,7 @@ export type GuestAppointment = {
   guest_name: string | null;
   guest_email: string | null;
   service_name: string;
+  service_slug: string;
   duration_minutes: number;
   price: number;
   can_cancel: boolean;
@@ -384,7 +386,7 @@ export async function getGuestAppointment(
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, manage_token, service:services ( name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, manage_token, service:services ( slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -411,6 +413,7 @@ export async function getGuestAppointment(
     guest_name: data.guest_name,
     guest_email: data.guest_email,
     service_name: service.name,
+    service_slug: service.slug,
     duration_minutes: service.duration_minutes,
     price: Number(service.price),
     can_cancel: cancellable,
@@ -450,7 +453,11 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
     const template = cancellationEmail({
       locale,
       customerName: appointment.guest_name,
-      serviceName: appointment.service_name,
+      serviceName: localizedServiceName(
+        locale,
+        appointment.service_slug,
+        appointment.service_name,
+      ),
       startsAt: appointment.starts_at,
       durationMinutes: appointment.duration_minutes,
       referenceCode: appointment.reference_code,

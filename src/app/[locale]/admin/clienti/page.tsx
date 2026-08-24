@@ -80,7 +80,9 @@ export default async function AdminCustomersPage({
                           : "border-border text-muted"
                       }`}
                     >
-                      {c.role}
+                      {c.role === "admin"
+                        ? t.pages.admin.roles.admin
+                        : t.pages.admin.roles.customer}
                     </span>
                   </td>
                   <td className="p-3">{c.appointment_count}</td>

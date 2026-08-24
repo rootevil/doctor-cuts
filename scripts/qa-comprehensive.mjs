@@ -9,7 +9,16 @@ const BASE = process.argv.includes("--base")
   : "http://localhost:3000";
 
 const LOCALES = ["it", "en"];
-const SERVICE_SLUGS = ["haircut", "beard-fade", "face-mask", "face-massage"];
+const SERVICE_SLUGS = [
+  "haircut",
+  "beard-fade",
+  "baby-cut",
+  "face-threading",
+  "eyebrows-threading",
+  "hair-shampoo",
+  "face-mask",
+  "face-massage",
+];
 
 function routes() {
   const list = ["/"];

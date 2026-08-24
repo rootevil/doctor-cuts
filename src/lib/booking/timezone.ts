@@ -1,4 +1,6 @@
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
+import type { Locale } from "@/i18n/config";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
 
 export const SHOP_TZ = "Europe/Rome";
 
@@ -54,11 +56,8 @@ export function shopToday(now: Date = new Date()): string {
 }
 
 /** Format a Date as a locale-aware weekday + day + month string in shop tz. */
-export function formatShopLong(date: Date, locale: "it" | "en"): string {
-  return formatInTimeZone(
-    date,
-    SHOP_TZ,
-    locale === "it" ? "EEEE d MMMM" : "EEEE d MMMM",
-    { locale: undefined },
-  );
+export function formatShopLong(date: Date, locale: Locale): string {
+  return formatInTimeZone(date, SHOP_TZ, "EEEE d MMMM", {
+    locale: dateFnsLocale(locale),
+  });
 }

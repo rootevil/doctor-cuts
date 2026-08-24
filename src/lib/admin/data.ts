@@ -31,6 +31,7 @@ export type AdminAppointment = {
   } | null;
   service: {
     id: string;
+    slug: string;
     name: string;
     price: number;
     duration_minutes: number;
@@ -41,7 +42,7 @@ const APPOINTMENT_SELECT = `
   id, starts_at, ends_at, status, reference_code, customer_notes, admin_notes,
   guest_name, guest_email, guest_phone,
   customer:profiles ( id, full_name, email, phone ),
-  service:services ( id, name, price, duration_minutes )
+  service:services ( id, slug, name, price, duration_minutes )
 `;
 
 function normaliseAppointment(row: unknown): AdminAppointment {

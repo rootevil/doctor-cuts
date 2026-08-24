@@ -17,7 +17,7 @@ export default async function HomePage({
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const t = getDictionary(raw);
-  const galleryItems = await getPublicGallery();
+  const galleryItems = await getPublicGallery(raw);
 
   return (
     <>

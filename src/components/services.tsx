@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import type { ServiceSlug } from "@/lib/site";
 import { formatPrice, services as staticServices } from "@/lib/site";
 import { getActiveServices } from "@/lib/data/services";
+import {
+  localizedServiceBlurb,
+  localizedServiceName,
+} from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import { Kicker } from "@/components/ui/kicker";
 import { ServiceRow } from "@/components/services/service-row";
@@ -19,16 +22,13 @@ export async function Services({ locale, t }: { locale: Locale; t: Dictionary })
   const dbServices = await getActiveServices();
   const list =
     dbServices.length > 0
-      ? dbServices.map((s, i) => {
-          const dict = t.services.items[s.slug as ServiceSlug];
-          return {
-            slug: s.slug,
-            id: padId(i),
-            name: dict?.name ?? s.name,
-            blurb: dict?.blurb ?? s.description ?? "",
-            price: formatPrice(Number(s.price), locale),
-          };
-        })
+      ? dbServices.map((s, i) => ({
+          slug: s.slug,
+          id: padId(i),
+          name: localizedServiceName(locale, s.slug, s.name),
+          blurb: localizedServiceBlurb(locale, s.slug, s.description),
+          price: formatPrice(Number(s.price), locale),
+        }))
       : staticServices.map((service) => {
           const copy = t.services.items[service.slug];
           return {

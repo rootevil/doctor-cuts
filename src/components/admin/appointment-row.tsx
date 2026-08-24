@@ -8,6 +8,8 @@ import type { AppointmentStatus } from "@/lib/supabase/types";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { SHOP_TZ } from "@/lib/booking/timezone";
+import { dateFnsLocale } from "@/lib/booking/date-locale";
+import { localizedServiceName } from "@/lib/services/localize";
 import {
   updateAppointmentNotes,
   updateAppointmentStatus,
@@ -44,7 +46,14 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
   const [notes, setNotes] = useState(appointment.admin_notes ?? "");
 
   const startsAt = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "HH:mm");
-  const day = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "EEE d MMM");
+  const day = formatInTimeZone(new Date(appointment.starts_at), SHOP_TZ, "EEE d MMM", {
+    locale: dateFnsLocale(locale),
+  });
+  const serviceName = localizedServiceName(
+    locale,
+    appointment.service?.slug,
+    appointment.service?.name,
+  );
 
   const setStatus = (status: AppointmentStatus) => {
     startSaving(async () => {
@@ -91,7 +100,7 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
             </span>
           </div>
           <p className="truncate text-xs text-muted">
-            {appointment.service?.name ?? "—"}
+            {serviceName}
             {appointment.service
               ? ` · ${fmtCurrency(Number(appointment.service.price), locale)}`
               : ""}

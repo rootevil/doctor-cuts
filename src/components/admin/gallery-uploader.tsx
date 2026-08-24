@@ -76,9 +76,9 @@ export function GalleryUploader({ locale, t }: { locale: Locale; t: Dictionary }
           className="border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
         >
           <option value="">—</option>
-          {["cuts", "fade", "beard", "style", "studio"].map((c) => (
+          {(["cuts", "fade", "beard", "style", "studio"] as const).map((c) => (
             <option key={c} value={c}>
-              {c}
+              {t.gallery.filters[c]}
             </option>
           ))}
         </select>

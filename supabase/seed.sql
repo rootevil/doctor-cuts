@@ -63,10 +63,14 @@ update public.services set slug = 'face-massage' where slug = 'full-experience';
 
 insert into public.services (slug, name, description, price, duration_minutes, image_url, sort_order, is_active)
 values
-  ('haircut',       'Taglio',         'Taglio di precisione',          15.00, 30, '/images/cut-detail.jpg', 10, true),
-  ('beard-fade',    'Fade barba',     'Sfumatura barba precisa',       10.00, 25, '/images/beard.jpg',      20, true),
-  ('face-mask',     'Maschera viso',  'Trattamento viso rinfrescante', 10.00, 25, '/images/portrait.jpg',   30, true),
-  ('face-massage',  'Massaggio viso', 'Massaggio rilassante del viso', 40.00, 45, '/images/leave.jpg',      40, true)
+  ('haircut',             'Taglio',                            'Taglio di precisione',                 15.00, 30, '/images/cut-detail.jpg', 10, true),
+  ('beard-fade',          'Sfumatura barba',                   'Sfumatura barba precisa',              10.00, 25, '/images/beard.jpg',      20, true),
+  ('baby-cut',            'Taglio bambino (sotto i 10 anni)',  'Taglio per bambini sotto i 10 anni',   12.00, 25, '/images/cut-detail.jpg', 30, true),
+  ('face-threading',      'Filo viso',                         'Depilazione del viso con filo',        10.00, 20, '/images/portrait.jpg',   40, true),
+  ('eyebrows-threading',  'Filo sopracciglia',                 'Definizione sopracciglia con filo',     5.00, 15, '/images/portrait.jpg',   50, true),
+  ('hair-shampoo',        'Shampoo',                           'Lavaggio capelli',                      3.00, 10, '/images/cut-detail.jpg', 60, true),
+  ('face-mask',           'Maschera viso',                     'Trattamento viso rinfrescante',        10.00, 25, '/images/portrait.jpg',   70, true),
+  ('face-massage',        'Massaggio viso',                    'Massaggio rilassante del viso',        40.00, 45, '/images/leave.jpg',      80, true)
 on conflict (slug) do update set
   name             = excluded.name,
   description      = excluded.description,
@@ -80,11 +84,11 @@ on conflict (slug) do update set
 -- (We keep the /images paths so the site works before Storage uploads.)
 delete from public.gallery where image_url like '/images/%';
 insert into public.gallery (image_url, title, category, sort_order, is_featured) values
-  ('/images/gallery-01.jpg', 'In studio', 'studio', 10, true),
-  ('/images/gallery-02.jpg', 'Portrait',  'cuts',   20, true),
-  ('/images/gallery-03.jpg', 'Fade',      'fade',   30, true),
-  ('/images/gallery-04.jpg', 'At work',   'studio', 40, false),
-  ('/images/gallery-05.jpg', 'Texture',   'fade',   50, false),
-  ('/images/gallery-06.jpg', 'Design',    'style',  60, false),
-  ('/images/gallery-07.jpg', 'Cut',       'cuts',   70, false),
-  ('/images/gallery-08.jpg', 'Lines',     'style',  80, false);
+  ('/images/gallery-01.jpg', 'In studio',  'studio', 10, true),
+  ('/images/gallery-02.jpg', 'Ritratto',   'cuts',   20, true),
+  ('/images/gallery-03.jpg', 'Sfumatura',  'fade',   30, true),
+  ('/images/gallery-04.jpg', 'Al lavoro',  'studio', 40, false),
+  ('/images/gallery-05.jpg', 'Texture',    'fade',   50, false),
+  ('/images/gallery-06.jpg', 'Design',     'style',  60, false),
+  ('/images/gallery-07.jpg', 'Taglio',     'cuts',   70, false),
+  ('/images/gallery-08.jpg', 'Linee',      'style',  80, false);

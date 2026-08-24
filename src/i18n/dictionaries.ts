@@ -184,6 +184,7 @@ export type Dictionary = {
           legendUnavailable: string;
           booked: string;
           unavailable: string;
+          legendLabel: string;
         };
       };
       notesLabel: string;
@@ -240,6 +241,10 @@ export type Dictionary = {
         guestRequired: string;
         createFailed: string;
         bookingsClosed: string;
+      };
+      a11y: {
+        progress: string;
+        slotLegend: string;
       };
     };
     gestisci: {
@@ -537,6 +542,19 @@ export type Dictionary = {
         save: string;
         saving: string;
       };
+      messages: {
+        invalid: string;
+        slugTaken: string;
+        selectImage: string;
+        imageTooLarge: string;
+        uploaded: string;
+        saved: string;
+      };
+      roles: {
+        admin: string;
+        customer: string;
+      };
+      delete: string;
     };
   };
   header: {
@@ -549,7 +567,7 @@ const it: Dictionary = {
   meta: {
     title: "Doctor Cuts — L’arte del taglio · Macerata",
     description:
-      "Doctor Cuts, studio di grooming maschile a Macerata. Tagli precisi, dettagli considerati. Via Antelmo Severini, 4/C.",
+      "Doctor Cuts, studio di cura maschile a Macerata. Tagli precisi, dettagli considerati. Via Antelmo Severini, 4/C.",
   },
   nav: {
     services: "Servizi",
@@ -580,26 +598,26 @@ const it: Dictionary = {
   services: {
     kicker: "Servizi",
     viewAll: "Tutti i servizi",
-    minutes: "MIN",
+    minutes: "min",
     items: {
       haircut: {
         name: "Taglio",
         blurb: "Taglio di precisione",
         detail:
-          "Consulenza, lavaggio, taglio a forbice o macchina e styling finale. Pensato sulla forma della testa e sulla direzione naturale del capello.",
+          "Consulenza, lavaggio, taglio a forbice o macchina e messa in piega. Pensato sulla forma della testa e sulla direzione naturale del capello.",
         includes: [
           "Consulenza personale",
           "Lavaggio",
           "Taglio a forbice o macchina",
-          "Styling finale",
+          "Messa in piega",
         ],
         ideal: "Per chi cerca un taglio pulito e curato.",
       },
       "beard-fade": {
-        name: "Fade barba",
+        name: "Sfumatura barba",
         blurb: "Sfumatura barba precisa",
         detail:
-          "Fade della barba con transizioni nette e rifinitura dei contorni. Un lavoro definito, senza eccessi.",
+          "Sfumatura della barba con transizioni nette e rifinitura dei contorni. Un lavoro definito, senza eccessi.",
         includes: [
           "Sfumatura barba",
           "Rifinitura contorni",
@@ -607,6 +625,53 @@ const it: Dictionary = {
           "Finitura con prodotto",
         ],
         ideal: "Per chi vuole una barba sfumata e ordinata.",
+      },
+      "baby-cut": {
+        name: "Taglio bambino (sotto i 10 anni)",
+        blurb: "Taglio per bambini sotto i 10 anni",
+        detail:
+          "Taglio gentile e rapido per i più piccoli, con pazienza e attenzione. Pensato per bambini sotto i 10 anni.",
+        includes: [
+          "Accoglienza del bambino",
+          "Taglio a forbice o macchina",
+          "Rifinitura",
+          "Consiglio ai genitori",
+        ],
+        ideal: "Per bambini sotto i 10 anni.",
+      },
+      "face-threading": {
+        name: "Filo viso",
+        blurb: "Depilazione del viso con filo",
+        detail:
+          "Depilazione del viso con il filo: precisa, pulita e delicata sulla pelle. Ideale per definire e rifinire.",
+        includes: [
+          "Preparazione della pelle",
+          "Depilazione con filo",
+          "Rifinitura",
+          "Cura dopo il trattamento",
+        ],
+        ideal: "Per chi vuole un viso netto e definito.",
+      },
+      "eyebrows-threading": {
+        name: "Filo sopracciglia",
+        blurb: "Definizione sopracciglia con filo",
+        detail:
+          "Definizione e pulizia delle sopracciglia con il filo. Forma naturale, linee ordinate.",
+        includes: [
+          "Analisi della forma",
+          "Depilazione con filo",
+          "Simmetria",
+          "Finitura",
+        ],
+        ideal: "Per sopracciglia ordinate e naturali.",
+      },
+      "hair-shampoo": {
+        name: "Shampoo",
+        blurb: "Lavaggio capelli",
+        detail:
+          "Lavaggio dei capelli con prodotti dedicati. Freschezza e cura prima di un taglio o come servizio a sé.",
+        includes: ["Lavaggio", "Massaggio del cuoio capelluto", "Risciacquo", "Asciugatura leggera"],
+        ideal: "Per un lavaggio rapido e curato.",
       },
       "face-mask": {
         name: "Maschera viso",
@@ -617,7 +682,7 @@ const it: Dictionary = {
           "Pulizia della pelle",
           "Applicazione maschera",
           "Tempo di posa",
-          "Rimuovere e finire",
+          "Rimozione e finitura",
         ],
         ideal: "Per chi vuole freschezza e cura della pelle.",
       },
@@ -637,7 +702,7 @@ const it: Dictionary = {
     },
   },
   cta: {
-    lines: ["IL TUO PROSSIMO", "MIGLIOR LOOK", "INIZIA QUI."],
+    lines: ["IL TUO PROSSIMO", "MIGLIOR STILE", "INIZIA QUI."],
   },
   gallery: {
     kicker: "Galleria",
@@ -648,9 +713,9 @@ const it: Dictionary = {
     filters: {
       all: "Tutti",
       cuts: "Tagli",
-      fade: "Fade",
+      fade: "Sfumature",
       beard: "Barba",
-      style: "Style",
+      style: "Stile",
       studio: "Studio",
     },
   },
@@ -681,7 +746,7 @@ const it: Dictionary = {
   pages: {
     servizi: {
       kicker: "Servizi",
-      title: ["QUATTRO MODI", "DI USCIRE DIVERSO."],
+      title: ["OGNI SERVIZIO,", "UN DETTAGLIO IN PIÙ."],
       intro:
         "Ogni servizio è un rituale, non una lista. Prezzi chiari — tocca un servizio per prenotare.",
       listLabel: "Menu servizi",
@@ -691,7 +756,7 @@ const it: Dictionary = {
       bookCta: "Prenota ora",
       metaTitle: "Servizi — Doctor Cuts",
       metaDescription:
-        "Tagli, fade, barba e rituale completo. Servizi di grooming maschile a Macerata da Doctor Cuts.",
+        "Tagli, sfumature, barba, filo e trattamenti. Servizi di cura maschile a Macerata da Doctor Cuts.",
     },
     serviceDetail: {
       back: "Torna ai servizi",
@@ -715,12 +780,12 @@ const it: Dictionary = {
       bookCta: "Prenota ora",
       metaTitle: "Galleria — Doctor Cuts",
       metaDescription:
-        "Selezione di tagli, fade, barba e interni dello studio Doctor Cuts a Macerata.",
+        "Selezione di tagli, sfumature, barba e interni dello studio Doctor Cuts a Macerata.",
     },
     storia: {
       kicker: "Storia",
       title: ["COSTRUITO INTORNO", "AL BUON GUSTO."],
-      lead: "Uno studio a Macerata per chi tratta il look come parte del proprio stile — non una corsa al prossimo cliente.",
+      lead: "Uno studio a Macerata per chi tratta il proprio aspetto come parte dello stile — non una corsa al prossimo cliente.",
       heroImageAlt: "Interno dello studio Doctor Cuts",
       storyLabel: "Come lavoriamo",
       sections: [
@@ -752,7 +817,7 @@ const it: Dictionary = {
       findUsCta: "Trovaci",
       metaTitle: "Storia — Doctor Cuts",
       metaDescription:
-        "Come nasce Doctor Cuts a Macerata: uno studio pensato per chi tratta il proprio look come parte di uno stile personale.",
+        "Come nasce Doctor Cuts a Macerata: uno studio pensato per chi tratta il proprio aspetto come parte di uno stile personale.",
     },
     contatti: {
       kicker: "Contatti",
@@ -808,6 +873,7 @@ const it: Dictionary = {
           legendUnavailable: "Chiuso",
           booked: "Occupato",
           unavailable: "Non disponibile",
+          legendLabel: "Legenda orari",
         },
       },
       notesLabel: "Note (opzionale)",
@@ -870,6 +936,10 @@ const it: Dictionary = {
         createFailed: "Non è stato possibile completare la prenotazione. Riprova.",
         bookingsClosed:
           "Le prenotazioni online sono sospese. Contatta lo studio via WhatsApp o telefono.",
+      },
+      a11y: {
+        progress: "Avanzamento prenotazione",
+        slotLegend: "Legenda orari",
       },
     },
     gestisci: {
@@ -937,8 +1007,8 @@ const it: Dictionary = {
       roleLabel: "Ruolo",
       joinedLabel: "Iscritto dal",
       detailsTitle: "I tuoi dati",
-      adminRole: "Admin",
-      adminPanelCta: "Pannello admin",
+      adminRole: "Amministratore",
+      adminPanelCta: "Pannello gestione",
       appointmentsCta: "I tuoi appuntamenti",
       metaTitle: "Account — Doctor Cuts",
       metaDescription: "Area personale Doctor Cuts.",
@@ -990,15 +1060,15 @@ const it: Dictionary = {
       home: "Torna alla home",
     },
     admin: {
-      kicker: "Admin",
-      title: ["PANNELLO", "ADMIN."],
+      kicker: "Amministrazione",
+      title: ["PANNELLO", "GESTIONE."],
       lead: "Gestisci servizi, appuntamenti, orari e galleria.",
-      metaTitle: "Admin — Doctor Cuts",
+      metaTitle: "Amministrazione — Doctor Cuts",
       metaDescription: "Pannello amministrativo Doctor Cuts.",
       nav: {
-        section: "Admin",
+        section: "Amministrazione",
         backToSite: "Torna al sito",
-        overview: "Overview",
+        overview: "Panoramica",
         appointments: "Appuntamenti",
         services: "Servizi",
         hours: "Orari",
@@ -1008,7 +1078,7 @@ const it: Dictionary = {
         settings: "Impostazioni",
       },
       overview: {
-        kicker: "Overview",
+        kicker: "Panoramica",
         lead: "Cosa fare ora: conferma le richieste, gestisci l’agenda di oggi.",
         viewAll: "Tutti gli appuntamenti",
         today: "Oggi",
@@ -1034,7 +1104,7 @@ const it: Dictionary = {
         kicker: "Appuntamenti",
         title: "Prenotazioni",
         lead: "Filtra, cerca e aggiorna gli appuntamenti dello studio.",
-        metaTitle: "Appuntamenti · Admin — Doctor Cuts",
+        metaTitle: "Appuntamenti · Amministrazione — Doctor Cuts",
         ranges: { today: "Oggi", week: "7 giorni", month: "30 giorni", all: "Tutti" },
         allStatuses: "Tutti",
         searchPlaceholder: "Cerca per nome, email, telefono o riferimento…",
@@ -1054,7 +1124,7 @@ const it: Dictionary = {
         kicker: "Servizi",
         title: "Listino",
         lead: "Modifica prezzi, durate e visibilità dei servizi.",
-        metaTitle: "Servizi · Admin — Doctor Cuts",
+        metaTitle: "Servizi · Amministrazione — Doctor Cuts",
         new: "Nuovo servizio",
         newLead: "Aggiungi un nuovo servizio al listino.",
         edit: "Modifica",
@@ -1172,6 +1242,19 @@ const it: Dictionary = {
         save: "Salva impostazioni",
         saving: "Salvataggio…",
       },
+      messages: {
+        invalid: "Dati non validi.",
+        slugTaken: 'Slug già in uso: "{slug}". Scegli uno slug diverso.',
+        selectImage: "Seleziona un file immagine.",
+        imageTooLarge: "Immagine troppo grande (max 10 MB).",
+        uploaded: "Caricata.",
+        saved: "Salvato.",
+      },
+      roles: {
+        admin: "Amministratore",
+        customer: "Cliente",
+      },
+      delete: "Elimina",
     },
   },
   header: {
@@ -1215,7 +1298,7 @@ const en: Dictionary = {
   services: {
     kicker: "Services",
     viewAll: "View all services",
-    minutes: "MIN",
+    minutes: "min",
     items: {
       haircut: {
         name: "Haircut",
@@ -1231,7 +1314,7 @@ const en: Dictionary = {
         ideal: "For a clean, well-finished cut.",
       },
       "beard-fade": {
-        name: "Beard Fade",
+        name: "Beard fade",
         blurb: "Precise beard fade",
         detail:
           "A clean beard fade with sharp transitions and tidy edges. Defined work, nothing excessive.",
@@ -1243,8 +1326,55 @@ const en: Dictionary = {
         ],
         ideal: "For a neat, faded beard.",
       },
+      "baby-cut": {
+        name: "Kids’ cut (under 10)",
+        blurb: "Haircut for children under 10",
+        detail:
+          "A gentle, efficient cut for younger clients, with patience and care. Designed for children under 10.",
+        includes: [
+          "Warm welcome",
+          "Scissor or clipper cut",
+          "Finishing",
+          "Guidance for parents",
+        ],
+        ideal: "For children under 10.",
+      },
+      "face-threading": {
+        name: "Face threading",
+        blurb: "Thread hair removal for the face",
+        detail:
+          "Precise face threading: clean, controlled, and gentle on the skin. Ideal for definition and tidy lines.",
+        includes: [
+          "Skin preparation",
+          "Thread hair removal",
+          "Finishing",
+          "Aftercare",
+        ],
+        ideal: "For a clean, defined face.",
+      },
+      "eyebrows-threading": {
+        name: "Eyebrow threading",
+        blurb: "Threaded brow definition",
+        detail:
+          "Brow definition and clean-up with threading. Natural shape, orderly lines.",
+        includes: [
+          "Shape assessment",
+          "Thread hair removal",
+          "Symmetry",
+          "Finish",
+        ],
+        ideal: "For neat, natural brows.",
+      },
+      "hair-shampoo": {
+        name: "Shampoo",
+        blurb: "Hair wash",
+        detail:
+          "A dedicated hair wash. Freshness and care before a cut, or as a stand-alone service.",
+        includes: ["Wash", "Scalp massage", "Rinse", "Light dry"],
+        ideal: "For a quick, careful wash.",
+      },
       "face-mask": {
-        name: "Face Mask",
+        name: "Face mask",
         blurb: "Refreshing facial treatment",
         detail:
           "A face mask to cleanse and revive the skin. A short care ritual on its own, or paired with a cut.",
@@ -1257,7 +1387,7 @@ const en: Dictionary = {
         ideal: "For fresher, cared-for skin.",
       },
       "face-massage": {
-        name: "Face Massage",
+        name: "Face massage",
         blurb: "Relaxing facial massage",
         detail:
           "A full face massage to ease tension, support circulation, and leave the skin softer and more rested.",
@@ -1283,7 +1413,7 @@ const en: Dictionary = {
     filters: {
       all: "All",
       cuts: "Cuts",
-      fade: "Fade",
+      fade: "Fades",
       beard: "Beard",
       style: "Style",
       studio: "Studio",
@@ -1316,7 +1446,7 @@ const en: Dictionary = {
   pages: {
     servizi: {
       kicker: "Services",
-      title: ["FOUR WAYS", "TO LEAVE DIFFERENT."],
+      title: ["EVERY SERVICE,", "ONE MORE DETAIL."],
       intro:
         "Every service is a ritual, not a list. Clear prices — tap a service to book now.",
       listLabel: "Service menu",
@@ -1326,7 +1456,7 @@ const en: Dictionary = {
       bookCta: "Book now",
       metaTitle: "Services — Doctor Cuts",
       metaDescription:
-        "Cuts, fades, beard work, and the full ritual. Men’s grooming services in Macerata.",
+        "Cuts, fades, beard work, threading, and treatments. Men’s grooming services in Macerata.",
     },
     serviceDetail: {
       back: "Back to services",
@@ -1442,6 +1572,7 @@ const en: Dictionary = {
           legendUnavailable: "Closed",
           booked: "Booked",
           unavailable: "Unavailable",
+          legendLabel: "Time slot legend",
         },
       },
       notesLabel: "Notes (optional)",
@@ -1503,6 +1634,10 @@ const en: Dictionary = {
         createFailed: "We couldn’t complete the booking. Try again.",
         bookingsClosed:
           "Online booking is paused. Reach the studio on WhatsApp or by phone.",
+      },
+      a11y: {
+        progress: "Booking progress",
+        slotLegend: "Time slot legend",
       },
     },
     gestisci: {
@@ -1805,6 +1940,19 @@ const en: Dictionary = {
         save: "Save settings",
         saving: "Saving…",
       },
+      messages: {
+        invalid: "Invalid details.",
+        slugTaken: 'Slug already in use: "{slug}". Choose a different slug.',
+        selectImage: "Select an image file.",
+        imageTooLarge: "Image too large (max 10 MB).",
+        uploaded: "Uploaded.",
+        saved: "Saved.",
+      },
+      roles: {
+        admin: "Admin",
+        customer: "Customer",
+      },
+      delete: "Delete",
     },
   },
   header: {

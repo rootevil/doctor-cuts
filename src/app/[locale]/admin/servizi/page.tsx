@@ -6,6 +6,7 @@ import { AdminSection } from "@/components/admin/section";
 import { ServiceActiveToggle } from "@/components/admin/service-active-toggle";
 import { deleteService } from "@/lib/admin/actions";
 import { listAllServices } from "@/lib/admin/data";
+import { localizedServiceName } from "@/lib/services/localize";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, locales } from "@/i18n/config";
 import { routes } from "@/lib/routes";
@@ -73,7 +74,9 @@ export default async function AdminServicesPage({
               className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between"
             >
               <div className="flex flex-col">
-                <span className="font-display text-lg text-value">{service.name}</span>
+                <span className="font-display text-lg text-value">
+                  {localizedServiceName(locale, service.slug, service.name)}
+                </span>
                 <span className="text-caption">
                   {service.slug} · {service.duration_minutes} min ·{" "}
                   {fmtPrice(Number(service.price), locale)} · #{service.sort_order}
@@ -96,7 +99,7 @@ export default async function AdminServicesPage({
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="id" value={service.id} />
                   <button type="submit" className="admin-btn admin-btn-ghost !min-h-9">
-                    {locale === "it" ? "Elimina" : "Delete"}
+                    {t.pages.admin.delete}
                   </button>
                 </form>
               </div>
