@@ -21,10 +21,7 @@ export type ShopBookingAlertCtx = {
   customerName: string | null;
   customerEmail: string;
   customerPhone: string | null;
-  /** Italian catalog / dictionary name */
-  serviceNameIt: string;
-  /** English dictionary name */
-  serviceNameEn: string;
+  serviceName: string;
   startsAt: string;
   durationMinutes: number;
   referenceCode: string;
@@ -98,14 +95,15 @@ function statusLabel(status: string, locale: Locale) {
 
 function shell(inner: string, lang: Locale = "it") {
   return `<!doctype html>
-<html lang="${lang}">
+<html lang="${lang}" translate="no">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="color-scheme" content="dark" />
+  <meta name="google" content="notranslate" />
   <title>Doctor Cuts</title>
 </head>
-<body style="margin:0;padding:0;background:#0a0a0a;color:#e6e6e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body class="notranslate" translate="no" style="margin:0;padding:0;background:#0a0a0a;color:#e6e6e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:28px 12px;">
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#111111;border:1px solid #222222;">
@@ -210,64 +208,55 @@ export function confirmationEmail(
 }
 
 /**
- * Shop inbox alert — bilingual (IT + EN) so Gmail auto-translate does not
- * scramble names or turn "Taglio" into "Cut" / "Avviso studio" into "Study Notice".
+ * Shop inbox alert — English only.
+ * Bilingual copy triggered Gmail auto-translate and mangled the message.
  */
 export function shopBookingAlertEmail(
   ctx: ShopBookingAlertCtx,
 ): { subject: string; html: string; text: string } {
-  // Exact name from the booking — do not re-derive from email (Gmail contacts
-  // / profile rows must never override what the customer typed).
   const name =
     (ctx.customerName ?? "").trim().replace(/\s+/g, " ") ||
     resolveCustomerDisplayName({ email: ctx.customerEmail });
 
-  const whenIt = fmtDate(ctx.startsAt, "it");
-  const whenEn = fmtDate(ctx.startsAt, "en");
+  const when = fmtDate(ctx.startsAt, "en");
   const whenShort = fmtDateShort(ctx.startsAt, "en");
-  const statusIt = statusLabel(ctx.status, "it");
-  const statusEn = statusLabel(ctx.status, "en");
-  const price = fmtPrice(ctx.price, "it");
-  const serviceLine =
-    ctx.serviceNameIt === ctx.serviceNameEn
-      ? ctx.serviceNameIt
-      : `${ctx.serviceNameIt} / ${ctx.serviceNameEn}`;
-
+  const status = statusLabel(ctx.status, "en");
+  const price = fmtPrice(ctx.price, "en");
   const subject = `New booking · ${name} · ${whenShort} · ${ctx.referenceCode}`;
 
   const body = `
-    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert · Avviso studio</p>
-    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">New booking · Nuova prenotazione</p>
-    <p style="margin:0;color:#cfcfcf;" translate="no">
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert</p>
+    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">New booking</p>
+    <p style="margin:0;color:#cfcfcf;">
       <strong style="color:#f4f4f4;">${escapeHtml(name)}</strong>
-      — ${escapeHtml(whenEn)}
+      booked for <strong style="color:#f4f4f4;">${escapeHtml(when)}</strong>.
     </p>
     ${detailsTable([
-      ["Customer · Cliente", name, { noTranslate: true }],
+      ["Customer", name, { noTranslate: true }],
       ["Email", ctx.customerEmail, { noTranslate: true }],
-      ["Phone · Telefono", ctx.customerPhone, { noTranslate: true }],
-      ["Service · Servizio", serviceLine],
-      ["When · Quando", `${whenEn}  ·  ${whenIt}`],
-      ["Duration · Durata", `${ctx.durationMinutes} min`],
-      ["Price · Prezzo", price],
-      ["Status · Stato", `${statusEn} · ${statusIt}`],
-      ["Reference · Riferimento", ctx.referenceCode, { noTranslate: true }],
-      ["Notes · Note", ctx.notes],
+      ["Phone", ctx.customerPhone, { noTranslate: true }],
+      ["Service", ctx.serviceName],
+      ["Date & time", when],
+      ["Duration", `${ctx.durationMinutes} min`],
+      ["Price", price],
+      ["Status", status],
+      ["Reference", ctx.referenceCode, { noTranslate: true }],
+      ["Notes", ctx.notes],
     ])}
-    ${cta(ctx.adminUrl, "Open in admin · Apri in admin")}
+    ${cta(ctx.adminUrl, "Open in admin")}
   `;
 
   const text = [
-    "Doctor Cuts — New booking / Nuova prenotazione",
+    "Doctor Cuts — New booking",
     "",
     `Customer: ${name}`,
     `Email: ${ctx.customerEmail}`,
     ctx.customerPhone?.trim() ? `Phone: ${ctx.customerPhone.trim()}` : null,
-    `Service: ${serviceLine}`,
-    `When: ${whenEn}`,
+    `Service: ${ctx.serviceName}`,
+    `Date & time: ${when}`,
     `Duration: ${ctx.durationMinutes} min`,
     `Price: ${price}`,
-    `Status: ${statusEn}`,
+    `Status: ${status}`,
     `Reference: ${ctx.referenceCode}`,
     ctx.notes?.trim() ? `Notes: ${ctx.notes.trim()}` : null,
     "",
@@ -326,8 +315,7 @@ export type ShopCancellationAlertCtx = {
   customerName: string | null;
   customerEmail: string;
   customerPhone: string | null;
-  serviceNameIt: string;
-  serviceNameEn: string;
+  serviceName: string;
   startsAt: string;
   durationMinutes: number;
   referenceCode: string;
@@ -335,7 +323,7 @@ export type ShopCancellationAlertCtx = {
   adminUrl: string;
 };
 
-/** Shop inbox — bilingual cancellation notice. */
+/** Shop inbox — English-only cancellation notice (avoids Gmail auto-translate). */
 export function shopCancellationAlertEmail(
   ctx: ShopCancellationAlertCtx,
 ): { subject: string; html: string; text: string } {
@@ -343,45 +331,39 @@ export function shopCancellationAlertEmail(
     (ctx.customerName ?? "").trim().replace(/\s+/g, " ") ||
     resolveCustomerDisplayName({ email: ctx.customerEmail });
 
-  const whenIt = fmtDate(ctx.startsAt, "it");
-  const whenEn = fmtDate(ctx.startsAt, "en");
+  const when = fmtDate(ctx.startsAt, "en");
   const whenShort = fmtDateShort(ctx.startsAt, "en");
-  const price = fmtPrice(ctx.price, "it");
-  const serviceLine =
-    ctx.serviceNameIt === ctx.serviceNameEn
-      ? ctx.serviceNameIt
-      : `${ctx.serviceNameIt} / ${ctx.serviceNameEn}`;
-
+  const price = fmtPrice(ctx.price, "en");
   const subject = `Cancelled · ${name} · ${whenShort} · ${ctx.referenceCode}`;
 
   const body = `
-    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert · Avviso studio</p>
-    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">Booking cancelled · Prenotazione annullata</p>
-    <p style="margin:0;color:#cfcfcf;" translate="no">
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#c9a227;">Shop alert</p>
+    <p style="margin:0 0 8px;font-size:20px;color:#f4f4f4;">Booking cancelled</p>
+    <p style="margin:0;color:#cfcfcf;">
       <strong style="color:#f4f4f4;">${escapeHtml(name)}</strong>
-      cancelled · ha annullato — ${escapeHtml(whenEn)}
+      cancelled <strong style="color:#f4f4f4;">${escapeHtml(when)}</strong>.
     </p>
     ${detailsTable([
-      ["Customer · Cliente", name, { noTranslate: true }],
+      ["Customer", name, { noTranslate: true }],
       ["Email", ctx.customerEmail, { noTranslate: true }],
-      ["Phone · Telefono", ctx.customerPhone, { noTranslate: true }],
-      ["Service · Servizio", serviceLine],
-      ["Was · Era", `${whenEn}  ·  ${whenIt}`],
-      ["Duration · Durata", `${ctx.durationMinutes} min`],
-      ["Price · Prezzo", price],
-      ["Reference · Riferimento", ctx.referenceCode, { noTranslate: true }],
+      ["Phone", ctx.customerPhone, { noTranslate: true }],
+      ["Service", ctx.serviceName],
+      ["Was scheduled", when],
+      ["Duration", `${ctx.durationMinutes} min`],
+      ["Price", price],
+      ["Reference", ctx.referenceCode, { noTranslate: true }],
     ])}
-    ${cta(ctx.adminUrl, "Open in admin · Apri in admin")}
+    ${cta(ctx.adminUrl, "Open in admin")}
   `;
 
   const text = [
-    "Doctor Cuts — Booking cancelled / Prenotazione annullata",
+    "Doctor Cuts — Booking cancelled",
     "",
     `Customer: ${name}`,
     `Email: ${ctx.customerEmail}`,
     ctx.customerPhone?.trim() ? `Phone: ${ctx.customerPhone.trim()}` : null,
-    `Service: ${serviceLine}`,
-    `Was: ${whenEn}`,
+    `Service: ${ctx.serviceName}`,
+    `Was scheduled: ${when}`,
     `Reference: ${ctx.referenceCode}`,
     "",
     ctx.adminUrl,

@@ -295,8 +295,7 @@ export async function createBooking(
       customerName,
       customerEmail: to,
       customerPhone,
-      serviceNameIt: localizedServiceName("it", service.slug, service.name),
-      serviceNameEn: localizedServiceName("en", service.slug, service.name),
+      serviceName: localizedServiceName("en", service.slug, service.name),
       startsAt: startsAt.toISOString(),
       durationMinutes: BOOKING_SLOT_MINUTES,
       referenceCode: data.reference_code,
@@ -414,8 +413,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
       customerName,
       customerEmail: to,
       customerPhone,
-      serviceNameIt: localizedServiceName("it", service.slug, service.name),
-      serviceNameEn: localizedServiceName("en", service.slug, service.name),
+      serviceName: localizedServiceName("en", service.slug, service.name),
       startsAt: existing.starts_at,
       durationMinutes,
       referenceCode: existing.reference_code,
@@ -559,12 +557,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
       customerName,
       customerEmail: appointment.guest_email,
       customerPhone: appointment.guest_phone,
-      serviceNameIt: localizedServiceName(
-        "it",
-        appointment.service_slug,
-        appointment.service_name,
-      ),
-      serviceNameEn: localizedServiceName(
+      serviceName: localizedServiceName(
         "en",
         appointment.service_slug,
         appointment.service_name,
