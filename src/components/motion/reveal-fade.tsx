@@ -18,7 +18,7 @@ export function RevealFade({
     <motion.div
       initial={reduce ? { y: 0, opacity: 1 } : { y, opacity: 0 }}
       whileInView={{ y: 0, opacity: 1 }}
-      viewport={{ once: true, margin: "-10% 0px" }}
+      viewport={{ once: true, amount: 0.15, margin: "0px 0px -40px 0px" }}
       transition={{
         duration: reduce ? 0 : 0.7,
         delay: reduce ? 0 : delay,
