@@ -1,18 +1,7 @@
-// This file replaces the deprecated `middleware.ts` convention (Next 16
-// renamed it to `proxy`). It handles three concerns per request:
-//   1. Locale prefixing + persistence (defaults from cookie, then
-//      Accept-Language, then the site default).
-//   2. Supabase session cookie refresh + role resolution.
-//   3. Auth gating for `/account/**` and `/admin/**`.
-//   4. Baseline security headers on every response.
-//
-// The Data Security guide explicitly warns that Proxy is not a substitute
-// for per-action authorization checks — `requireAdminClient()` in every
-// admin action still enforces the same rules server-side.
-
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { defaultLocale, isLocale, localeCookie } from "@/i18n/config";
+import { canonicalizePathname } from "@/i18n/path-aliases";
 import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { routes } from "@/lib/routes";
 import { applySecurityHeaders } from "@/lib/security/headers";
@@ -34,32 +23,49 @@ function localeFromPath(pathname: string) {
   return isLocale(first) ? first : null;
 }
 
+function resolvePreferredLocale(request: NextRequest) {
+  const cookie = request.cookies.get(localeCookie)?.value;
+  if (isLocale(cookie ?? "")) return cookie as typeof defaultLocale;
+  return localeFromHeader(request.headers.get("accept-language"));
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const pathLocale = localeFromPath(pathname);
+  const preferredLocale = pathLocale ?? resolvePreferredLocale(request);
 
-  // 1. Locale prefix
-  const currentLocale = localeFromPath(pathname);
-  if (!currentLocale) {
-    const cookie = request.cookies.get(localeCookie)?.value;
-    const locale = isLocale(cookie ?? "")
-      ? cookie
-      : localeFromHeader(request.headers.get("accept-language"));
+  // Canonicalize English aliases → Italian segments, ensure locale prefix.
+  const canonical = canonicalizePathname(pathname, preferredLocale);
+  if (canonical.changed) {
     const url = request.nextUrl.clone();
-    url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
+    url.pathname = canonical.pathname;
+    if (canonical.hash) {
+      url.hash = canonical.hash.replace(/^#/, "");
+    }
     const redirect = NextResponse.redirect(url);
-    redirect.cookies.set(localeCookie, locale ?? defaultLocale, {
+    redirect.cookies.set(localeCookie, preferredLocale, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
-      httpOnly: false, // language pref must be readable from client toggles
+      httpOnly: false,
     });
     return applySecurityHeaders(redirect, request);
   }
 
-  // 2. Supabase session refresh + role
-  const { response, user, role } = await refreshSupabaseSession(request);
+  const currentLocale = pathLocale ?? preferredLocale;
 
-  // 3. Auth gates for /account and /admin
+  // Persist locale cookie when missing / mismatched.
+  const { response, user, role } = await refreshSupabaseSession(request);
+  if (!request.cookies.get(localeCookie)?.value || pathLocale) {
+    response.cookies.set(localeCookie, currentLocale, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
+
+  // Auth gates for /account and /admin
   const rest = pathname.slice(`/${currentLocale}`.length) || "/";
   const r = routes(currentLocale);
 
@@ -80,7 +86,6 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("next", pathname);
       return applySecurityHeaders(NextResponse.redirect(url), request);
     }
-    // Role alone is not enough — email must match the allowlisted admin.
     if (role !== "admin" || !isAllowedAdminEmail(user.email)) {
       const url = request.nextUrl.clone();
       url.pathname = r.home;
@@ -92,7 +97,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip Next internals, API routes, static assets, and the public folder.
   matcher: [
     "/((?!_next|api|images|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
   ],

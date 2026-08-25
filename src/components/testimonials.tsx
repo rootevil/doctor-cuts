@@ -23,7 +23,8 @@ function Stars({ rating, label }: { rating: number; label: string }) {
 
 /**
  * Compact social proof between About and Location.
- * Omitted when empty — no filler quotes.
+ * Always renders `#reviews` so header/nav hashes work in both locales —
+ * when there are no curated quotes, shows a Google CTA only.
  */
 export function Testimonials({
   t,
@@ -32,8 +33,6 @@ export function Testimonials({
   t: Dictionary;
   reviews: PublicReview[];
 }) {
-  if (reviews.length === 0) return null;
-
   const copy = t.testimonials;
   const reviewsHref = site.mapsReviewsUrl;
   const moreCount = Math.max(0, site.googleReviewsTotal - reviews.length);
@@ -69,61 +68,58 @@ export function Testimonials({
           </div>
         </RevealFade>
 
-        <ul className="mt-1 divide-y section-rule">
-          {reviews.map((review, index) => (
-            <li key={review.id}>
-              <RevealFade delay={Math.min(index * 0.04, 0.16)}>
-                <figure className="flex flex-col gap-2 py-4 md:flex-row md:items-baseline md:gap-6 md:py-3.5">
-                  <figcaption className="flex shrink-0 items-center gap-2.5 md:w-40">
-                    <Stars rating={review.rating} label={starsLabel(review.rating)} />
-                    <span className="text-[10px] font-bold tracking-[0.18em] text-accent-soft uppercase">
-                      {review.name}
-                    </span>
-                  </figcaption>
-                  <blockquote className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug text-body md:text-[0.9375rem] md:leading-relaxed">
-                      <span className="mr-0.5 text-brass/70" aria-hidden>
-                        “
+        {reviews.length > 0 ? (
+          <ul className="mt-1 divide-y section-rule">
+            {reviews.map((review, index) => (
+              <li key={review.id}>
+                <RevealFade delay={Math.min(index * 0.04, 0.16)}>
+                  <figure className="flex flex-col gap-2 py-4 md:flex-row md:items-baseline md:gap-6 md:py-3.5">
+                    <figcaption className="flex shrink-0 items-center gap-2.5 md:w-40">
+                      <Stars rating={review.rating} label={starsLabel(review.rating)} />
+                      <span className="text-[10px] font-bold tracking-[0.18em] text-accent-soft uppercase">
+                        {review.name}
                       </span>
-                      {review.quote}
-                      <span className="text-brass/70" aria-hidden>
-                        ”
-                      </span>
-                    </p>
-                  </blockquote>
-                </figure>
-              </RevealFade>
-            </li>
-          ))}
-        </ul>
-
-        {moreCount > 0 ? (
-          <RevealFade delay={0.1}>
-            <div className="border-t section-rule pt-4">
-              <a
-                href={reviewsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex min-h-10 items-center gap-2.5 text-[11px] tracking-[0.18em] text-brass uppercase transition hover:text-foreground"
-              >
-                <span className="font-display text-xl leading-none tracking-tight text-brass normal-case">
-                  +{moreCount}
-                </span>
-                <span>{copy.moreOnGoogle}</span>
-                <span
-                  aria-hidden
-                  className="transition-transform group-hover:translate-x-0.5"
-                >
-                  →
-                </span>
-                <span className="sr-only">
-                  {" "}
-                  ({copy.opensNew})
-                </span>
-              </a>
-            </div>
-          </RevealFade>
+                    </figcaption>
+                    <blockquote className="min-w-0 flex-1">
+                      <p className="text-sm leading-snug text-body md:text-[0.9375rem] md:leading-relaxed">
+                        <span className="mr-0.5 text-brass/70" aria-hidden>
+                          “
+                        </span>
+                        {review.quote}
+                        <span className="text-brass/70" aria-hidden>
+                          ”
+                        </span>
+                      </p>
+                    </blockquote>
+                  </figure>
+                </RevealFade>
+              </li>
+            ))}
+          </ul>
         ) : null}
+
+        <RevealFade delay={0.1}>
+          <div className={`border-t section-rule ${reviews.length > 0 ? "pt-4" : "pt-5"}`}>
+            <a
+              href={reviewsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex min-h-10 items-center gap-2.5 text-[11px] tracking-[0.18em] text-brass uppercase transition hover:text-foreground"
+            >
+              <span className="font-display text-xl leading-none tracking-tight text-brass normal-case">
+                +{moreCount > 0 ? moreCount : site.googleReviewsTotal}
+              </span>
+              <span>{copy.moreOnGoogle}</span>
+              <span
+                aria-hidden
+                className="transition-transform group-hover:translate-x-0.5"
+              >
+                →
+              </span>
+              <span className="sr-only"> ({copy.opensNew})</span>
+            </a>
+          </div>
+        </RevealFade>
       </div>
     </section>
   );

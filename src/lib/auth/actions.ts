@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
 import { isLocale, type Locale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
+import { rewriteNextParam } from "@/i18n/path-aliases";
 import { getDictionary } from "@/i18n/dictionaries";
 import {
   fdToObject,
@@ -23,11 +24,23 @@ function coerceLocale(value: unknown): Locale {
 }
 
 function safeNext(nextValue: unknown, locale: Locale) {
-  const raw = typeof nextValue === "string" ? nextValue : "";
-  // Only allow same-locale, relative paths — no absolute URLs or scheme
-  // switches (which would enable an open redirect).
-  if (raw.startsWith(`/${locale}/`) || raw === `/${locale}`) return raw;
-  return routes(locale).account;
+  const raw = typeof nextValue === "string" ? nextValue.trim() : "";
+  if (!raw.startsWith("/")) return routes(locale).account;
+
+  const rewritten = rewriteNextParam(raw, locale);
+  if (!rewritten) return routes(locale).account;
+
+  try {
+    const url = new URL(rewritten, "http://local.invalid");
+    if (url.origin !== "http://local.invalid") return routes(locale).account;
+    const path = url.pathname;
+    if (path !== `/${locale}` && !path.startsWith(`/${locale}/`)) {
+      return routes(locale).account;
+    }
+    return `${path}${url.search}${url.hash}`;
+  } catch {
+    return routes(locale).account;
+  }
 }
 
 export async function signInAction(

@@ -90,6 +90,7 @@ export type Dictionary = {
   footer: {
     rights: string;
     backToTop: string;
+    navLabel: string;
   };
   pages: {
     servizi: {
@@ -391,6 +392,7 @@ export type Dictionary = {
       lead: string;
       home: string;
       services: string;
+      contact: string;
     };
     error: {
       kicker: string;
@@ -812,6 +814,7 @@ const it: Dictionary = {
   footer: {
     rights: "Tutti i diritti riservati.",
     backToTop: "Torna su",
+    navLabel: "Navigazione",
   },
   pages: {
     servizi: {
@@ -1153,6 +1156,7 @@ const it: Dictionary = {
       lead: "La pagina che cerchi non esiste o è stata spostata.",
       home: "Torna alla home",
       services: "Vedi i servizi",
+      contact: "Contatti",
     },
     error: {
       kicker: "Si è verificato un errore",
@@ -1578,6 +1582,7 @@ const en: Dictionary = {
   footer: {
     rights: "All rights reserved.",
     backToTop: "Back to top",
+    navLabel: "Navigation",
   },
   pages: {
     servizi: {
@@ -1916,6 +1921,7 @@ const en: Dictionary = {
       lead: "The page you're looking for doesn't exist or has been moved.",
       home: "Back to home",
       services: "View services",
+      contact: "Contact",
     },
     error: {
       kicker: "Something went wrong",

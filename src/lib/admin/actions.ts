@@ -45,14 +45,17 @@ async function requireAdminClient() {
 }
 
 function revalidatePublic(locale: Locale) {
-  const r = routes(locale);
-  revalidatePath(r.home);
-  revalidatePath(r.services);
-  revalidatePath(r.gallery);
-  revalidatePath(r.contact);
-  revalidatePath(r.about);
-  revalidatePath(r.book);
-  revalidatePath(r.admin, "layout");
+  // Invalidate both locales — admin edits affect shared content.
+  for (const loc of ["it", "en"] as const) {
+    const r = routes(loc);
+    revalidatePath(r.home);
+    revalidatePath(r.services);
+    revalidatePath(r.gallery);
+    revalidatePath(r.contact);
+    revalidatePath(r.about);
+    revalidatePath(r.book);
+  }
+  revalidatePath(routes(locale).admin, "layout");
 }
 
 function revalidateReviewsAdmin(locale: Locale) {
