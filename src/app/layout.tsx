@@ -15,8 +15,8 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Doctor Cuts — L’arte del taglio · Macerata",
-    template: "%s · Doctor Cuts",
+    default: "Doctor Cuts",
+    template: "Doctor Cuts",
   },
   description:
     "Doctor Cuts, studio di cura maschile a Macerata. Tagli precisi, dettagli considerati. Via Antelmo Severini, 4/C.",
@@ -26,7 +26,10 @@ export const metadata: Metadata = {
   publisher: "Doctor Cuts",
   formatDetection: { telephone: true, email: true, address: false },
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png", sizes: "192x192" }],
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.ico", sizes: "48x48" },
+    ],
     shortcut: "/favicon.ico",
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },

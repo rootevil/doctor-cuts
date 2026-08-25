@@ -22,8 +22,8 @@ export async function generateMetadata({
   const url = `/${locale}`;
   return {
     title: {
-      default: t.meta.title,
-      template: `%s · Doctor Cuts`,
+      default: "Doctor Cuts",
+      template: "Doctor Cuts",
     },
     description: t.meta.description,
     alternates: {

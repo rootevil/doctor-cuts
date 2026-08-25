@@ -570,7 +570,7 @@ export type Dictionary = {
 
 const it: Dictionary = {
   meta: {
-    title: "Doctor Cuts — L’arte del taglio · Macerata",
+    title: "Doctor Cuts",
     description:
       "Doctor Cuts, studio di cura maschile a Macerata. Tagli precisi, dettagli considerati. Via Antelmo Severini, 4/C.",
   },
@@ -1275,7 +1275,7 @@ const it: Dictionary = {
 
 const en: Dictionary = {
   meta: {
-    title: "Doctor Cuts — The art of the cut · Macerata",
+    title: "Doctor Cuts",
     description:
       "Doctor Cuts is a men’s grooming studio in Macerata. Precise cuts, considered details. Via Antelmo Severini, 4/C.",
   },
