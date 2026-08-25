@@ -207,6 +207,70 @@ export function confirmationEmail(
   return { subject, html: shell(body, ctx.locale), text };
 }
 
+/** Day-before reminder — same visual language as confirmation. */
+export function reminderEmail(
+  ctx: BaseCtx,
+): { subject: string; html: string; text: string } {
+  const isIt = ctx.locale === "it";
+  const name = ctx.customerName?.trim() || null;
+  const greeting = name
+    ? isIt
+      ? `Ciao ${name},`
+      : `Hi ${name},`
+    : isIt
+      ? "Ciao,"
+      : "Hi,";
+  const when = fmtDate(ctx.startsAt, ctx.locale);
+  const subject = isIt
+    ? `Promemoria · domani da Doctor Cuts · ${ctx.referenceCode}`
+    : `Reminder · tomorrow at Doctor Cuts · ${ctx.referenceCode}`;
+
+  const lead = isIt
+    ? "Ti ricordiamo il tuo appuntamento di domani da Doctor Cuts."
+    : "This is a reminder for your appointment tomorrow at Doctor Cuts.";
+
+  const body = `
+    <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;" translate="no">${escapeHtml(greeting)}</p>
+    <p style="margin:0;color:#cfcfcf;">${escapeHtml(lead)}</p>
+    ${detailsTable([
+      [isIt ? "Servizio" : "Service", ctx.serviceName],
+      [isIt ? "Data e ora" : "Date & time", when],
+      [isIt ? "Durata" : "Duration", `${ctx.durationMinutes} min`],
+      [isIt ? "Riferimento" : "Reference", ctx.referenceCode, { noTranslate: true }],
+    ])}
+    <p style="margin:0;color:#cfcfcf;">${
+      isIt
+        ? `Ti aspettiamo in ${site.addressLine}, ${site.postalCity}.`
+        : `See you at ${site.addressLine}, ${site.postalCity}.`
+    }</p>
+    ${cta(ctx.manageUrl, isIt ? "Gestisci prenotazione" : "Manage booking")}
+    <p style="margin:20px 0 0;color:#8a8a8a;font-size:12px;">${
+      isIt
+        ? `Per modifiche o cancellazioni avvisaci con almeno ${ctx.settings.cancellation_hours} ore di anticipo.`
+        : `To reschedule or cancel, please give us at least ${ctx.settings.cancellation_hours} hours notice.`
+    }</p>
+  `;
+
+  const text = [
+    greeting,
+    "",
+    lead,
+    "",
+    `${isIt ? "Servizio" : "Service"}: ${ctx.serviceName}`,
+    `${isIt ? "Data e ora" : "Date & time"}: ${when}`,
+    `${isIt ? "Durata" : "Duration"}: ${ctx.durationMinutes} min`,
+    `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
+    "",
+    isIt
+      ? `Ti aspettiamo in ${site.addressLine}, ${site.postalCity}.`
+      : `See you at ${site.addressLine}, ${site.postalCity}.`,
+    "",
+    ctx.manageUrl,
+  ].join("\n");
+
+  return { subject, html: shell(body, ctx.locale), text };
+}
+
 /**
  * Shop inbox alert — English only.
  * Bilingual copy triggered Gmail auto-translate and mangled the message.

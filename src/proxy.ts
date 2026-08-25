@@ -92,6 +92,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip Next internals, static assets, and the public folder.
-  matcher: ["/((?!_next|images|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)"],
+  // Skip Next internals, API routes, static assets, and the public folder.
+  matcher: [
+    "/((?!_next|api|images|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
+  ],
 };

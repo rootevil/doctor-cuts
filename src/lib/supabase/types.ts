@@ -53,6 +53,8 @@ export type AppointmentRow = {
   guest_email: string | null;
   guest_phone: string | null;
   manage_token: string | null;
+  locale: "it" | "en";
+  reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

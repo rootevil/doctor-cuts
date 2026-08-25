@@ -207,6 +207,7 @@ export async function createBooking(
           ends_at: endsAt.toISOString(),
           status: initialStatus,
           customer_notes: validated.notes || null,
+          locale: validated.locale,
         })
         .select("id, reference_code")
         .single()
@@ -223,6 +224,7 @@ export async function createBooking(
           ends_at: endsAt.toISOString(),
           status: initialStatus,
           customer_notes: validated.notes || null,
+          locale: validated.locale,
         })
         .select("id, reference_code")
         .single();
