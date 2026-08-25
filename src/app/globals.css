@@ -777,7 +777,7 @@ button.text-nav:hover {
   transform: translateX(0.25rem);
 }
 
-/* Channel CTAs — Uiverse-inspired gradient + side bars */
+/* Channel CTAs — email-style surface + brass outline; corner morph on hover */
 .btn-channel {
   position: relative;
   display: inline-flex;
@@ -787,10 +787,12 @@ button.text-nav:hover {
   width: 100%;
   min-height: 2.875rem;
   box-sizing: border-box;
-  /* Extra side inset clears the decorative bars */
-  padding: 0.65rem 1.15rem 0.65rem 1.05rem;
-  border: none;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--brass) 40%, var(--border));
   border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--brass));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 10%, transparent);
+  color: var(--foreground);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -798,51 +800,22 @@ button.text-nav:hover {
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-channel::before,
-.btn-channel::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 3px;
-  height: 38%;
-  transform: translateY(-50%);
-  transition: all 0.2s ease;
-  pointer-events: none;
-}
-
-.btn-channel::before {
-  left: 0;
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.btn-channel::after {
-  right: 0;
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
+  transition:
+    border-radius 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .btn-channel:hover {
   border-top-left-radius: 40px;
   border-bottom-right-radius: 40px;
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
-.btn-channel:hover::before,
-.btn-channel:hover::after {
-  height: 58%;
-}
-
-.btn-channel:hover::before {
-  border-radius: 5px 0 0 5px;
-  transform: translate(4px, calc(-50% - 12px)) rotate(45deg);
-}
-
-.btn-channel:hover::after {
-  border-radius: 0 5px 5px 0;
-  transform: translate(-4px, calc(-50% + 12px)) rotate(45deg);
+.btn-channel:active {
+  opacity: 0.92;
 }
 
 .btn-channel:focus-visible {
@@ -873,13 +846,20 @@ button.text-nav:hover {
   flex: 0 1 auto;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   /* Optical align with icon glyph */
   transform: translateY(0.5px);
+}
+
+.btn-channel-instagram .btn-channel-label,
+.btn-channel-facebook .btn-channel-label {
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .btn-channel-grid {
@@ -896,160 +876,13 @@ button.text-nav:hover {
   }
 }
 
-/* Call — brass */
-.btn-channel-call {
-  background: linear-gradient(
-    144deg,
-    color-mix(in srgb, var(--brass) 72%, #5c5040),
-    var(--brass) 50%,
-    color-mix(in srgb, var(--brass) 85%, #f4efe6)
-  );
-  box-shadow: 0 0.7em 1.5em -0.5em color-mix(in srgb, var(--brass) 45%, transparent);
-  color: #12100c;
-}
-
-.btn-channel-call::before,
-.btn-channel-call::after {
-  background-color: #12100c;
-}
-
-.btn-channel-call:hover {
-  box-shadow: 0 0.5em 1.5em -0.5em color-mix(in srgb, var(--brass) 70%, transparent);
-}
-
-.btn-channel-call:active {
-  box-shadow: 0 0.3em 1em -0.5em color-mix(in srgb, var(--brass) 80%, transparent);
-}
-
-.btn-channel-call .btn-channel-label,
-.btn-channel-whatsapp .btn-channel-label,
-.btn-channel-email .btn-channel-label {
-  letter-spacing: 0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.btn-channel-instagram .btn-channel-label,
-.btn-channel-facebook .btn-channel-label {
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-weight: 700;
-}
-
-/* WhatsApp */
-.btn-channel-whatsapp {
-  background: linear-gradient(144deg, #166534, #25d366 50%, #128c7e);
-  box-shadow: 0 0.7em 1.5em -0.5em rgba(37, 211, 102, 0.45);
-  color: #fff;
-}
-
-.btn-channel-whatsapp::before,
-.btn-channel-whatsapp::after {
-  background-color: #fff;
-}
-
-.btn-channel-whatsapp:hover {
-  box-shadow: 0 0.5em 1.5em -0.5em rgba(37, 211, 102, 0.7);
-}
-
-.btn-channel-whatsapp:active {
-  box-shadow: 0 0.3em 1em -0.5em rgba(37, 211, 102, 0.85);
-}
-
-/* Email */
-.btn-channel-email {
-  background: color-mix(in srgb, var(--surface-raised) 88%, var(--brass));
-  border: 1px solid color-mix(in srgb, var(--brass) 40%, var(--border));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 10%, transparent);
-  color: var(--foreground);
-}
-
-.btn-channel-email::before,
-.btn-channel-email::after {
-  background-color: var(--brass);
-}
-
-.btn-channel-email:hover {
-  border-color: var(--brass);
-  color: var(--brass);
-}
-
-.btn-channel-email:active {
-  opacity: 0.92;
-}
-
-/* Instagram */
-.btn-channel-instagram {
-  background: linear-gradient(
-    144deg,
-    #f09433,
-    #e6683c 25%,
-    #dc2743 50%,
-    #cc2366 75%,
-    #bc1888
-  );
-  box-shadow: 0 0.7em 1.5em -0.5em rgba(220, 39, 67, 0.45);
-  color: #fff;
-}
-
-.btn-channel-instagram::before,
-.btn-channel-instagram::after {
-  background-color: #fff;
-}
-
-.btn-channel-instagram:hover {
-  box-shadow: 0 0.5em 1.5em -0.5em rgba(188, 24, 136, 0.65);
-}
-
-.btn-channel-instagram:active {
-  box-shadow: 0 0.3em 1em -0.5em rgba(188, 24, 136, 0.8);
-}
-
-/* Facebook */
-.btn-channel-facebook {
-  background: linear-gradient(144deg, #0b4f9c, #1877f2 50%, #3b5998);
-  box-shadow: 0 0.7em 1.5em -0.5em rgba(24, 119, 242, 0.45);
-  color: #fff;
-}
-
-.btn-channel-facebook::before,
-.btn-channel-facebook::after {
-  background-color: #fff;
-}
-
-.btn-channel-facebook:hover {
-  box-shadow: 0 0.5em 1.5em -0.5em rgba(24, 119, 242, 0.7);
-}
-
-.btn-channel-facebook:active {
-  box-shadow: 0 0.3em 1em -0.5em rgba(24, 119, 242, 0.85);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .btn-channel,
-  .btn-channel::before,
-  .btn-channel::after {
-    transition: none;
+  .btn-channel {
+    transition: border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
   }
 
   .btn-channel:hover {
     border-radius: 8px;
-  }
-
-  .btn-channel:hover::before,
-  .btn-channel:hover::after {
-    height: 40%;
-    transform: translateY(-50%);
-    border-radius: 0;
-  }
-
-  .btn-channel:hover::before {
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-  }
-
-  .btn-channel:hover::after {
-    border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
   }
 }
 
