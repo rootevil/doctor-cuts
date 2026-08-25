@@ -26,7 +26,9 @@ export const metadata: Metadata = {
   publisher: "Doctor Cuts",
   formatDetection: { telephone: true, email: true, address: false },
   icons: {
-    icon: "/favicon.ico",
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "192x192" }],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
     type: "website",
