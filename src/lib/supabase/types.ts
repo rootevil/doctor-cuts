@@ -55,6 +55,11 @@ export type AppointmentRow = {
   manage_token: string | null;
   locale: "it" | "en";
   reminder_sent_at: string | null;
+  payment_status: "none" | "awaiting" | "paid" | "failed" | "expired";
+  deposit_cents: number;
+  nexi_order_id: string | null;
+  payment_token: string | null;
+  payment_expires_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -76,5 +81,7 @@ export type SettingsRow = {
   /** When false, online booking is paused for customers. */
   bookings_enabled: boolean;
   slot_interval_minutes: number;
+  deposit_required: boolean;
+  deposit_cents: number;
   updated_at: string;
 };

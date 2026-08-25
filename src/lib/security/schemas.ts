@@ -118,6 +118,14 @@ export const serviceSchema = z.object({
   is_active: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
 });
 
+export const curatedReviewSchema = z.object({
+  locale: localeSchema,
+  author_name: trimmed(80).pipe(z.string().min(1)),
+  rating: z.coerce.number().int().min(1).max(5),
+  comment: trimmed(1200).pipe(z.string().min(8)),
+  is_featured: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
+});
+
 export const settingsSchema = z.object({
   locale: localeSchema,
   business_name: trimmed(120).pipe(z.string().min(1)),
@@ -132,6 +140,8 @@ export const settingsSchema = z.object({
   cancellation_hours: z.coerce.number().int().min(0).max(720),
   require_confirmation: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
   bookings_enabled: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
+  deposit_required: z.union([z.literal("on"), z.literal(""), z.undefined()]).optional(),
+  deposit_cents: z.coerce.number().int().min(0).max(50000).optional(),
   slot_interval_minutes: z.coerce.number().int().min(5).max(180),
 });
 

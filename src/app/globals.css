@@ -1309,6 +1309,62 @@ button.text-nav:hover {
   letter-spacing: 0.18em;
 }
 
+.payment-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.payment-review-rows {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+
+.payment-review-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.payment-review-rows dt {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.payment-review-rows dd {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.05rem;
+}
+
+.payment-review-rows .is-now dd {
+  color: var(--brass);
+  font-size: 1.25rem;
+}
+
+.payment-review-trust {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.payment-review-trust li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .accent-rule {
   height: 1px;
   width: 3rem;

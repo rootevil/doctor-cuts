@@ -14,6 +14,7 @@ import type { AppointmentStatus } from "@/lib/supabase/types";
 import {
   adminAppointmentNotesSchema,
   adminAppointmentStatusSchema,
+  curatedReviewSchema,
   fdToObject,
   serviceSchema,
   settingsSchema,
@@ -364,6 +365,49 @@ export async function deleteGalleryItem(formData: FormData) {
 /*  Reviews                                                            */
 /* ------------------------------------------------------------------ */
 
+export type CuratedReviewFormState = { error?: string; success?: string };
+
+/** Admin-curated quote from Google Maps (no API). Goes live as approved + optional featured. */
+export async function createCuratedReview(
+  _prevState: CuratedReviewFormState,
+  formData: FormData,
+): Promise<CuratedReviewFormState> {
+  const { supabase } = await requireAdminClient();
+  const parsed = curatedReviewSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) {
+    return { error: "invalid" };
+  }
+  const { locale, author_name, rating, comment, is_featured } = parsed.data;
+  const featured = is_featured === "on";
+
+  if (featured) {
+    const { count } = await supabase
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "approved")
+      .eq("is_featured", true);
+    if ((count ?? 0) >= 5) {
+      return { error: "featured_limit" };
+    }
+  }
+
+  const { error } = await supabase.from("reviews").insert({
+    author_name,
+    rating,
+    comment,
+    source: "google",
+    status: "approved",
+    is_featured: featured,
+    customer_id: null,
+    appointment_id: null,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath(routes(locale).adminReviews);
+  revalidatePublic(locale);
+  return { success: "created" };
+}
+
 export async function moderateReview(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
@@ -374,6 +418,25 @@ export async function moderateReview(formData: FormData) {
     | "pending";
   const is_featured = formData.get("is_featured") === "on";
   if (!id) return;
+
+  if (is_featured && status === "approved") {
+    const { count } = await supabase
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "approved")
+      .eq("is_featured", true)
+      .neq("id", id);
+    if ((count ?? 0) >= 5) {
+      // Soft-fail: keep previous featured state rather than exceeding homepage cap.
+      const payload: Record<string, unknown> = { status };
+      const { error } = await supabase.from("reviews").update(payload).eq("id", id);
+      if (error) throw new Error(error.message);
+      revalidatePath(routes(locale).adminReviews);
+      revalidatePublic(locale);
+      return;
+    }
+  }
+
   const payload: Record<string, unknown> = { is_featured };
   if (["approved", "rejected", "pending"].includes(status)) payload.status = status;
   const { error } = await supabase.from("reviews").update(payload).eq("id", id);
@@ -428,6 +491,8 @@ export async function saveSettings(
     cancellation_hours: v.cancellation_hours,
     require_confirmation: v.require_confirmation === "on",
     bookings_enabled: v.bookings_enabled === "on",
+    deposit_required: v.deposit_required === "on",
+    deposit_cents: v.deposit_cents ?? 500,
     slot_interval_minutes: v.slot_interval_minutes,
   };
 

@@ -15,6 +15,7 @@ type BaseCtx = {
   price: number;
   settings: SettingsRow;
   manageUrl: string;
+  depositPaidLabel?: string | null;
 };
 
 export type ShopBookingAlertCtx = {
@@ -29,6 +30,7 @@ export type ShopBookingAlertCtx = {
   status: "pending" | "confirmed" | string;
   notes: string | null;
   adminUrl: string;
+  depositPaidLabel?: string | null;
 };
 
 /** Prefer profile / metadata / guest name; never leave the shop with a blank. */
@@ -180,6 +182,10 @@ export function confirmationEmail(
       [isIt ? "Data e ora" : "Date & time", when],
       [isIt ? "Durata" : "Duration", `${ctx.durationMinutes} min`],
       [isIt ? "Prezzo" : "Price", fmtPrice(ctx.price, ctx.locale)],
+      [
+        isIt ? "Acconto pagato" : "Deposit paid",
+        ctx.depositPaidLabel ?? null,
+      ],
       [isIt ? "Riferimento" : "Reference", ctx.referenceCode, { noTranslate: true }],
     ])}
     ${cta(ctx.manageUrl, isIt ? "Gestisci prenotazione" : "Manage booking")}
@@ -199,10 +205,15 @@ export function confirmationEmail(
     `${isIt ? "Data e ora" : "Date & time"}: ${when}`,
     `${isIt ? "Durata" : "Duration"}: ${ctx.durationMinutes} min`,
     `${isIt ? "Prezzo" : "Price"}: ${fmtPrice(ctx.price, ctx.locale)}`,
+    ctx.depositPaidLabel
+      ? `${isIt ? "Acconto pagato" : "Deposit paid"}: ${ctx.depositPaidLabel}`
+      : null,
     `${isIt ? "Riferimento" : "Reference"}: ${ctx.referenceCode}`,
     "",
     ctx.manageUrl,
-  ].join("\n");
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
 
   return { subject, html: shell(body, ctx.locale), text };
 }
@@ -303,6 +314,7 @@ export function shopBookingAlertEmail(
       ["Date & time", when],
       ["Duration", `${ctx.durationMinutes} min`],
       ["Price", price],
+      ["Deposit paid", ctx.depositPaidLabel],
       ["Status", status],
       ["Reference", ctx.referenceCode, { noTranslate: true }],
       ["Notes", ctx.notes],
@@ -320,6 +332,7 @@ export function shopBookingAlertEmail(
     `Date & time: ${when}`,
     `Duration: ${ctx.durationMinutes} min`,
     `Price: ${price}`,
+    ctx.depositPaidLabel ? `Deposit paid: ${ctx.depositPaidLabel}` : null,
     `Status: ${status}`,
     `Reference: ${ctx.referenceCode}`,
     ctx.notes?.trim() ? `Notes: ${ctx.notes.trim()}` : null,

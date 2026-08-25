@@ -22,6 +22,8 @@ export type AdminAppointment = {
   reference_code: string;
   customer_notes: string | null;
   admin_notes: string | null;
+  payment_status: string;
+  deposit_cents: number;
   is_guest: boolean;
   customer: {
     id: string;
@@ -40,6 +42,7 @@ export type AdminAppointment = {
 
 const APPOINTMENT_SELECT = `
   id, starts_at, ends_at, status, reference_code, customer_notes, admin_notes,
+  payment_status, deposit_cents,
   guest_name, guest_email, guest_phone,
   customer:profiles ( id, full_name, email, phone ),
   service:services ( id, slug, name, price, duration_minutes )
@@ -61,6 +64,8 @@ function normaliseAppointment(row: unknown): AdminAppointment {
     reference_code: r.reference_code as string,
     customer_notes: (r.customer_notes as string | null) ?? null,
     admin_notes: (r.admin_notes as string | null) ?? null,
+    payment_status: (r.payment_status as string) ?? "none",
+    deposit_cents: Number(r.deposit_cents ?? 0),
     is_guest: !linked && Boolean(guestEmail || guestName),
     customer:
       linked ??
@@ -336,6 +341,8 @@ export type AdminReview = {
   status: "pending" | "approved" | "rejected";
   is_featured: boolean;
   created_at: string;
+  author_name: string | null;
+  source: "site" | "google";
   customer: { id: string; full_name: string | null; email: string } | null;
 };
 
@@ -345,13 +352,14 @@ export async function listReviews(): Promise<AdminReview[]> {
   const { data } = await supabase
     .from("reviews")
     .select(
-      `id, rating, comment, status, is_featured, created_at,
+      `id, rating, comment, status, is_featured, created_at, author_name, source,
        customer:profiles ( id, full_name, email )`,
     )
     .order("created_at", { ascending: false });
   const rows = (data ?? []) as unknown as AdminReview[];
   return rows.map((r) => ({
     ...r,
+    source: r.source === "google" ? "google" : "site",
     customer: Array.isArray(r.customer)
       ? (r.customer[0] ?? null)
       : (r.customer ?? null),

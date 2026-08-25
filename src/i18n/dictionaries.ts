@@ -66,6 +66,16 @@ export type Dictionary = {
     findUs: string;
     imageAlt: string;
   };
+  testimonials: {
+    kicker: string;
+    title: string;
+    lead: string;
+    viaGoogle: string;
+    googleCta: string;
+    showAll: string;
+    opensNew: string;
+    starsLabel: string;
+  };
   location: {
     kicker: string;
     addressTitle: string;
@@ -242,6 +252,32 @@ export type Dictionary = {
         guestRequired: string;
         createFailed: string;
         bookingsClosed: string;
+        paymentFailed: string;
+      };
+      payment: {
+        stepTitle: string;
+        stepLead: string;
+        banner: string;
+        servicePrice: string;
+        payNow: string;
+        payInShop: string;
+        payInShopZero: string;
+        holdNote: string;
+        trustProvider: string;
+        trustSecure: string;
+        cta: string;
+        submitting: string;
+        nextHint: string;
+        summaryNow: string;
+        result: {
+          processingTitle: string;
+          processingLead: string;
+          unpaidTitle: string;
+          unpaidLead: string;
+          retry: string;
+          missingTitle: string;
+          missingLead: string;
+        };
       };
       a11y: {
         progress: string;
@@ -419,6 +455,7 @@ export type Dictionary = {
         empty: string;
         unknownCustomer: string;
         guestBadge: string;
+        depositPaid: string;
         customerNotesLabel: string;
         internalNotesLabel: string;
         internalNotesPlaceholder: string;
@@ -518,6 +555,21 @@ export type Dictionary = {
         featured: string;
         remove: string;
         statuses: { pending: string; approved: string; rejected: string };
+        sources: { site: string; google: string };
+        addTitle: string;
+        addLead: string;
+        authorLabel: string;
+        authorHint: string;
+        ratingLabel: string;
+        commentLabel: string;
+        commentHint: string;
+        featuredLabel: string;
+        submit: string;
+        success: string;
+        errorInvalid: string;
+        errorFeaturedLimit: string;
+        errorGeneric: string;
+        featuredCount: string;
       };
       settings: {
         kicker: string;
@@ -544,6 +596,10 @@ export type Dictionary = {
         requireConfirmHint: string;
         bookingsEnabled: string;
         bookingsEnabledHint: string;
+        depositRequired: string;
+        depositRequiredHint: string;
+        depositAmount: string;
+        depositAmountHint: string;
         save: string;
         saving: string;
       };
@@ -732,6 +788,16 @@ const it: Dictionary = {
     locationLabel: "Sede",
     findUs: "Come trovarci",
     imageAlt: "Interno Doctor Cuts a Macerata",
+  },
+  testimonials: {
+    kicker: "Recensioni",
+    title: "Dicono i clienti.",
+    lead: "Parole vere da Google — scelte per la homepage.",
+    viaGoogle: "Google",
+    googleCta: "Su Google",
+    showAll: "Tutte le recensioni su Google",
+    opensNew: "si apre in una nuova scheda",
+    starsLabel: "{n} stelle su 5",
   },
   location: {
     kicker: "Trovaci",
@@ -942,6 +1008,35 @@ const it: Dictionary = {
         createFailed: "Non è stato possibile completare la prenotazione. Riprova.",
         bookingsClosed:
           "Le prenotazioni online sono sospese. Contatta lo studio via WhatsApp o telefono.",
+        paymentFailed:
+          "Il pagamento non è partito. Riprova o scrivici su WhatsApp.",
+      },
+      payment: {
+        stepTitle: "Conferma",
+        stepLead: "Un acconto blocca l’orario. Il resto lo saldi in studio.",
+        banner: "Per confermare paghi un acconto ora. Niente sorprese: il resto in cassa.",
+        servicePrice: "Prezzo del servizio",
+        payNow: "Paga ora per confermare",
+        payInShop: "In studio",
+        payInShopZero: "Niente da saldare in studio",
+        holdNote: "L’orario resta tuo per 15 minuti mentre paghi.",
+        trustProvider: "Pagamento sicuro con Stripe",
+        trustSecure: "La banca può chiedere un codice (3D Secure).",
+        cta: "Paga {amount} e conferma",
+        submitting: "Apro il pagamento sicuro…",
+        nextHint: "Controlla il riepilogo e paga per confermare",
+        summaryNow: "Ora",
+        result: {
+          processingTitle: "Stiamo confermando il pagamento",
+          processingLead:
+            "Se hai già pagato, attendi qualche secondo e aggiorna la pagina. Se hai chiuso Nexi, puoi riprovare qui sotto.",
+          unpaidTitle: "Prenotazione non confermata",
+          unpaidLead:
+            "Il pagamento non è andato a buon fine o è stato annullato. L’orario è ancora tuo per pochi minuti.",
+          retry: "Riprova il pagamento",
+          missingTitle: "Link non valido",
+          missingLead: "Questo link di pagamento è scaduto o non è corretto. Prenota di nuovo.",
+        },
       },
       a11y: {
         progress: "Avanzamento prenotazione",
@@ -1123,6 +1218,7 @@ const it: Dictionary = {
         empty: "Nessun appuntamento con questi filtri.",
         unknownCustomer: "Cliente sconosciuto",
         guestBadge: "Ospite",
+        depositPaid: "Acconto pagato",
         customerNotesLabel: "Note cliente",
         internalNotesLabel: "Note interne",
         internalNotesPlaceholder: "Solo per lo studio (es. preferenze, allergie, promemoria).",
@@ -1215,12 +1311,29 @@ const it: Dictionary = {
       },
       reviews: {
         kicker: "Recensioni",
-        title: "Moderazione",
-        lead: "Approva o rifiuta le recensioni dei clienti prima che compaiano online.",
-        empty: "Nessuna recensione ricevuta.",
+        title: "Recensioni",
+        lead: "Incolla fino a 5 recensioni da Google Maps per la homepage. Approva o togli quelle in evidenza quando vuoi.",
+        empty: "Nessuna recensione ancora. Aggiungine una da Google qui sopra.",
         featured: "In evidenza",
         remove: "Elimina",
         statuses: { pending: "In attesa", approved: "Approvata", rejected: "Rifiutata" },
+        sources: { site: "Sito", google: "Google" },
+        addTitle: "Aggiungi da Google",
+        addLead:
+          "Apri la scheda Google del salone, copia nome e testo di una recensione vera, e salvala qui. Comparirà in homepage se è “in evidenza”.",
+        authorLabel: "Nome",
+        authorHint: "Come su Google (es. Marco R.)",
+        ratingLabel: "Stelle",
+        commentLabel: "Testo",
+        commentHint: "Incolla il testo della recensione, senza inventarlo.",
+        featuredLabel: "Mostra in homepage (max 5)",
+        submit: "Salva recensione",
+        success: "Recensione salvata.",
+        errorInvalid: "Controlla nome, stelle e testo (min. 8 caratteri).",
+        errorFeaturedLimit:
+          "Hai già 5 recensioni in evidenza. Togline una prima di aggiungerne un’altra.",
+        errorGeneric: "Salvataggio non riuscito. Riprova.",
+        featuredCount: "In evidenza homepage: {count} / 5",
       },
       settings: {
         kicker: "Impostazioni",
@@ -1249,6 +1362,11 @@ const it: Dictionary = {
         bookingsEnabled: "Accetta prenotazioni online",
         bookingsEnabledHint:
           "Disattiva per sospendere le nuove prenotazioni. Gli slot liberati dalle cancellazioni tornano disponibili.",
+        depositRequired: "Acconto di conferma (Stripe)",
+        depositRequiredHint:
+          "Se attivo e Stripe è configurato, il cliente paga l’acconto online per confermare. Senza chiavi il sito resta gratuito.",
+        depositAmount: "Acconto (centesimi di euro)",
+        depositAmountHint: "500 = € 5,00. Non può superare il prezzo del servizio.",
         save: "Salva impostazioni",
         saving: "Salvataggio…",
       },
@@ -1437,6 +1555,16 @@ const en: Dictionary = {
     locationLabel: "Location",
     findUs: "Find us",
     imageAlt: "Doctor Cuts interior in Macerata",
+  },
+  testimonials: {
+    kicker: "Reviews",
+    title: "What clients say.",
+    lead: "Real words from Google — curated for the homepage.",
+    viaGoogle: "Google",
+    googleCta: "On Google",
+    showAll: "All reviews on Google",
+    opensNew: "opens in a new tab",
+    starsLabel: "{n} out of 5 stars",
   },
   location: {
     kicker: "Find us",
@@ -1645,6 +1773,34 @@ const en: Dictionary = {
         createFailed: "We couldn’t complete the booking. Try again.",
         bookingsClosed:
           "Online booking is paused. Reach the studio on WhatsApp or by phone.",
+        paymentFailed: "Payment didn’t start. Try again or message us on WhatsApp.",
+      },
+      payment: {
+        stepTitle: "Confirm",
+        stepLead: "A small deposit holds the time. You pay the rest in the studio.",
+        banner: "To confirm, you pay a deposit now. The rest is at the till — no surprises.",
+        servicePrice: "Service price",
+        payNow: "Pay now to confirm",
+        payInShop: "In studio",
+        payInShopZero: "Nothing left to pay in studio",
+        holdNote: "This time is held for 15 minutes while you pay.",
+        trustProvider: "Secure payment with Stripe",
+        trustSecure: "Your bank may ask for a one-time code (3D Secure).",
+        cta: "Pay {amount} and confirm",
+        submitting: "Opening secure payment…",
+        nextHint: "Check the summary and pay to confirm",
+        summaryNow: "Now",
+        result: {
+          processingTitle: "Confirming your payment",
+          processingLead:
+            "If you’ve already paid, wait a few seconds and refresh. If you closed Nexi, you can try again below.",
+          unpaidTitle: "Booking not confirmed",
+          unpaidLead:
+            "Payment didn’t go through or was cancelled. The slot is still yours for a few minutes.",
+          retry: "Try payment again",
+          missingTitle: "Link not valid",
+          missingLead: "This payment link is expired or incorrect. Please book again.",
+        },
       },
       a11y: {
         progress: "Booking progress",
@@ -1826,6 +1982,7 @@ const en: Dictionary = {
         empty: "No bookings match these filters.",
         unknownCustomer: "Unknown customer",
         guestBadge: "Guest",
+        depositPaid: "Deposit paid",
         customerNotesLabel: "Customer notes",
         internalNotesLabel: "Internal notes",
         internalNotesPlaceholder: "For the studio only (preferences, allergies, reminders).",
@@ -1918,12 +2075,28 @@ const en: Dictionary = {
       },
       reviews: {
         kicker: "Reviews",
-        title: "Moderation",
-        lead: "Approve or reject customer reviews before they go live.",
-        empty: "No reviews yet.",
+        title: "Reviews",
+        lead: "Paste up to 5 Google Maps reviews for the homepage. Feature or unfeature anytime.",
+        empty: "No reviews yet. Add one from Google above.",
         featured: "Featured",
         remove: "Delete",
         statuses: { pending: "Pending", approved: "Approved", rejected: "Rejected" },
+        sources: { site: "Site", google: "Google" },
+        addTitle: "Add from Google",
+        addLead:
+          "Open the shop’s Google place, copy a real reviewer’s name and text, and save it here. It appears on the homepage when featured.",
+        authorLabel: "Name",
+        authorHint: "As on Google (e.g. Marco R.)",
+        ratingLabel: "Stars",
+        commentLabel: "Review text",
+        commentHint: "Paste the review text — don’t invent it.",
+        featuredLabel: "Show on homepage (max 5)",
+        submit: "Save review",
+        success: "Review saved.",
+        errorInvalid: "Check name, stars, and text (min. 8 characters).",
+        errorFeaturedLimit: "You already have 5 featured reviews. Unfeature one first.",
+        errorGeneric: "Couldn’t save. Try again.",
+        featuredCount: "Featured on homepage: {count} / 5",
       },
       settings: {
         kicker: "Settings",
@@ -1952,6 +2125,11 @@ const en: Dictionary = {
         bookingsEnabled: "Accept online bookings",
         bookingsEnabledHint:
           "Turn off to pause new bookings. Cancelled appointments free their slots again.",
+        depositRequired: "Confirmation deposit (Stripe)",
+        depositRequiredHint:
+          "When on and Stripe is configured, customers pay the deposit online to confirm. Without keys, booking stays free.",
+        depositAmount: "Deposit (euro cents)",
+        depositAmountHint: "500 = €5.00. Never more than the service price.",
         save: "Save settings",
         saving: "Saving…",
       },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { moderateReview } from "@/lib/admin/actions";
 
@@ -18,6 +19,7 @@ export function ReviewFeaturedToggle({
   label: string;
 }) {
   const ref = useRef<HTMLFormElement>(null);
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const submit = () => {
@@ -26,6 +28,7 @@ export function ReviewFeaturedToggle({
     startTransition(async () => {
       const fd = new FormData(form);
       await moderateReview(fd);
+      router.refresh();
     });
   };
 

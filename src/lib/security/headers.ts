@@ -40,7 +40,14 @@ function buildCsp() {
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     "base-uri": ["'self'"],
-    "form-action": ["'self'"],
+    "form-action": [
+      "'self'",
+      "https://*.nexigroup.com",
+      "https://ecommerce.nexi.it",
+      "https://*.nexi.it",
+      "https://checkout.stripe.com",
+      "https://*.stripe.com",
+    ],
     "frame-ancestors": ["'none'"],
     "object-src": ["'none'"],
     "img-src": ["'self'", "data:", "blob:", "https:"],

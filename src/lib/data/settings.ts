@@ -21,6 +21,10 @@ export const DEFAULT_SETTINGS: SettingsRow = {
   require_confirmation: false,
   bookings_enabled: true,
   slot_interval_minutes: 15,
+  // Deposit UI/settings stay available; checkout is gated by
+  // BOOKING_DEPOSIT_ENABLED + Stripe/Nexi keys in payments/config.
+  deposit_required: true,
+  deposit_cents: 500,
   updated_at: new Date().toISOString(),
 };
 
@@ -39,5 +43,7 @@ export async function getSettings(): Promise<SettingsRow> {
     // Graceful if migration not applied yet
     bookings_enabled: row.bookings_enabled ?? true,
     require_confirmation: row.require_confirmation ?? false,
+    deposit_required: row.deposit_required ?? true,
+    deposit_cents: row.deposit_cents ?? 500,
   };
 }

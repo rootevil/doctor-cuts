@@ -43,6 +43,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { FieldInput, FieldLabel, FieldTextarea } from "@/components/ui/field";
 import { BookingCalendar } from "@/components/booking/booking-calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slot-picker";
+import { PaymentReview } from "@/components/booking/payment-review";
+import { formatEurFromCents } from "@/lib/payments/deposit";
 
 type Props = {
   locale: Locale;
@@ -51,6 +53,8 @@ type Props = {
   maxDays: number;
   timezone: string;
   isAuthenticated: boolean;
+  depositEnabled?: boolean;
+  depositCents?: number;
   /** Preselect from `/prenota?service=slug` (deep-link continuity). */
   initialServiceSlug?: string | null;
 };
@@ -82,6 +86,8 @@ export function BookingFlow({
   maxDays,
   timezone,
   isAuthenticated,
+  depositEnabled = false,
+  depositCents = 500,
   initialServiceSlug = null,
 }: Props) {
   const copy = t.pages.prenota;
@@ -227,6 +233,15 @@ export function BookingFlow({
       label: isAuthenticated ? copy.confirm : copy.guest.title,
       done: detailsReady && Boolean(slot),
     },
+    ...(depositEnabled
+      ? [
+          {
+            id: "pay",
+            label: copy.payment.stepTitle,
+            done: false,
+          },
+        ]
+      : []),
   ] as const;
 
   const activeStep = !serviceId
@@ -237,7 +252,9 @@ export function BookingFlow({
         ? 2
         : !detailsReady
           ? 3
-          : 3;
+          : depositEnabled
+            ? 4
+            : 3;
 
   const nextHint = !serviceId
     ? copy.nextHint.pickService
@@ -247,7 +264,9 @@ export function BookingFlow({
         ? copy.nextHint.pickTime
         : !detailsReady
           ? copy.nextHint.addDetails
-          : copy.nextHint.ready;
+          : depositEnabled
+            ? copy.payment.nextHint
+            : copy.nextHint.ready;
 
   // When deep-linked with a service, nudge toward the date step once
   useEffect(() => {
@@ -281,6 +300,10 @@ export function BookingFlow({
             },
       });
       if (res.ok) {
+        if (res.mode === "checkout") {
+          window.location.assign(res.checkoutUrl);
+          return;
+        }
         setSuccess({
           referenceCode: res.referenceCode,
           serviceName: serviceLabel(service),
@@ -300,7 +323,9 @@ export function BookingFlow({
                   ? copy.errors.notConfigured
                   : res.reason === "bookings_closed"
                     ? copy.errors.bookingsClosed
-                    : copy.errors.createFailed,
+                    : res.reason === "payment_failed"
+                      ? copy.errors.paymentFailed
+                      : copy.errors.createFailed,
         );
         if (res.reason === "slot_taken" && dateISO) {
           setSlot(null);
@@ -620,6 +645,30 @@ export function BookingFlow({
             </div>
           </section>
         ) : null}
+
+        {depositEnabled && detailsUnlocked && detailsReady && service ? (
+          <section
+            aria-labelledby="book-step-pay"
+            className={`booking-panel ${activeStep === 4 ? "is-active" : ""}`}
+          >
+            <StepHeader
+              step={5}
+              title={copy.payment.stepTitle}
+              lead={copy.payment.stepLead}
+              done={false}
+              active={activeStep === 4}
+              headingId="book-step-pay"
+            />
+            <div className="mt-3">
+              <PaymentReview
+                locale={locale}
+                copy={copy.payment}
+                servicePriceEuro={Number(service.price)}
+                depositCents={depositCents}
+              />
+            </div>
+          </section>
+        ) : null}
       </div>
 
       {/* Recognition over recall + Fitts: sticky summary + large primary CTA */}
@@ -642,12 +691,27 @@ export function BookingFlow({
                 <dd className="text-foreground">{slot ? timeLabel(slot) : "—"}</dd>
               </div>
               {service ? (
-                <div className="flex items-baseline gap-1.5">
-                  <dt className="text-muted">{copy.summary.total}</dt>
-                  <dd className="font-display text-base tracking-normal text-brass">
-                    {formatCurrency(Number(service.price), locale)}
-                  </dd>
-                </div>
+                depositEnabled ? (
+                  <div className="flex items-baseline gap-1.5">
+                    <dt className="text-muted">{copy.payment.summaryNow}</dt>
+                    <dd className="font-display text-base tracking-normal text-brass">
+                      {formatEurFromCents(
+                        Math.min(
+                          depositCents,
+                          Math.round(Number(service.price) * 100),
+                        ),
+                        locale,
+                      )}
+                    </dd>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1.5">
+                    <dt className="text-muted">{copy.summary.total}</dt>
+                    <dd className="font-display text-base tracking-normal text-brass">
+                      {formatCurrency(Number(service.price), locale)}
+                    </dd>
+                  </div>
+                )
               ) : null}
             </dl>
             {!canConfirm ? (
@@ -672,12 +736,27 @@ export function BookingFlow({
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                <span>{copy.submitting}</span>
+                <span>
+                  {depositEnabled ? copy.payment.submitting : copy.submitting}
+                </span>
               </>
             ) : (
               <>
                 <CalendarCheck className="h-4 w-4 shrink-0" aria-hidden />
-                <span>{copy.confirm}</span>
+                <span>
+                  {depositEnabled && service
+                    ? copy.payment.cta.replace(
+                        "{amount}",
+                        formatEurFromCents(
+                          Math.min(
+                            depositCents,
+                            Math.round(Number(service.price) * 100),
+                          ),
+                          locale,
+                        ),
+                      )
+                    : copy.confirm}
+                </span>
               </>
             )}
           </Button>

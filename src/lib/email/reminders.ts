@@ -81,6 +81,7 @@ export async function sendTomorrowReminders(
     `,
     )
     .in("status", ["pending", "confirmed"])
+    .neq("payment_status", "awaiting")
     .is("reminder_sent_at", null)
     .gte("starts_at", startUtc)
     .lt("starts_at", endUtc)

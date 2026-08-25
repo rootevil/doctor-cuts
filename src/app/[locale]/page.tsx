@@ -4,8 +4,10 @@ import { Statement } from "@/components/statement";
 import { Services } from "@/components/services";
 import { Gallery } from "@/components/gallery";
 import { About } from "@/components/about";
+import { Testimonials } from "@/components/testimonials";
 import { Location } from "@/components/location";
 import { getPublicGallery } from "@/lib/data/gallery";
+import { getFeaturedReviews } from "@/lib/data/reviews";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 
@@ -17,7 +19,10 @@ export default async function HomePage({
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const t = getDictionary(raw);
-  const galleryItems = await getPublicGallery(raw);
+  const [galleryItems, reviews] = await Promise.all([
+    getPublicGallery(raw),
+    getFeaturedReviews(5),
+  ]);
 
   return (
     <>
@@ -26,6 +31,7 @@ export default async function HomePage({
       <Services locale={raw} t={t} />
       <Gallery t={t} locale={raw} items={galleryItems} />
       <About locale={raw} t={t} />
+      <Testimonials t={t} reviews={reviews} />
       <Location locale={raw} t={t} />
     </>
   );

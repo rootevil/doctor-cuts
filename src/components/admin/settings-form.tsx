@@ -135,6 +135,28 @@ export function SettingsForm({
             {copy.requireConfirmHint}
           </span>
         </label>
+        <label className="flex flex-col gap-2 md:col-span-4">
+          <span className="inline-flex items-center gap-3 text-[11px] tracking-[0.22em] text-foreground uppercase">
+            <input
+              type="checkbox"
+              name="deposit_required"
+              defaultChecked={settings.deposit_required}
+              className="h-4 w-4 accent-brass"
+            />
+            {copy.depositRequired}
+          </span>
+          <span className="text-xs tracking-normal text-muted normal-case">
+            {copy.depositRequiredHint}
+          </span>
+        </label>
+        <Field
+          label={copy.depositAmount}
+          name="deposit_cents"
+          type="number"
+          min="0"
+          defaultValue={settings.deposit_cents}
+          hint={copy.depositAmountHint}
+        />
       </fieldset>
 
       {state.error ? (

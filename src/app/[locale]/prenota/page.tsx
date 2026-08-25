@@ -12,6 +12,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, locales } from "@/i18n/config";
 import { routes } from "@/lib/routes";
 import { site } from "@/lib/site";
+import { isDepositCheckoutReady } from "@/lib/payments/config";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +110,8 @@ export default async function PrenotaPage({
             maxDays={settings.max_booking_days}
             timezone={SHOP_TZ}
             isAuthenticated={Boolean(userId)}
+            depositEnabled={isDepositCheckoutReady() && settings.deposit_required}
+            depositCents={settings.deposit_cents}
             initialServiceSlug={serviceSlug?.trim() || null}
           />
         </section>

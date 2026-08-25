@@ -37,6 +37,10 @@ import {
 } from "@/lib/security/schemas";
 import { limitByIp, limitByKey } from "@/lib/security/rate-limit";
 import { generateManageToken, tokensEqual } from "@/lib/booking/token";
+import { isDepositCheckoutReady } from "@/lib/payments/config";
+import { startDepositCheckout, newPaymentToken } from "@/lib/payments/checkout";
+import { PAYMENT_HOLD_MS, depositBreakdown } from "@/lib/payments/deposit";
+import { expireStalePaymentHolds } from "@/lib/payments/expire";
 import { siteUrl } from "@/lib/seo/site-url";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 
@@ -71,6 +75,8 @@ export async function getAvailableSlots(
 
   const rl = await limitByIp("slots", 60, 60_000);
   if (!rl.ok) return { ok: false, reason: "invalid_input" };
+
+  await expireStalePaymentHolds();
 
   const service = await getServiceById(parsedId.data);
   if (!service) return { ok: false, reason: "unknown_service" };
@@ -123,10 +129,18 @@ export type CreateBookingInput = {
 export type CreateBookingResult =
   | {
       ok: true;
+      mode: "instant";
       referenceCode: string;
       appointmentId: string;
       managePath: string;
       isGuest: boolean;
+    }
+  | {
+      ok: true;
+      mode: "checkout";
+      checkoutUrl: string;
+      referenceCode: string;
+      appointmentId: string;
     }
   | {
       ok: false;
@@ -138,6 +152,7 @@ export type CreateBookingResult =
         | "invalid_time"
         | "slot_taken"
         | "bookings_closed"
+        | "payment_failed"
         | "unknown";
       message?: string;
     };
@@ -188,14 +203,39 @@ export async function createBooking(
     return { ok: false, reason: "bookings_closed" };
   }
 
+  await expireStalePaymentHolds();
+
   const startsAt = new Date(validated.startsAtUTC);
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
   const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
 
-  const initialStatus = settings.require_confirmation ? "pending" : "confirmed";
+  const takeDeposit =
+    isDepositCheckoutReady() &&
+    settings.deposit_required &&
+    depositBreakdown(Number(service.price), settings.deposit_cents).payNowCents > 0;
+  const breakdown = depositBreakdown(Number(service.price), settings.deposit_cents);
+  const paymentToken = takeDeposit ? newPaymentToken() : null;
+
+  const initialStatus = takeDeposit
+    ? "pending"
+    : settings.require_confirmation
+      ? "pending"
+      : "confirmed";
   const manageToken = user ? null : generateManageToken();
   const writer =
     !user && supabaseServiceRoleKey ? createSupabaseAdminClient() : supabase;
+
+  const paymentFields = takeDeposit
+    ? {
+        payment_status: "awaiting" as const,
+        deposit_cents: breakdown.payNowCents,
+        payment_token: paymentToken,
+        payment_expires_at: new Date(Date.now() + PAYMENT_HOLD_MS).toISOString(),
+      }
+    : {
+        payment_status: "none" as const,
+        deposit_cents: 0,
+      };
 
   const { data, error } = user
     ? await supabase
@@ -208,6 +248,7 @@ export async function createBooking(
           status: initialStatus,
           customer_notes: validated.notes || null,
           locale: validated.locale,
+          ...paymentFields,
         })
         .select("id, reference_code")
         .single()
@@ -225,6 +266,7 @@ export async function createBooking(
           status: initialStatus,
           customer_notes: validated.notes || null,
           locale: validated.locale,
+          ...paymentFields,
         })
         .select("id, reference_code")
         .single();
@@ -270,6 +312,33 @@ export async function createBooking(
       email: guest.email,
     });
     customerPhone = guest.phone?.trim() || null;
+  }
+
+  if (takeDeposit) {
+    if (!to || !paymentToken) {
+      await abortUnpaidHold(data.id);
+      return { ok: false, reason: "payment_failed" };
+    }
+    const checkout = await startDepositCheckout({
+      appointmentId: data.id,
+      referenceCode: data.reference_code,
+      locale: validated.locale,
+      amountCents: breakdown.payNowCents,
+      customerName: customerName || "Cliente",
+      customerEmail: to,
+      paymentToken,
+    });
+    if (!checkout.ok) {
+      await abortUnpaidHold(data.id);
+      return { ok: false, reason: "payment_failed", message: checkout.message };
+    }
+    return {
+      ok: true,
+      mode: "checkout",
+      checkoutUrl: checkout.checkoutUrl,
+      referenceCode: data.reference_code,
+      appointmentId: data.id,
+    };
   }
 
   const origin = await siteOrigin();
@@ -318,11 +387,22 @@ export async function createBooking(
   revalidatePath(routes(validated.locale).admin, "layout");
   return {
     ok: true,
+    mode: "instant",
     referenceCode: data.reference_code,
     appointmentId: data.id,
     managePath,
     isGuest,
   };
+}
+
+async function abortUnpaidHold(appointmentId: string) {
+  if (!supabaseServiceRoleKey) return;
+  const admin = createSupabaseAdminClient();
+  await admin
+    .from("appointments")
+    .update({ status: "cancelled", payment_status: "failed" })
+    .eq("id", appointmentId)
+    .eq("status", "pending");
 }
 
 export type CancelResult = {

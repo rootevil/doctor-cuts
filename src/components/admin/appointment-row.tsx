@@ -95,6 +95,11 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
                 {copy.guestBadge}
               </span>
             ) : null}
+            {appointment.payment_status === "paid" ? (
+              <span className="text-[10px] tracking-[0.22em] text-brass uppercase">
+                {copy.depositPaid}
+              </span>
+            ) : null}
             <span className="text-[11px] tracking-[0.22em] text-muted uppercase">
               {appointment.reference_code}
             </span>
