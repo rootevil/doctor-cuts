@@ -24,7 +24,7 @@ export function HomeAwareNav({
   return (
     <nav
       aria-label={menuLabel}
-      className="hidden items-center gap-8 text-[11px] tracking-[0.22em] uppercase md:flex"
+      className="hidden items-center gap-5 text-[11px] tracking-[0.2em] uppercase lg:gap-8 md:flex"
     >
       {items.map((item) => {
         const href =

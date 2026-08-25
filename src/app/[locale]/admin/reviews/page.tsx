@@ -8,8 +8,8 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-/** Italian path segment — canonical for `it`. */
-export default async function AdminRecensioniPage({
+/** English path segment — canonical for `en`. */
+export default async function AdminReviewsPage({
   params,
 }: {
   params: Promise<{ locale: string }>;

@@ -7,11 +7,11 @@ import { RevealFade } from "@/components/motion/reveal-fade";
 function Stars({ rating, label }: { rating: number; label: string }) {
   const filled = Math.min(5, Math.max(0, Math.round(rating)));
   return (
-    <span className="inline-flex items-center gap-0.5 text-brass" aria-label={label}>
+    <span className="inline-flex items-center gap-px text-[10px] leading-none" aria-label={label}>
       {Array.from({ length: 5 }, (_, i) => (
         <span
           key={i}
-          className={i < filled ? "text-brass" : "text-foreground-muted/35"}
+          className={i < filled ? "text-brass" : "text-foreground-muted/30"}
           aria-hidden
         >
           ★
@@ -22,8 +22,8 @@ function Stars({ rating, label }: { rating: number; label: string }) {
 }
 
 /**
- * Social proof between About and Location.
- * Curated Google quotes only — section omitted when empty (no filler).
+ * Compact social proof between About and Location.
+ * Omitted when empty — no filler quotes.
  */
 export function Testimonials({
   t,
@@ -35,87 +35,95 @@ export function Testimonials({
   if (reviews.length === 0) return null;
 
   const copy = t.testimonials;
-  const mapsHref = site.mapsUrl;
+  const reviewsHref = site.mapsReviewsUrl;
+  const moreCount = Math.max(0, site.googleReviewsTotal - reviews.length);
   const starsLabel = (n: number) => copy.starsLabel.replace("{n}", String(n));
 
   return (
-    <section id="reviews" className="section-shell bg-background" aria-labelledby="reviews-heading">
-      <div className="site-wrap-wide section-pad-y">
+    <section
+      id="reviews"
+      className="section-shell bg-background"
+      aria-labelledby="reviews-heading"
+    >
+      <div className="site-wrap-wide py-10 md:py-12">
         <RevealFade>
-          <div className="section-head flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b section-rule pb-4">
+            <div className="flex flex-col gap-1.5">
               <Kicker accent>{copy.kicker}</Kicker>
               <h2
                 id="reviews-heading"
-                className="font-display text-3xl leading-[0.95] tracking-tight md:text-4xl lg:text-5xl"
+                className="font-display text-xl tracking-tight md:text-2xl"
               >
                 {copy.title}
               </h2>
-              {copy.lead ? (
-                <p className="max-w-md text-base text-body md:text-lg">{copy.lead}</p>
-              ) : null}
             </div>
             <a
-              href={mapsHref}
+              href={reviewsHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="link-brass inline-flex min-h-11 items-center self-start text-[11px] tracking-[0.22em] uppercase md:self-auto"
+              className="link-brass inline-flex min-h-10 items-center text-[10px] tracking-[0.2em] uppercase"
             >
-              {copy.googleCta}
-              <span aria-hidden className="ml-1.5">
-                →
-              </span>
+              {copy.viaGoogle}
               <span className="sr-only"> ({copy.opensNew})</span>
             </a>
           </div>
         </RevealFade>
 
-        <ul className="mt-10 flex flex-col md:mt-14">
+        <ul className="mt-1 divide-y section-rule">
           {reviews.map((review, index) => (
             <li key={review.id}>
-              <RevealFade delay={Math.min(index * 0.06, 0.24)}>
-                <figure className="border-t section-rule py-8 md:py-10">
-                  <blockquote className="max-w-3xl">
-                    <p className="font-display text-2xl leading-[1.2] tracking-tight text-foreground md:text-3xl md:leading-[1.15]">
-                      “{review.quote}”
-                    </p>
-                  </blockquote>
-                  <figcaption className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <RevealFade delay={Math.min(index * 0.04, 0.16)}>
+                <figure className="flex flex-col gap-2 py-4 md:flex-row md:items-baseline md:gap-6 md:py-3.5">
+                  <figcaption className="flex shrink-0 items-center gap-2.5 md:w-40">
                     <Stars rating={review.rating} label={starsLabel(review.rating)} />
-                    <span className="text-[11px] font-bold tracking-[0.22em] text-accent-soft uppercase">
+                    <span className="text-[10px] font-bold tracking-[0.18em] text-accent-soft uppercase">
                       {review.name}
                     </span>
-                    {review.source === "google" ? (
-                      <span className="text-[10px] tracking-[0.2em] text-muted uppercase">
-                        {copy.viaGoogle}
-                      </span>
-                    ) : null}
                   </figcaption>
+                  <blockquote className="min-w-0 flex-1">
+                    <p className="text-sm leading-snug text-body md:text-[0.9375rem] md:leading-relaxed">
+                      <span className="mr-0.5 text-brass/70" aria-hidden>
+                        “
+                      </span>
+                      {review.quote}
+                      <span className="text-brass/70" aria-hidden>
+                        ”
+                      </span>
+                    </p>
+                  </blockquote>
                 </figure>
               </RevealFade>
             </li>
           ))}
         </ul>
 
-        <RevealFade delay={0.12}>
-          <div className="border-t section-rule pt-8">
-            <a
-              href={mapsHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex min-h-11 items-center gap-2 text-[11px] tracking-[0.22em] text-foreground-muted uppercase transition hover:text-brass"
-            >
-              {copy.showAll}
-              <span
-                aria-hidden
-                className="transition-transform group-hover:translate-x-0.5"
+        {moreCount > 0 ? (
+          <RevealFade delay={0.1}>
+            <div className="border-t section-rule pt-4">
+              <a
+                href={reviewsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex min-h-10 items-center gap-2.5 text-[11px] tracking-[0.18em] text-brass uppercase transition hover:text-foreground"
               >
-                →
-              </span>
-              <span className="sr-only"> ({copy.opensNew})</span>
-            </a>
-          </div>
-        </RevealFade>
+                <span className="font-display text-xl leading-none tracking-tight text-brass normal-case">
+                  +{moreCount}
+                </span>
+                <span>{copy.moreOnGoogle}</span>
+                <span
+                  aria-hidden
+                  className="transition-transform group-hover:translate-x-0.5"
+                >
+                  →
+                </span>
+                <span className="sr-only">
+                  {" "}
+                  ({copy.opensNew})
+                </span>
+              </a>
+            </div>
+          </RevealFade>
+        ) : null}
       </div>
     </section>
   );

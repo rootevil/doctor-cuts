@@ -1,5 +1,13 @@
 import { locales, type Locale } from "@/i18n/config";
 
+/** Locale-canonical admin review slug (EN: reviews, IT: recensioni). */
+function canonicalizeAdminReviewsPath(pathname: string, nextLocale: Locale): string {
+  const reviewsRe = /\/admin\/(reviews|recensioni)(?=\/|$)/;
+  if (!reviewsRe.test(pathname)) return pathname;
+  const slug = nextLocale === "en" ? "reviews" : "recensioni";
+  return pathname.replace(reviewsRe, `/admin/${slug}`);
+}
+
 /** Swap the locale segment in a pathname, keeping the rest of the path intact. */
 export function switchLocalePath(pathname: string, nextLocale: Locale): string {
   const segments = pathname.split("/").filter(Boolean);
@@ -10,7 +18,8 @@ export function switchLocalePath(pathname: string, nextLocale: Locale): string {
     segments.unshift(nextLocale);
   }
 
-  return `/${segments.join("/")}`;
+  const swapped = `/${segments.join("/")}`;
+  return canonicalizeAdminReviewsPath(swapped, nextLocale);
 }
 
 /** Full client URL for a locale switch — preserves query + hash. */

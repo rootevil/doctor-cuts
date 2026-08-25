@@ -18,6 +18,7 @@ export type Dictionary = {
     services: string;
     gallery: string;
     about: string;
+    reviews: string;
     contact: string;
     book: string;
     menu: string;
@@ -69,10 +70,8 @@ export type Dictionary = {
   testimonials: {
     kicker: string;
     title: string;
-    lead: string;
     viaGoogle: string;
-    googleCta: string;
-    showAll: string;
+    moreOnGoogle: string;
     opensNew: string;
     starsLabel: string;
   };
@@ -634,6 +633,7 @@ const it: Dictionary = {
     services: "Servizi",
     gallery: "Galleria",
     about: "Storia",
+    reviews: "Recensioni",
     contact: "Contatti",
     book: "Prenota ora",
     menu: "Menu",
@@ -791,11 +791,9 @@ const it: Dictionary = {
   },
   testimonials: {
     kicker: "Recensioni",
-    title: "Dicono i clienti.",
-    lead: "Parole vere da Google — scelte per la homepage.",
+    title: "Dicono i clienti",
     viaGoogle: "Google",
-    googleCta: "Su Google",
-    showAll: "Tutte le recensioni su Google",
+    moreOnGoogle: "altre su Google",
     opensNew: "si apre in una nuova scheda",
     starsLabel: "{n} stelle su 5",
   },
@@ -1401,6 +1399,7 @@ const en: Dictionary = {
     services: "Services",
     gallery: "Gallery",
     about: "About",
+    reviews: "Reviews",
     contact: "Contact",
     book: "Book now",
     menu: "Menu",
@@ -1558,11 +1557,9 @@ const en: Dictionary = {
   },
   testimonials: {
     kicker: "Reviews",
-    title: "What clients say.",
-    lead: "Real words from Google — curated for the homepage.",
+    title: "What clients say",
     viaGoogle: "Google",
-    googleCta: "On Google",
-    showAll: "All reviews on Google",
+    moreOnGoogle: "more on Google",
     opensNew: "opens in a new tab",
     starsLabel: "{n} out of 5 stars",
   },

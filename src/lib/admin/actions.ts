@@ -55,6 +55,11 @@ function revalidatePublic(locale: Locale) {
   revalidatePath(r.admin, "layout");
 }
 
+function revalidateReviewsAdmin(locale: Locale) {
+  revalidatePath(`/${locale}/admin/recensioni`);
+  revalidatePath(`/${locale}/admin/reviews`);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Appointments                                                       */
 /* ------------------------------------------------------------------ */
@@ -403,7 +408,7 @@ export async function createCuratedReview(
   });
   if (error) return { error: error.message };
 
-  revalidatePath(routes(locale).adminReviews);
+  revalidateReviewsAdmin(locale);
   revalidatePublic(locale);
   return { success: "created" };
 }
@@ -431,7 +436,7 @@ export async function moderateReview(formData: FormData) {
       const payload: Record<string, unknown> = { status };
       const { error } = await supabase.from("reviews").update(payload).eq("id", id);
       if (error) throw new Error(error.message);
-      revalidatePath(routes(locale).adminReviews);
+      revalidateReviewsAdmin(locale);
       revalidatePublic(locale);
       return;
     }
@@ -441,7 +446,7 @@ export async function moderateReview(formData: FormData) {
   if (["approved", "rejected", "pending"].includes(status)) payload.status = status;
   const { error } = await supabase.from("reviews").update(payload).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminReviews);
+  revalidateReviewsAdmin(locale);
   revalidatePublic(locale);
 }
 
@@ -452,7 +457,7 @@ export async function deleteReview(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("reviews").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminReviews);
+  revalidateReviewsAdmin(locale);
   revalidatePublic(locale);
 }
 

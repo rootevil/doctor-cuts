@@ -34,6 +34,7 @@ export async function SiteHeader({
     { href: r.services, label: t.nav.services, hash: "#services" },
     { href: r.gallery, label: t.nav.gallery, hash: "#gallery" },
     { href: r.about, label: t.nav.about, hash: "#about" },
+    { href: `${r.home}#reviews`, label: t.nav.reviews, hash: "#reviews" },
     { href: r.contact, label: t.nav.contact, hash: "#contact" },
   ];
 

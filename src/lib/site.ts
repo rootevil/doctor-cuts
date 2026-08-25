@@ -21,6 +21,14 @@ export const site = {
     "https://www.google.com/maps/place/Doctor+cuts/@43.2969985,13.4565567,17z/data=!4m6!3m5!1s0x132df5b60f1337d3:0xc86686bf5bfe5a3e!8m2!3d43.2969985!4d13.4565567!16s%2Fg%2F11xp4gxf3y",
   mapsEmbedUrl:
     "https://www.google.com/maps?q=Doctor+cuts,+Via+Antelmo+Severini,+4%2Fc,+62100+Macerata+MC&ll=43.2969985,13.4565567&z=17&output=embed",
+  /**
+   * Google Maps place with the reviews panel open (`!9m1!1b1`).
+   * Update `googleReviewsTotal` when the public count on Maps changes.
+   */
+  mapsReviewsUrl:
+    "https://www.google.com/maps/place/Doctor+cuts/@43.2969985,13.4565567,17z/data=!4m8!3m7!1s0x132df5b60f1337d3:0xc86686bf5bfe5a3e!8m2!3d43.2969985!4d13.4565567!9m1!1b1!16s%2Fg%2F11xp4gxf3y",
+  /** Approximate public review count on Google (for “+N more” CTA). */
+  googleReviewsTotal: 95,
   established: 2025,
 } as const;
 

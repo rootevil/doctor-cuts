@@ -31,7 +31,9 @@ export function routes(locale: Locale) {
     adminHours: `/${locale}/admin/orari`,
     adminCustomers: `/${locale}/admin/clienti`,
     adminGallery: `/${locale}/admin/galleria`,
-    adminReviews: `/${locale}/admin/recensioni`,
+    /** Locale-aware segment so EN nav hits `/reviews` and IT hits `/recensioni`. */
+    adminReviews:
+      locale === "en" ? `/${locale}/admin/reviews` : `/${locale}/admin/recensioni`,
     adminSettings: `/${locale}/admin/impostazioni`,
   } as const;
 }

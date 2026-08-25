@@ -2264,7 +2264,9 @@ body[data-admin] main {
 
 @media (min-width: 768px) {
   .admin-sidebar {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 }
 
