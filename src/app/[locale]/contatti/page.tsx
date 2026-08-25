@@ -14,12 +14,12 @@ import { getBusinessHours } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
 import { contactFromSettings, displayHoursRows } from "@/lib/display/contact";
 import { routes } from "@/lib/routes";
+import { site } from "@/lib/site";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, locales } from "@/i18n/config";
 
 /** Place-accurate embed (Doctor cuts · Macerata). */
-const MAPS_EMBED =
-  "https://www.google.com/maps?q=Doctor+cuts,+Via+Antelmo+Severini,+4%2Fc,+62100+Macerata+MC&ll=43.2969985,13.4565567&z=17&output=embed";
+const MAPS_EMBED = site.mapsEmbedUrl;
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -68,9 +68,7 @@ export default async function ContattiPage({
   const [settings, hours] = await Promise.all([getSettings(), getBusinessHours()]);
   const contact = contactFromSettings(settings);
   const hourRows = displayHoursRows(hours, locale);
-  const mapsHref =
-    contact.mapsUrl ||
-    "https://www.google.com/maps/place/Doctor+cuts/@43.2969985,13.4565567,17z";
+  const mapsHref = contact.mapsUrl;
 
   return (
     <>

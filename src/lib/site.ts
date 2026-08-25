@@ -16,10 +16,11 @@ export const site = {
   instagramHandle: "dr_barbiere",
   facebook: "https://www.facebook.com/206368819943168",
   whatsapp: "https://wa.me/393481748052",
+  /** Official Google Maps place for Doctor Cuts (Macerata). */
   mapsUrl:
-    "https://www.google.com/maps/search/?api=1&query=Via+Antelmo+Severini+4/C+62100+Macerata",
+    "https://www.google.com/maps/place/Doctor+cuts/@43.2969985,13.4565567,17z/data=!4m6!3m5!1s0x132df5b60f1337d3:0xc86686bf5bfe5a3e!8m2!3d43.2969985!4d13.4565567!16s%2Fg%2F11xp4gxf3y",
   mapsEmbedUrl:
-    "https://www.google.com/maps?q=Via+Antelmo+Severini+4%2FC+62100+Macerata&output=embed",
+    "https://www.google.com/maps?q=Doctor+cuts,+Via+Antelmo+Severini,+4%2Fc,+62100+Macerata+MC&ll=43.2969985,13.4565567&z=17&output=embed",
   established: 2025,
 } as const;
 

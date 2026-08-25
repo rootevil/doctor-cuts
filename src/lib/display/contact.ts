@@ -53,11 +53,6 @@ export function telHrefFrom(phone: string | null | undefined) {
   return `tel:+39${raw.replace(/\D/g, "")}`;
 }
 
-export function mapsUrlFromAddress(address: string | null | undefined) {
-  const q = encodeURIComponent(address?.trim() || `${site.addressLine} ${site.postalCity}`);
-  return `https://www.google.com/maps/search/?api=1&query=${q}`;
-}
-
 export function contactFromSettings(settings: SettingsRow) {
   const { line, city } = parseAddress(settings.address);
   const phoneDisplay = formatPhoneDisplay(settings.phone);
@@ -73,7 +68,7 @@ export function contactFromSettings(settings: SettingsRow) {
     whatsapp: settings.whatsapp || site.whatsapp,
     instagram: settings.instagram || site.instagram,
     facebook: settings.facebook || site.facebook,
-    mapsUrl: mapsUrlFromAddress(settings.address),
+    mapsUrl: site.mapsUrl,
   };
 }
 

@@ -15,6 +15,7 @@ import {
 import { LazyMap } from "@/components/location/lazy-map";
 import { Kicker } from "@/components/ui/kicker";
 import { RevealFade } from "@/components/motion/reveal-fade";
+import { site } from "@/lib/site";
 
 function SectionIcon({ children }: { children: ReactNode }) {
   return (
@@ -28,16 +29,13 @@ function SectionIcon({ children }: { children: ReactNode }) {
 }
 
 /** Place-accurate embed (Doctor cuts · Macerata). */
-const MAPS_EMBED =
-  "https://www.google.com/maps?q=Doctor+cuts,+Via+Antelmo+Severini,+4%2Fc,+62100+Macerata+MC&ll=43.2969985,13.4565567&z=17&output=embed";
+const MAPS_EMBED = site.mapsEmbedUrl;
 
 export async function Location({ locale, t }: { locale: Locale; t: Dictionary }) {
   const [settings, hours] = await Promise.all([getSettings(), getBusinessHours()]);
   const contact = contactFromSettings(settings);
   const rows = displayHoursRows(hours, locale);
-  const mapsHref =
-    contact.mapsUrl ||
-    "https://www.google.com/maps/place/Doctor+cuts/@43.2969985,13.4565567,17z";
+  const mapsHref = contact.mapsUrl;
 
   return (
     <section id="contact" className="section-shell bg-background">
