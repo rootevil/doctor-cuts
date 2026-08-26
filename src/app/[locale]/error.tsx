@@ -1,17 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { defaultLocale, isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { readPersistedLocale } from "@/i18n/cookie";
 import { routes } from "@/lib/routes";
 import { Kicker } from "@/components/ui/kicker";
 import { Button, ButtonLink } from "@/components/ui/button";
-
-function localeFromPath() {
-  if (typeof window === "undefined") return defaultLocale;
-  const first = window.location.pathname.split("/")[1] ?? "";
-  return isLocale(first) ? first : defaultLocale;
-}
 
 export default function LocaleError({
   error,
@@ -24,7 +18,7 @@ export default function LocaleError({
     console.error("[app] locale error", { digest: error.digest, message: error.message });
   }, [error]);
 
-  const locale = localeFromPath();
+  const locale = readPersistedLocale();
   const t = getDictionary(locale);
   const r = routes(locale);
   const copy = t.pages.error;

@@ -9,7 +9,7 @@ import {
   supabaseServiceRoleKey,
 } from "@/lib/supabase/env";
 import { isLocale, type Locale } from "@/i18n/config";
-import { routes } from "@/lib/routes";
+import { routes, forEachLocaleRoute, type SiteRoutes } from "@/lib/routes";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 import {
   adminAppointmentNotesSchema,
@@ -44,23 +44,25 @@ async function requireAdminClient() {
   return { supabase, userId: user.id };
 }
 
-function revalidatePublic(locale: Locale) {
-  // Invalidate both locales — admin edits affect shared content.
-  for (const loc of ["it", "en"] as const) {
-    const r = routes(loc);
-    revalidatePath(r.home);
-    revalidatePath(r.services);
-    revalidatePath(r.gallery);
-    revalidatePath(r.contact);
-    revalidatePath(r.about);
-    revalidatePath(r.book);
+function revalidatePicked(pick: (r: SiteRoutes) => string, type?: "layout") {
+  for (const path of forEachLocaleRoute(pick)) {
+    if (type) revalidatePath(path, type);
+    else revalidatePath(path);
   }
-  revalidatePath(routes(locale).admin, "layout");
 }
 
-function revalidateReviewsAdmin(locale: Locale) {
-  revalidatePath(`/${locale}/admin/recensioni`);
-  revalidatePath(`/${locale}/admin/reviews`);
+function revalidatePublic() {
+  for (const path of forEachLocaleRoute((r) => r.home)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.services)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.gallery)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.contact)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.about)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.book)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+}
+
+function revalidateReviewsAdmin() {
+  for (const path of forEachLocaleRoute((r) => r.adminReviews)) revalidatePath(path);
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,28 +73,28 @@ export async function updateAppointmentStatus(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const parsed = adminAppointmentStatusSchema.safeParse(fdToObject(formData));
   if (!parsed.success) return;
-  const { locale, appointment_id, status } = parsed.data;
+  const { appointment_id, status } = parsed.data;
 
   const { error } = await supabase
     .from("appointments")
     .update({ status: status as AppointmentStatus })
     .eq("id", appointment_id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).admin, "layout");
+  revalidatePicked((r) => r.admin, "layout");
 }
 
 export async function updateAppointmentNotes(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const parsed = adminAppointmentNotesSchema.safeParse(fdToObject(formData));
   if (!parsed.success) return;
-  const { locale, appointment_id, admin_notes } = parsed.data;
+  const { appointment_id, admin_notes } = parsed.data;
 
   const { error } = await supabase
     .from("appointments")
     .update({ admin_notes: admin_notes || null })
     .eq("id", appointment_id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).admin, "layout");
+  revalidatePicked((r) => r.admin, "layout");
 }
 
 /* ------------------------------------------------------------------ */
@@ -151,32 +153,30 @@ export async function saveService(
     if (error) return { error: humanise(error.message) };
   }
 
-  revalidatePath(routes(locale).adminServices, "layout");
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminServices, "layout");
+  revalidatePublic();
   redirect(routes(locale).adminServices);
 }
 
 export async function toggleServiceActive(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   const is_active = formData.get("is_active") === "on";
   if (!id) return;
   const { error } = await supabase.from("services").update({ is_active }).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminServices, "layout");
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminServices, "layout");
+  revalidatePublic();
 }
 
 export async function deleteService(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { error } = await supabase.from("services").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminServices, "layout");
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminServices, "layout");
+  revalidatePublic();
 }
 
 /* ------------------------------------------------------------------ */
@@ -185,7 +185,6 @@ export async function deleteService(formData: FormData) {
 
 export async function saveHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
 
   // Fields come as e.g. hours[1][open]=10:00, hours[1][close]=21:00, hours[1][closed]=on
   const updates: Array<{
@@ -211,36 +210,33 @@ export async function saveHours(formData: FormData) {
     .from("business_hours")
     .upsert(updates, { onConflict: "day_of_week" });
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminHours);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminHours);
+  revalidatePublic();
 }
 
 export async function addBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const date = String(formData.get("date") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim() || null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
   const { error } = await supabase.from("blocked_dates").insert({ date, reason });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
-  revalidatePath(routes(locale).adminHours);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminHours);
+  revalidatePublic();
 }
 
 export async function removeBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminHours);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminHours);
+  revalidatePublic();
 }
 
 export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
   const start = String(formData.get("start_time") ?? "").trim();
   const end = String(formData.get("end_time") ?? "").trim();
@@ -254,19 +250,18 @@ export async function addBreak(formData: FormData) {
     label,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminHours);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminHours);
+  revalidatePublic();
 }
 
 export async function removeBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { error } = await supabase.from("breaks").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminHours);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminHours);
+  revalidatePublic();
 }
 
 /* ------------------------------------------------------------------ */
@@ -318,14 +313,13 @@ export async function uploadGalleryImage(
   });
   if (insertError) return { error: insertError.message };
 
-  revalidatePath(routes(locale).adminGallery);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminGallery);
+  revalidatePublic();
   return { success: getDictionary(locale).pages.admin.messages.uploaded };
 }
 
 export async function updateGalleryItem(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   const sort_order = Number(formData.get("sort_order") ?? 0);
   const is_featured = formData.get("is_featured") === "on";
@@ -342,13 +336,12 @@ export async function updateGalleryItem(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(routes(locale).adminGallery);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminGallery);
+  revalidatePublic();
 }
 
 export async function deleteGalleryItem(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   const imageUrl = String(formData.get("image_url") ?? "");
   if (!id) return;
@@ -365,8 +358,8 @@ export async function deleteGalleryItem(formData: FormData) {
     }
   }
 
-  revalidatePath(routes(locale).adminGallery);
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminGallery);
+  revalidatePublic();
 }
 
 /* ------------------------------------------------------------------ */
@@ -385,7 +378,7 @@ export async function createCuratedReview(
   if (!parsed.success) {
     return { error: "invalid" };
   }
-  const { locale, author_name, rating, comment, is_featured } = parsed.data;
+  const { author_name, rating, comment, is_featured } = parsed.data;
   const featured = is_featured === "on";
 
   if (featured) {
@@ -411,14 +404,13 @@ export async function createCuratedReview(
   });
   if (error) return { error: error.message };
 
-  revalidateReviewsAdmin(locale);
-  revalidatePublic(locale);
+  revalidateReviewsAdmin();
+  revalidatePublic();
   return { success: "created" };
 }
 
 export async function moderateReview(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "") as
     | "approved"
@@ -439,8 +431,8 @@ export async function moderateReview(formData: FormData) {
       const payload: Record<string, unknown> = { status };
       const { error } = await supabase.from("reviews").update(payload).eq("id", id);
       if (error) throw new Error(error.message);
-      revalidateReviewsAdmin(locale);
-      revalidatePublic(locale);
+      revalidateReviewsAdmin();
+      revalidatePublic();
       return;
     }
   }
@@ -449,19 +441,18 @@ export async function moderateReview(formData: FormData) {
   if (["approved", "rejected", "pending"].includes(status)) payload.status = status;
   const { error } = await supabase.from("reviews").update(payload).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateReviewsAdmin(locale);
-  revalidatePublic(locale);
+  revalidateReviewsAdmin();
+  revalidatePublic();
 }
 
 export async function deleteReview(formData: FormData) {
   const { supabase } = await requireAdminClient();
-  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { error } = await supabase.from("reviews").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateReviewsAdmin(locale);
-  revalidatePublic(locale);
+  revalidateReviewsAdmin();
+  revalidatePublic();
 }
 
 /* ------------------------------------------------------------------ */
@@ -512,7 +503,7 @@ export async function saveSettings(
     const { error } = await supabase.from("settings").insert({ ...payload, singleton: true });
     if (error) return { error: error.message };
   }
-  revalidatePath(routes(locale).adminSettings, "layout");
-  revalidatePublic(locale);
+  revalidatePicked((r) => r.adminSettings, "layout");
+  revalidatePublic();
   return { success: getDictionary(locale).pages.admin.messages.saved };
 }

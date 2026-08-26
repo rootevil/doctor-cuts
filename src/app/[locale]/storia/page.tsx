@@ -9,10 +9,12 @@ import { Kicker } from "@/components/ui/kicker";
 import { site } from "@/lib/site";
 import { routes } from "@/lib/routes";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { italianAlternates } from "@/i18n/public-url";
+import { requestLocale } from "@/i18n/request-locale";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -20,16 +22,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.storia.metaTitle,
     description: t.pages.storia.metaDescription,
-    alternates: {
-      canonical: routes(locale).about,
-      languages: { it: "/it/storia", en: "/en/storia" },
-    },
+    alternates: italianAlternates(routes(locale).about),
   };
 }
 
@@ -40,7 +40,7 @@ export default async function StoriaPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const page = t.pages.storia;
   const r = routes(locale);

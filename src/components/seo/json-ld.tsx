@@ -1,6 +1,6 @@
 import { site } from "@/lib/site";
 import { siteUrl } from "@/lib/seo/site-url";
-import type { Locale } from "@/i18n/config";
+import { defaultLocale, type Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 
 function stringify(data: unknown) {
@@ -36,7 +36,7 @@ export function LocalBusinessJsonLd({
     "@type": "HairSalon",
     "@id": `${siteUrl}#business`,
     name: site.name,
-    url: `${siteUrl}/${locale}`,
+    url: `${siteUrl}/${defaultLocale}`,
     telephone: site.phoneE164,
     email: site.email,
     image: `${siteUrl}/images/portrait.jpg`,
@@ -99,7 +99,6 @@ export function ServiceJsonLd({
   description,
   price,
   duration,
-  locale,
 }: {
   name: string;
   description: string;
@@ -119,7 +118,7 @@ export function ServiceJsonLd({
       price,
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
-      url: `${siteUrl}/${locale}/prenota`,
+      url: `${siteUrl}/${defaultLocale}/prenota`,
     },
     additionalProperty: {
       "@type": "PropertyValue",

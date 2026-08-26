@@ -1,36 +1,11 @@
-import { cookies, headers } from "next/headers";
-import { defaultLocale, isLocale, localeCookie } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { requestLocale } from "@/i18n/request-locale";
 import { routes } from "@/lib/routes";
 import { Kicker } from "@/components/ui/kicker";
 import { ButtonLink } from "@/components/ui/button";
 
-async function localeFromRequest() {
-  try {
-    const jar = await cookies();
-    const fromCookie = jar.get(localeCookie)?.value;
-    if (fromCookie && isLocale(fromCookie)) return fromCookie;
-
-    const h = await headers();
-    const path = h.get("x-invoke-path") ?? h.get("x-matched-path") ?? h.get("next-url") ?? "/";
-    const first = path.split("/").filter(Boolean)[0] ?? "";
-    if (isLocale(first)) return first;
-
-    const accept = h.get("accept-language") ?? "";
-    const preferred = accept
-      .split(",")
-      .map((part) => part.split(";")[0]?.trim().slice(0, 2).toLowerCase());
-    for (const code of preferred) {
-      if (code && isLocale(code)) return code;
-    }
-  } catch {
-    /* fall through */
-  }
-  return defaultLocale;
-}
-
 export default async function NotFound() {
-  const locale = await localeFromRequest();
+  const locale = await requestLocale();
   const t = getDictionary(locale);
   const r = routes(locale);
   const copy = t.pages.notFound;

@@ -8,16 +8,23 @@ import { supabaseAnonKey, supabaseConfigured, supabaseUrl } from "./env";
  * resolved user so callers can gate protected routes without a second
  * round-trip.
  */
-export async function refreshSupabaseSession(request: NextRequest) {
+export async function refreshSupabaseSession(
+  request: NextRequest,
+  extraRequestHeaders?: Headers,
+) {
+  const requestInit = extraRequestHeaders
+    ? { headers: extraRequestHeaders }
+    : { headers: request.headers };
+
   if (!supabaseConfigured || !supabaseUrl || !supabaseAnonKey) {
     return {
-      response: NextResponse.next({ request }),
+      response: NextResponse.next({ request: requestInit }),
       user: null as null | { id: string; email?: string | null },
       role: null as null | "customer" | "admin",
     };
   }
 
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({ request: requestInit });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -28,7 +35,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: requestInit });
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options as CookieOptions);
         }

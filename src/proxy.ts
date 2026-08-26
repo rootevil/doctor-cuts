@@ -1,13 +1,21 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { defaultLocale, isLocale, localeCookie } from "@/i18n/config";
-import { canonicalizePathname } from "@/i18n/path-aliases";
+import { defaultLocale, isLocale, localeCookie, type Locale } from "@/i18n/config";
+import { canonicalizePathname, splitLocalePath } from "@/i18n/path-aliases";
+import { contentLocaleHeader } from "@/i18n/request-locale";
 import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { routes } from "@/lib/routes";
 import { applySecurityHeaders } from "@/lib/security/headers";
 import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 
-function localeFromHeader(header: string | null) {
+const LOCALE_COOKIE_ATTRS = {
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: "lax" as const,
+  httpOnly: false,
+};
+
+function localeFromHeader(header: string | null): Locale {
   if (!header) return defaultLocale;
   const preferred = header
     .split(",")
@@ -23,19 +31,24 @@ function localeFromPath(pathname: string) {
   return isLocale(first) ? first : null;
 }
 
-function resolvePreferredLocale(request: NextRequest) {
+function setLocaleCookie(response: NextResponse, locale: Locale) {
+  response.cookies.set(localeCookie, locale, LOCALE_COOKIE_ATTRS);
+}
+
+function resolveContentLocale(request: NextRequest): Locale {
   const cookie = request.cookies.get(localeCookie)?.value;
-  if (isLocale(cookie ?? "")) return cookie as typeof defaultLocale;
+  if (isLocale(cookie ?? "")) return cookie as Locale;
   return localeFromHeader(request.headers.get("accept-language"));
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const pathLocale = localeFromPath(pathname);
-  const preferredLocale = pathLocale ?? resolvePreferredLocale(request);
+  const existingCookie = request.cookies.get(localeCookie)?.value;
+  const contentLocale = resolveContentLocale(request);
 
-  // Canonicalize English aliases → Italian segments, ensure locale prefix.
-  const canonical = canonicalizePathname(pathname, preferredLocale);
+  // Public URLs are always `/it/...`. English aliases and `/en/...` redirect here.
+  const canonical = canonicalizePathname(pathname);
   if (canonical.changed) {
     const url = request.nextUrl.clone();
     url.pathname = canonical.pathname;
@@ -43,31 +56,28 @@ export async function proxy(request: NextRequest) {
       url.hash = canonical.hash.replace(/^#/, "");
     }
     const redirect = NextResponse.redirect(url);
-    redirect.cookies.set(localeCookie, preferredLocale, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-      httpOnly: false,
-    });
+    const cookieValue: Locale = isLocale(existingCookie ?? "")
+      ? (existingCookie as Locale)
+      : pathLocale === "en"
+        ? "en"
+        : contentLocale;
+    setLocaleCookie(redirect, cookieValue);
     return applySecurityHeaders(redirect, request);
   }
 
-  const currentLocale = pathLocale ?? preferredLocale;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(contentLocaleHeader, contentLocale);
 
-  // Persist locale cookie when missing / mismatched.
-  const { response, user, role } = await refreshSupabaseSession(request);
-  if (!request.cookies.get(localeCookie)?.value || pathLocale) {
-    response.cookies.set(localeCookie, currentLocale, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-      httpOnly: false,
-    });
+  const { response, user, role } = await refreshSupabaseSession(
+    request,
+    requestHeaders,
+  );
+  if (!existingCookie) {
+    setLocaleCookie(response, contentLocale);
   }
 
-  // Auth gates for /account and /admin
-  const rest = pathname.slice(`/${currentLocale}`.length) || "/";
-  const r = routes(currentLocale);
+  const { rest } = splitLocalePath(pathname);
+  const r = routes();
 
   const needsAuth = rest === "/account" || rest.startsWith("/account/");
   const needsAdmin = rest === "/admin" || rest.startsWith("/admin/");

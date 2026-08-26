@@ -1,23 +1,24 @@
-import { locales, type Locale } from "@/i18n/config";
+import { defaultLocale, locales, type Locale } from "@/i18n/config";
 import { rewriteNextParam, rewriteRestPath, splitLocalePath } from "@/i18n/path-aliases";
 
-/** Locale-canonical path (aliases + admin reviews slug). */
-export function switchLocalePath(pathname: string, nextLocale: Locale): string {
+/** Public path for the current page (Italian prefix + canonical segments). */
+export function switchLocalePath(pathname: string): string {
   const { rest } = splitLocalePath(pathname);
-  const { rest: rewritten, hash } = rewriteRestPath(rest, nextLocale);
-  const path = rewritten === "/" ? `/${nextLocale}` : `/${nextLocale}${rewritten}`;
+  const { rest: rewritten, hash } = rewriteRestPath(rest, defaultLocale);
+  const path =
+    rewritten === "/" ? `/${defaultLocale}` : `/${defaultLocale}${rewritten}`;
   return `${path}${hash}`;
 }
 
-/** Full client URL for a locale switch — preserves query + hash; rewrites `next`. */
+/** Full client URL after a language switch — same Italian path; preserves query + hash. */
 export function switchLocaleHref(
   pathname: string,
   nextLocale: Locale,
   search = "",
   hash = "",
 ): string {
-  const path = switchLocalePath(pathname, nextLocale);
-  // switchLocalePath may already include #reviews from alias rewrite
+  void nextLocale;
+  const path = switchLocalePath(pathname);
   const [pathOnly, pathHash = ""] = path.split("#");
   const finalHash = hash || (pathHash ? `#${pathHash}` : "");
 
@@ -25,7 +26,7 @@ export function switchLocaleHref(
   const params = new URLSearchParams(rawQuery);
   const next = params.get("next");
   if (next) {
-    const rewritten = rewriteNextParam(next, nextLocale);
+    const rewritten = rewriteNextParam(next);
     if (rewritten) params.set("next", rewritten);
     else params.delete("next");
   }

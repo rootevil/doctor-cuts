@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
+import { isHomePath } from "@/i18n/public-url";
 
 type NavItem = { href: string; label: string; hash?: string };
 
@@ -18,8 +19,7 @@ export function HomeAwareNav({
 }) {
   const pathname = usePathname();
   const home = routes(locale).home;
-  const onHome =
-    pathname === home || pathname === `/${locale}` || pathname === `/${locale}/`;
+  const onHome = isHomePath(pathname);
 
   return (
     <nav

@@ -9,7 +9,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { italianAlternates } from "@/i18n/public-url";
+import { requestLocale } from "@/i18n/request-locale";
 import { routes } from "@/lib/routes";
 import { site } from "@/lib/site";
 import { isDepositCheckoutReady } from "@/lib/payments/config";
@@ -17,7 +19,7 @@ import { isDepositCheckoutReady } from "@/lib/payments/config";
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -25,16 +27,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.prenota.metaTitle,
     description: t.pages.prenota.metaDescription,
-    alternates: {
-      canonical: routes(locale).book,
-      languages: { it: "/it/prenota", en: "/en/prenota" },
-    },
+    alternates: italianAlternates(routes(locale).book),
   };
 }
 
@@ -56,7 +56,7 @@ export default async function PrenotaPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const { service: serviceSlug } = await searchParams;
   const t = getDictionary(locale);
   const copy = t.pages.prenota;

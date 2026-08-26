@@ -13,13 +13,14 @@ import {
 } from "@/lib/admin/data";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 import { routes } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -27,8 +28,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.admin.metaTitle,
@@ -44,7 +46,7 @@ export default async function AdminOverviewPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const r = routes(locale);
   const copy = t.pages.admin.overview;

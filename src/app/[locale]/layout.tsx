@@ -5,10 +5,12 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { HtmlLang } from "@/components/layout/html-lang";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales, type Locale } from "@/i18n/config";
+import { defaultLocale, isLocale, urlLocaleParams } from "@/i18n/config";
+import { italianAlternates } from "@/i18n/public-url";
+import { requestLocale } from "@/i18n/request-locale";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -16,24 +18,18 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw) || raw !== defaultLocale) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
-  const url = `/${locale}`;
+  const url = `/${defaultLocale}`;
   return {
     title: {
       default: "Doctor Cuts",
       template: "Doctor Cuts",
     },
     description: t.meta.description,
-    alternates: {
-      canonical: url,
-      languages: {
-        it: "/it",
-        en: "/en",
-        "x-default": "/it",
-      },
-    },
+    alternates: italianAlternates(url),
     openGraph: {
       title: t.meta.title,
       description: t.meta.description,
@@ -59,8 +55,8 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale: raw } = await params;
-  if (!isLocale(raw)) notFound();
-  const locale: Locale = raw;
+  if (!isLocale(raw) || raw !== defaultLocale) notFound();
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
 
   return (

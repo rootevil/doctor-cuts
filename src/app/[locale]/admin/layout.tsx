@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin/shell";
 import { AdminTopbar } from "@/components/admin/topbar";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
@@ -20,7 +21,7 @@ export default async function AdminLayout({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const r = routes(locale);
 

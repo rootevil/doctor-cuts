@@ -58,10 +58,11 @@ Closer to a fashion / grooming house than a “barber WordPress theme.”
 ### Language & locale (v1)
 
 - **Default locale:** Italian (`it`)
+- **Public URLs:** Italian path segments under `/it/...`. English path aliases and `/en/...` redirect to the Italian canonical. Do not ship a second English URL tree.
+- **Content language:** `it` / `en` toggle in the header (cookie). English customers see English copy on the same Italian URLs.
 - **Timezone:** `Europe/Rome`
 - **Currency:** EUR (`€`), formatted `it-IT` (e.g. `€ 25`)
-- **Brand lines** (hero, statements) may stay in **English** for editorial effect; **functional UI** (booking, forms, errors, admin, legal microcopy) in Italian.
-- **v1.1 (optional):** `it` / `en` locale switch. Do not block v1 on i18n infrastructure.
+- **Brand lines** (hero, statements) may stay in **English** for editorial effect; **functional UI** (booking, forms, errors, admin, legal microcopy) follows the selected content language.
 
 ---
 
@@ -160,7 +161,7 @@ Confident, short, specific. No “Benvenuti nel nostro barbershop.” No fake aw
 | `/accedi`, `/registrati` | Auth |
 | `/admin/*` | Admin (protected) |
 
-English path aliases may redirect to Italian canonicals for SEO.
+English path aliases redirect to Italian canonicals for SEO. Do not index a parallel `/en/...` tree.
 
 ### Desktop nav
 

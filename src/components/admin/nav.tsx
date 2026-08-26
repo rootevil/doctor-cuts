@@ -40,11 +40,8 @@ function useAdminItems(locale: Locale, t: Dictionary) {
 
 function isActive(pathname: string, href: string, adminRoot: string) {
   if (href === adminRoot) return pathname === adminRoot;
-  // Both locale slugs resolve the same Reviews screen.
-  if (href.endsWith("/admin/reviews") || href.endsWith("/admin/recensioni")) {
-    return (
-      pathname.includes("/admin/reviews") || pathname.includes("/admin/recensioni")
-    );
+  if (href.endsWith("/admin/recensioni")) {
+    return pathname.includes("/admin/recensioni") || pathname.includes("/admin/reviews");
   }
   return pathname.startsWith(href);
 }

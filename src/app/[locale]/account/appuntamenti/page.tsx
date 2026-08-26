@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
 

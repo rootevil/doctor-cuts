@@ -10,11 +10,9 @@ export default function robots(): MetadataRoute.Robots {
       // themselves are OK because they're linked from the header.
       disallow: [
         "/it/account",
-        "/en/account",
         "/it/admin",
-        "/en/admin",
         "/it/gestisci-prenotazione",
-        "/en/gestisci-prenotazione",
+        "/en",
         "/api",
       ],
     },

@@ -5,7 +5,8 @@ import { AdminSection } from "@/components/admin/section";
 import { AppointmentRow } from "@/components/admin/appointment-row";
 import { listAppointments } from "@/lib/admin/data";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 import { routes } from "@/lib/routes";
 import { shiftDate, shopToday } from "@/lib/booking/timezone";
 import type { AppointmentStatus } from "@/lib/supabase/types";
@@ -13,7 +14,7 @@ import type { AppointmentStatus } from "@/lib/supabase/types";
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -21,8 +22,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.admin.appointments.metaTitle,
@@ -65,7 +67,7 @@ export default async function AdminAppointmentsPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const sp = await searchParams;
   const t = getDictionary(locale);
   const copy = t.pages.admin.appointments;

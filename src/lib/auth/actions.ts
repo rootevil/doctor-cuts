@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
-import { isLocale, type Locale } from "@/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
 import { rewriteNextParam } from "@/i18n/path-aliases";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -27,14 +27,14 @@ function safeNext(nextValue: unknown, locale: Locale) {
   const raw = typeof nextValue === "string" ? nextValue.trim() : "";
   if (!raw.startsWith("/")) return routes(locale).account;
 
-  const rewritten = rewriteNextParam(raw, locale);
+  const rewritten = rewriteNextParam(raw);
   if (!rewritten) return routes(locale).account;
 
   try {
     const url = new URL(rewritten, "http://local.invalid");
     if (url.origin !== "http://local.invalid") return routes(locale).account;
     const path = url.pathname;
-    if (path !== `/${locale}` && !path.startsWith(`/${locale}/`)) {
+    if (path !== `/${defaultLocale}` && !path.startsWith(`/${defaultLocale}/`)) {
       return routes(locale).account;
     }
     return `${path}${url.search}${url.hash}`;
@@ -82,7 +82,7 @@ export async function signInAction(
     await syncAdminRole(data.user.id, data.user.email ?? email);
   }
 
-  revalidatePath(`/${locale}`, "layout");
+  revalidatePath(`/${defaultLocale}`, "layout");
   redirect(safeNext(next, locale));
 }
 
@@ -129,7 +129,7 @@ export async function signUpAction(
   }
 
   if (data.session) {
-    revalidatePath(`/${locale}`, "layout");
+    revalidatePath(`/${defaultLocale}`, "layout");
     redirect(routes(locale).account);
   }
   return { success: t.pages.auth.signUp.checkEmail };
@@ -141,6 +141,6 @@ export async function signOutAction(formData: FormData) {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.signOut();
   }
-  revalidatePath(`/${locale}`, "layout");
+  revalidatePath(`/${defaultLocale}`, "layout");
   redirect(routes(locale).home);
 }

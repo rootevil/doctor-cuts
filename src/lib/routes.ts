@@ -1,10 +1,11 @@
-import type { Locale } from "@/i18n/config";
+import { defaultLocale, type Locale } from "@/i18n/config";
 
 /**
- * Canonical routes. Path segments stay Italian per PRODUCT_SPEC §4 —
- * both locales use the same URL structure, prefixed by the locale segment.
+ * Canonical routes. Path segments stay Italian per PRODUCT_SPEC §4.
+ * Public hrefs always use the Italian locale prefix (`/it/...`). English is
+ * a content language (cookie), not a second URL tree.
  */
-export function routes(locale: Locale) {
+function buildRoutes(locale: Locale) {
   return {
     home: `/${locale}`,
     services: `/${locale}/servizi`,
@@ -31,9 +32,19 @@ export function routes(locale: Locale) {
     adminHours: `/${locale}/admin/orari`,
     adminCustomers: `/${locale}/admin/clienti`,
     adminGallery: `/${locale}/admin/galleria`,
-    /** Locale-aware segment so EN nav hits `/reviews` and IT hits `/recensioni`. */
-    adminReviews:
-      locale === "en" ? `/${locale}/admin/reviews` : `/${locale}/admin/recensioni`,
+    adminReviews: `/${locale}/admin/recensioni`,
     adminSettings: `/${locale}/admin/impostazioni`,
   } as const;
+}
+
+export type SiteRoutes = ReturnType<typeof buildRoutes>;
+
+/** Links shown in the browser — always `/it/...`. */
+export function routes(locale?: Locale) {
+  void locale;
+  return buildRoutes(defaultLocale);
+}
+
+export function forEachLocaleRoute(pick: (r: SiteRoutes) => string) {
+  return [pick(routes())];
 }

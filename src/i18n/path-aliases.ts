@@ -1,4 +1,4 @@
-import { isLocale, type Locale } from "@/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 
 /**
  * English (and other) path aliases → Italian canonical segments.
@@ -32,14 +32,7 @@ const REST_RULES: Array<{
   { match: /^\/admin\/clients(?=\/|$)/, to: "/admin/clienti" },
   { match: /^\/admin\/gallery(?=\/|$)/, to: "/admin/galleria" },
   { match: /^\/admin\/settings(?=\/|$)/, to: "/admin/impostazioni" },
-  {
-    match: /^\/admin\/reviews(?=\/|$)/,
-    to: (locale) => (locale === "en" ? "/admin/reviews" : "/admin/recensioni"),
-  },
-  {
-    match: /^\/admin\/recensioni(?=\/|$)/,
-    to: (locale) => (locale === "en" ? "/admin/reviews" : "/admin/recensioni"),
-  },
+  { match: /^\/admin\/reviews(?=\/|$)/, to: "/admin/recensioni" },
   { match: /^\/manage-booking(?=\/|$)/, to: "/gestisci-prenotazione" },
   { match: /^\/services(?=\/|$)/, to: "/servizi" },
   { match: /^\/gallery(?=\/|$)/, to: "/galleria" },
@@ -92,19 +85,19 @@ export function rewriteRestPath(rest: string, locale: Locale): RewriteResult {
 }
 
 /**
- * Full canonical pathname for a given preferred locale.
- * - Adds locale prefix when missing
+ * Full canonical (public) pathname.
+ * - Always uses the Italian locale prefix
  * - Rewrites English aliases to Italian segments
- * - Normalizes admin reviews slug per locale
  */
-export function canonicalizePathname(
-  pathname: string,
-  preferredLocale: Locale,
-): { pathname: string; hash: string; changed: boolean } {
-  const { locale: pathLocale, rest } = splitLocalePath(pathname);
-  const locale = pathLocale ?? preferredLocale;
-  const { rest: rewritten, hash } = rewriteRestPath(rest, locale);
-  const nextPath = rewritten === "/" ? `/${locale}` : `/${locale}${rewritten}`;
+export function canonicalizePathname(pathname: string): {
+  pathname: string;
+  hash: string;
+  changed: boolean;
+} {
+  const { rest } = splitLocalePath(pathname);
+  const { rest: rewritten, hash } = rewriteRestPath(rest, defaultLocale);
+  const nextPath =
+    rewritten === "/" ? `/${defaultLocale}` : `/${defaultLocale}${rewritten}`;
   const inputClean = pathname.split("?")[0]?.split("#")[0] || "/";
   const normalizedInput =
     inputClean.length > 1 && inputClean.endsWith("/")
@@ -118,14 +111,15 @@ export function canonicalizePathname(
   };
 }
 
-/** Rewrite a `next` redirect target into the active locale + canonical path. */
-export function rewriteNextParam(nextValue: string, locale: Locale): string | null {
+/** Rewrite a `next` redirect target into the Italian canonical path. */
+export function rewriteNextParam(nextValue: string): string | null {
   if (!nextValue.startsWith("/")) return null;
   try {
     const url = new URL(nextValue, "http://local.invalid");
     const { rest } = splitLocalePath(url.pathname);
-    const { rest: rewritten, hash: aliasHash } = rewriteRestPath(rest, locale);
-    const pathname = rewritten === "/" ? `/${locale}` : `/${locale}${rewritten}`;
+    const { rest: rewritten, hash: aliasHash } = rewriteRestPath(rest, defaultLocale);
+    const pathname =
+      rewritten === "/" ? `/${defaultLocale}` : `/${defaultLocale}${rewritten}`;
     return `${pathname}${url.search}${aliasHash || url.hash}`;
   } catch {
     return null;

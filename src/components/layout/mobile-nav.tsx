@@ -8,6 +8,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { site } from "@/lib/site";
 import { routes } from "@/lib/routes";
+import { isHomePath } from "@/i18n/public-url";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ButtonLink } from "@/components/ui/button";
 
@@ -31,10 +32,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const r = routes(locale);
-  const onHome =
-    pathname === r.home ||
-    pathname === `/${locale}` ||
-    pathname === `/${locale}/`;
+  const onHome = isHomePath(pathname);
 
   useEffect(() => {
     if (!open) return;

@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { routes } from "@/lib/routes";
+import { isHomePath } from "@/i18n/public-url";
 import { BrandLogo } from "@/components/layout/brand-logo";
 
 export type FooterContact = {
@@ -29,11 +30,7 @@ export function SiteFooterView({
 }) {
   const pathname = usePathname();
   const r = routes(locale);
-  const home = r.home;
-  const isHome =
-    pathname === home ||
-    pathname === `/${locale}` ||
-    pathname === `/${locale}/`;
+  const isHome = isHomePath(pathname);
 
   const navItems = [
     { href: r.services, label: t.nav.services },

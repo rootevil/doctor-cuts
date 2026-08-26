@@ -18,7 +18,7 @@ function displayName(review: {
   );
 }
 
-/** Shared admin Reviews UI — used by both `/admin/recensioni` and `/admin/reviews`. */
+/** Shared admin Reviews UI — `/admin/recensioni` for both languages. */
 export async function AdminReviewsView({ locale }: { locale: Locale }) {
   const t = getDictionary(locale);
   const copy = t.pages.admin.reviews;

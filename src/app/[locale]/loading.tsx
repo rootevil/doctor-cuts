@@ -1,10 +1,14 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { readPersistedLocale } from "@/i18n/cookie";
 
 export default function LocaleLoading() {
-  const pathname = usePathname();
-  const label = pathname?.startsWith("/en") ? "Loading" : "Caricamento";
+  const [label, setLabel] = useState("Caricamento");
+
+  useEffect(() => {
+    setLabel(readPersistedLocale() === "en" ? "Loading" : "Caricamento");
+  }, []);
 
   return (
     <div

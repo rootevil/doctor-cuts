@@ -11,10 +11,12 @@ import {
 } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { italianAlternates } from "@/i18n/public-url";
+import { requestLocale } from "@/i18n/request-locale";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export async function generateMetadata({
@@ -22,19 +24,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.servizi.metaTitle,
     description: t.pages.servizi.metaDescription,
-    alternates: {
-      canonical: routes(locale).services,
-      languages: {
-        it: "/it/servizi",
-        en: "/en/servizi",
-      },
-    },
+    alternates: italianAlternates(routes(locale).services),
   };
 }
 
@@ -49,7 +46,7 @@ export default async function ServiziPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const page = t.pages.servizi;
   const r = routes(locale);

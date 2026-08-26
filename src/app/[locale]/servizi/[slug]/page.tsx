@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServiceDetailView } from "@/components/services/service-detail-view";
 import { BreadcrumbsJsonLd, ServiceJsonLd } from "@/components/seo/json-ld";
-import { formatPrice, services as staticServices } from "@/lib/site";
+import { services as staticServices } from "@/lib/site";
 import {
   getActiveServices,
   getServiceBySlug,
@@ -14,12 +14,14 @@ import {
 } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { italianAlternates } from "@/i18n/public-url";
+import { requestLocale } from "@/i18n/request-locale";
 
 export function generateStaticParams() {
   // Build-time only — cannot call Supabase/cookies here. Runtime page still
   // loads live service data; unknown slugs are handled via dynamicParams.
-  return locales.flatMap((locale) =>
+  return urlLocaleParams.flatMap(({ locale }) =>
     staticServices.map((s) => ({ locale, slug: s.slug })),
   );
 }
@@ -29,9 +31,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { locale, slug } = await params;
-  if (!isLocale(locale)) return {};
-  const t = getDictionary(locale);
+  const { locale: raw, slug } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const db = await getServiceBySlug(slug);
   const staticSvc = staticServices.find((s) => s.slug === slug);
   const dict = getServiceCopy(locale, slug);
@@ -46,14 +48,7 @@ export async function generateMetadata({
   return {
     title: name,
     description,
-    alternates: {
-      canonical: routes(locale).service(slug),
-      languages: {
-        it: `/it/servizi/${slug}`,
-        en: `/en/servizi/${slug}`,
-        "x-default": `/it/servizi/${slug}`,
-      },
-    },
+    alternates: italianAlternates(routes(locale).service(slug)),
     openGraph: {
       title: name,
       description,
@@ -71,7 +66,7 @@ export default async function ServiceDetailPage({
 }) {
   const { locale: raw, slug } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const r = routes(locale);
 

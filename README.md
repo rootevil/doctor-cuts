@@ -20,7 +20,7 @@ The homepage, `/servizi`, `/servizi/[slug]`, `/galleria`, `/storia`, `/contatti`
 
 ## Locales
 
-`/it` (default) and `/en`. Path segments are Italian canonicals (`/servizi`, `/galleria`, etc.); the language toggle in the header swaps the current URL's locale segment. `NEXT_LOCALE` cookie + `Accept-Language` are respected on first visit.
+Public URLs are Italian (`/it/servizi`, `/it/galleria`, …). The header language toggle switches Italian/English copy via the `NEXT_LOCALE` cookie; it does not change the address. `Accept-Language` is respected on first visit. Old `/en/...` bookmarks redirect to `/it/...`.
 
 ## Supabase
 
@@ -88,7 +88,7 @@ Idempotent migrations live under `supabase/migrations/`:
 
 ```
 src/
-  app/[locale]/         # routes (both it and en)
+  app/[locale]/         # routes (`/it/...`; English is content-only)
   components/           # layout, hero, services, gallery, auth, ...
   i18n/                 # locale config, dictionaries, cookie
   lib/

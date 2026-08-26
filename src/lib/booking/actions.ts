@@ -26,7 +26,7 @@ import {
 } from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
 import { localizedServiceName } from "@/lib/services/localize";
-import { routes } from "@/lib/routes";
+import { routes, forEachLocaleRoute } from "@/lib/routes";
 import {
   bookingInputSchema,
   cancelBookingSchema,
@@ -382,9 +382,9 @@ export async function createBooking(
     });
   }
 
-  revalidatePath(routes(validated.locale).account);
-  revalidatePath(routes(validated.locale).accountAppointments);
-  revalidatePath(routes(validated.locale).admin, "layout");
+  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
   return {
     ok: true,
     mode: "instant",
@@ -509,9 +509,9 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
     });
   }
 
-  revalidatePath(routes(locale).account);
-  revalidatePath(routes(locale).accountAppointments);
-  revalidatePath(routes(locale).admin, "layout");
+  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
   return { ok: true };
 }
 
@@ -657,7 +657,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
     });
   }
 
-  revalidatePath(routes(locale).admin, "layout");
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
   return { ok: true };
 }
 

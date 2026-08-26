@@ -11,6 +11,7 @@ import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 import { routes } from "@/lib/routes";
 import { formatPrice } from "@/lib/site";
 
@@ -21,8 +22,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   return {
     title: t.pages.gestisci.metaTitle,
@@ -41,7 +43,7 @@ export default async function ManageGuestBookingPage({
   const { locale: raw, code } = await params;
   const { t: token } = await searchParams;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const copy = t.pages.gestisci;
   const r = routes(locale);

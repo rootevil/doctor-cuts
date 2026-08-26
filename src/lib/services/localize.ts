@@ -72,7 +72,7 @@ function humanizeSlug(slug: string, locale: Locale): string {
 
 /** Rough guard so we don't show Italian DB strings on English pages. */
 function isLikelyEnglish(text: string): boolean {
-  // Common Italian service words that must not appear on /en
+  // Common Italian service words that must not appear in English copy
   return !/\b(taglio|sfumatura|maschera|massaggio|filo|bambino|sopracciglia|viso|lavaggio|capelli)\b/i.test(
     text,
   );

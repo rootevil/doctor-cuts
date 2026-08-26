@@ -3,12 +3,13 @@ import { AdminSection } from "@/components/admin/section";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { getSettings } from "@/lib/data/settings";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export default async function AdminSettingsPage({
@@ -18,7 +19,7 @@ export default async function AdminSettingsPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const copy = t.pages.admin.settings;
   const settings = await getSettings();

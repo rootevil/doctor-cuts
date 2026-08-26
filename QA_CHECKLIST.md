@@ -39,7 +39,7 @@ browser.
 - [x] Service role key never imported from a client module (checked in
       `src/lib/supabase/env.ts` doc comment; RLS-safe fallback where the key
       isn't required).
-- [x] Sign-in `next` param sanitised to same-locale relative paths only
+- [x] Sign-in `next` param sanitised to Italian `/it` relative paths only
       (no open redirect).
 
 **Manual**
@@ -53,13 +53,14 @@ browser.
 ## 3. Performance + SEO (Phase 7)
 
 - [x] `metadataBase`, title template, OG, Twitter defaults in root layout.
-- [x] Every locale page has canonical + hreflang (it, en, x-default).
+- [x] Every public page has canonical + hreflang (`it`, `x-default`) on
+      Italian URLs. English is a content language, not a second URL.
 - [x] LocalBusiness JSON-LD emitted from the locale layout.
 - [x] Service pages emit Service + BreadcrumbList JSON-LD.
-- [x] `sitemap.xml` includes all public pages + all live services with
-      per-locale alternates.
-- [x] `robots.txt` blocks `/it/account`, `/en/account`, `/it/admin`,
-      `/en/admin`, `/api`.
+- [x] `sitemap.xml` includes all public pages + all live services on
+      Italian `/it/...` URLs (`it` + `x-default` alternates).
+- [x] `robots.txt` blocks `/it/account`, `/it/admin`,
+      `/it/gestisci-prenotazione`, leftover `/en`, `/api`.
 - [x] Preconnect to Supabase + fonts.gstatic.com in root `<head>`.
 - [x] `next/image` configured with AVIF/WebP formats + Supabase Storage
       hostname in `remotePatterns`.

@@ -4,6 +4,7 @@ import { ServiceForm } from "@/components/admin/service-form";
 import { getServiceRow } from "@/lib/admin/data";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function AdminServiceEditPage({
 }) {
   const { locale: raw, id } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const copy = t.pages.admin.services;
   const service = await getServiceRow(id);

@@ -5,12 +5,13 @@ import { GalleryUploader } from "@/components/admin/gallery-uploader";
 import { GalleryItemControls } from "@/components/admin/gallery-item-controls";
 import { listGallery } from "@/lib/admin/data";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, urlLocaleParams } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return urlLocaleParams;
 }
 
 export default async function AdminGalleryPage({
@@ -20,7 +21,7 @@ export default async function AdminGalleryPage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw;
+  const locale = await requestLocale(raw);
   const t = getDictionary(locale);
   const copy = t.pages.admin.gallery;
   const items = await listGallery();

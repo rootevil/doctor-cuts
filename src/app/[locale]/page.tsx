@@ -10,6 +10,7 @@ import { getPublicGallery } from "@/lib/data/gallery";
 import { getFeaturedReviews } from "@/lib/data/reviews";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { requestLocale } from "@/i18n/request-locale";
 
 export default async function HomePage({
   params,
@@ -18,21 +19,22 @@ export default async function HomePage({
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
-  const t = getDictionary(raw);
+  const locale = await requestLocale(raw);
+  const t = getDictionary(locale);
   const [galleryItems, reviews] = await Promise.all([
-    getPublicGallery(raw),
+    getPublicGallery(locale),
     getFeaturedReviews(5),
   ]);
 
   return (
     <>
-      <Hero locale={raw} t={t} />
+      <Hero locale={locale} t={t} />
       <Statement t={t} />
-      <Services locale={raw} t={t} />
-      <Gallery t={t} locale={raw} items={galleryItems} />
-      <About locale={raw} t={t} />
+      <Services locale={locale} t={t} />
+      <Gallery t={t} locale={locale} items={galleryItems} />
+      <About locale={locale} t={t} />
       <Testimonials t={t} reviews={reviews} />
-      <Location locale={raw} t={t} />
+      <Location locale={locale} t={t} />
     </>
   );
 }
