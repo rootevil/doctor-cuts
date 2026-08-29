@@ -55,9 +55,10 @@ export type AppointmentRow = {
   manage_token: string | null;
   locale: "it" | "en";
   reminder_sent_at: string | null;
-  payment_status: "none" | "awaiting" | "paid" | "failed" | "expired";
+  payment_status: "none" | "awaiting" | "paid" | "failed" | "expired" | "refunded";
   deposit_cents: number;
   nexi_order_id: string | null;
+  stripe_refund_id?: string | null;
   payment_token: string | null;
   payment_expires_at: string | null;
   created_at: string;

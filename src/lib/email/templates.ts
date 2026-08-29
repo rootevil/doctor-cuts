@@ -16,6 +16,7 @@ type BaseCtx = {
   settings: SettingsRow;
   manageUrl: string;
   depositPaidLabel?: string | null;
+  depositRefundedLabel?: string | null;
 };
 
 export type ShopBookingAlertCtx = {
@@ -362,8 +363,12 @@ export function cancellationEmail(
     ? `Prenotazione annullata · ${ctx.referenceCode}`
     : `Booking cancelled · ${ctx.referenceCode}`;
   const lead = isIt
-    ? "La tua prenotazione è stata annullata."
-    : "Your booking has been cancelled.";
+    ? ctx.depositRefundedLabel
+      ? "La tua prenotazione è stata annullata. L’acconto è stato rimborsato."
+      : "La tua prenotazione è stata annullata."
+    : ctx.depositRefundedLabel
+      ? "Your booking has been cancelled. Your deposit has been refunded."
+      : "Your booking has been cancelled.";
 
   const body = `
     <p style="margin:0 0 12px;font-size:18px;color:#f4f4f4;" translate="no">${escapeHtml(greeting)}</p>
@@ -372,6 +377,10 @@ export function cancellationEmail(
       [isIt ? "Servizio" : "Service", ctx.serviceName],
       [isIt ? "Data e ora" : "Date & time", when],
       [isIt ? "Riferimento" : "Reference", ctx.referenceCode, { noTranslate: true }],
+      [
+        isIt ? "Acconto rimborsato" : "Deposit refunded",
+        ctx.depositRefundedLabel ?? null,
+      ],
     ])}
     <p style="margin:8px 0 0;color:#cfcfcf;">${isIt ? "A presto." : "See you soon."}</p>
   `;
@@ -398,6 +407,8 @@ export type ShopCancellationAlertCtx = {
   referenceCode: string;
   price: number;
   adminUrl: string;
+  depositPaidLabel?: string | null;
+  depositRefundedLabel?: string | null;
 };
 
 /** Shop inbox — English-only cancellation notice (avoids Gmail auto-translate). */
@@ -429,6 +440,7 @@ export function shopCancellationAlertEmail(
       ["Duration", `${ctx.durationMinutes} min`],
       ["Price", price],
       ["Reference", ctx.referenceCode, { noTranslate: true }],
+      ["Deposit refunded", ctx.depositRefundedLabel],
     ])}
     ${cta(ctx.adminUrl, "View in admin")}
   `;

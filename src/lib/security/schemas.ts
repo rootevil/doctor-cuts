@@ -101,6 +101,11 @@ export const adminAppointmentNotesSchema = z.object({
   admin_notes: trimmed(2000).optional(),
 });
 
+export const adminCancelRefundSchema = z.object({
+  locale: localeSchema,
+  appointment_id: uuidSchema,
+});
+
 export const serviceSchema = z.object({
   locale: localeSchema,
   id: uuidSchema.optional().nullable(),

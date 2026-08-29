@@ -8,7 +8,12 @@ import type {
   ProfileRow,
   ServiceRow,
 } from "@/lib/supabase/types";
-import { shopDateBoundsUtc, shopToday } from "@/lib/booking/timezone";
+import {
+  shiftDate,
+  shopDateBoundsUtc,
+  shopToday,
+} from "@/lib/booking/timezone";
+import { completePastAppointments } from "@/lib/payments/complete";
 
 /* ------------------------------------------------------------------ */
 /*  Appointments                                                       */
@@ -24,6 +29,7 @@ export type AdminAppointment = {
   admin_notes: string | null;
   payment_status: string;
   deposit_cents: number;
+  can_refund: boolean;
   is_guest: boolean;
   customer: {
     id: string;
@@ -66,6 +72,12 @@ function normaliseAppointment(row: unknown): AdminAppointment {
     admin_notes: (r.admin_notes as string | null) ?? null,
     payment_status: (r.payment_status as string) ?? "none",
     deposit_cents: Number(r.deposit_cents ?? 0),
+    can_refund:
+      (r.payment_status as string) === "paid" &&
+      (r.status === "pending" ||
+        r.status === "confirmed" ||
+        r.status === "arrived" ||
+        r.status === "cancelled"),
     is_guest: !linked && Boolean(guestEmail || guestName),
     customer:
       linked ??
@@ -83,6 +95,7 @@ function normaliseAppointment(row: unknown): AdminAppointment {
 
 export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
   if (!supabaseConfigured) return [];
+  await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   const { startUtc, endUtc } = shopDateBoundsUtc(shopToday());
   const { data, error } = await supabase
@@ -90,6 +103,8 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
     .select(APPOINTMENT_SELECT)
     .gte("starts_at", startUtc)
     .lt("starts_at", endUtc)
+    .in("payment_status", ["paid", "none", "refunded"])
+    .not("status", "eq", "cancelled")
     .order("starts_at", { ascending: true });
   if (error) {
     console.warn("[admin] today's appointments:", error.message);
@@ -98,31 +113,163 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
   return (data ?? []).map(normaliseAppointment);
 }
 
+/** Newest bookings, by when they were created — not when the chair time is. */
+export async function listRecentAppointments(
+  days = 7,
+  limit = 12,
+): Promise<AdminAppointment[]> {
+  if (!supabaseConfigured) return [];
+  await completePastAppointments();
+  const supabase = await createSupabaseServerClient();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(APPOINTMENT_SELECT)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn("[admin] recent appointments:", error.message);
+    return [];
+  }
+  return (data ?? []).map(normaliseAppointment);
+}
+
+/** Confirmed/pending chair times after today, for the overview list. */
+export async function listUpcomingAppointments(
+  days = 13,
+  limit = 12,
+): Promise<AdminAppointment[]> {
+  if (!supabaseConfigured) return [];
+  await completePastAppointments();
+  const supabase = await createSupabaseServerClient();
+  const from = shopDateBoundsUtc(shiftDate(shopToday(), 1)).startUtc;
+  const to = shopDateBoundsUtc(shiftDate(shopToday(), days)).endUtc;
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(APPOINTMENT_SELECT)
+    .gte("starts_at", from)
+    .lt("starts_at", to)
+    .in("status", ["pending", "confirmed", "arrived"])
+    .in("payment_status", ["paid", "none"])
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+  if (error) {
+    console.warn("[admin] upcoming appointments:", error.message);
+    return [];
+  }
+  return (data ?? []).map(normaliseAppointment);
+}
+
+export type AdminBucket = "pending" | "completed" | "cancelled";
+export type AdminRange = "today" | "week" | "month" | "all";
+
 export type AppointmentFilter = {
   from?: string; // "YYYY-MM-DD" shop-local
   to?: string; // "YYYY-MM-DD"
+  bucket?: AdminBucket;
+  /** @deprecated use bucket */
   status?: AppointmentStatus | "all";
   q?: string;
   limit?: number;
 };
 
+export function rangeBoundsFor(
+  range: AdminRange,
+  bucket: AdminBucket,
+): { from?: string; to?: string } {
+  const today = shopToday();
+  if (range === "all") return {};
+  if (range === "today") return { from: today, to: today };
+  if (range === "week") {
+    if (bucket === "pending") return { from: today, to: shiftDate(today, 6) };
+    if (bucket === "completed") return { from: shiftDate(today, -6), to: today };
+    return { from: shiftDate(today, -6), to: shiftDate(today, 6) };
+  }
+  if (bucket === "pending") return { from: today, to: shiftDate(today, 29) };
+  if (bucket === "completed") return { from: shiftDate(today, -29), to: today };
+  return { from: shiftDate(today, -29), to: shiftDate(today, 29) };
+}
+
+function sanitizeSearch(raw: string) {
+  return raw.replace(/[%(),]/g, " ").trim().slice(0, 80);
+}
+
+function applyBucket<T extends {
+  in: (column: string, values: string[]) => T;
+  eq: (column: string, value: string) => T;
+  gt: (column: string, value: string) => T;
+}>(query: T, bucket: AdminBucket): T {
+  const now = new Date().toISOString();
+  if (bucket === "pending") {
+    // Waiting = deposit paid (or legacy free bookings) and the slot is still ahead.
+    return query
+      .in("status", ["pending", "confirmed", "arrived"])
+      .in("payment_status", ["paid", "none"])
+      .gt("ends_at", now);
+  }
+  if (bucket === "completed") {
+    return query.eq("status", "completed");
+  }
+  // Real cancellations only — hide expired/failed unpaid Stripe holds.
+  return query
+    .eq("status", "cancelled")
+    .in("payment_status", ["paid", "refunded", "none"]);
+}
+
 export async function listAppointments(
   filter: AppointmentFilter = {},
 ): Promise<AdminAppointment[]> {
   if (!supabaseConfigured) return [];
+  await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   let query = supabase.from("appointments").select(APPOINTMENT_SELECT);
 
-  if (filter.from) {
-    query = query.gte("starts_at", shopDateBoundsUtc(filter.from).startUtc);
+  const bucket: AdminBucket | undefined =
+    filter.bucket ??
+    (filter.status === "pending" ||
+    filter.status === "completed" ||
+    filter.status === "cancelled"
+      ? filter.status
+      : undefined);
+
+  const searching = Boolean(filter.q?.trim());
+  if (!searching) {
+    if (filter.from) {
+      query = query.gte("starts_at", shopDateBoundsUtc(filter.from).startUtc);
+    }
+    if (filter.to) {
+      query = query.lt("starts_at", shopDateBoundsUtc(filter.to).endUtc);
+    }
+    if (bucket) {
+      query = applyBucket(query, bucket);
+    }
+  } else {
+    const safe = sanitizeSearch(filter.q!);
+    if (safe) {
+      const { data: matches } = await supabase
+        .from("profiles")
+        .select("id")
+        .or(
+          `email.ilike.%${safe}%,full_name.ilike.%${safe}%,phone.ilike.%${safe}%`,
+        )
+        .limit(50);
+      const ids = (matches ?? []).map((p) => p.id as string);
+      const orParts = [
+        `reference_code.ilike.%${safe}%`,
+        `guest_email.ilike.%${safe}%`,
+        `guest_name.ilike.%${safe}%`,
+        `guest_phone.ilike.%${safe}%`,
+      ];
+      if (ids.length > 0) orParts.push(`customer_id.in.(${ids.join(",")})`);
+      query = query.or(orParts.join(","));
+    }
   }
-  if (filter.to) {
-    query = query.lt("starts_at", shopDateBoundsUtc(filter.to).endUtc);
-  }
-  if (filter.status && filter.status !== "all") {
-    query = query.eq("status", filter.status);
-  }
-  query = query.order("starts_at", { ascending: true }).limit(filter.limit ?? 200);
+
+  const newestFirst = bucket === "completed" || bucket === "cancelled";
+  query = query
+    .order("starts_at", { ascending: !newestFirst })
+    .limit(filter.limit ?? 200);
 
   const { data, error } = await query;
   if (error) {
@@ -146,6 +293,7 @@ export async function listAppointments(
 
 export async function appointmentCounts() {
   if (!supabaseConfigured) return { today: 0, upcoming: 0, pending: 0 };
+  await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   const now = new Date().toISOString();
   const { startUtc, endUtc } = shopDateBoundsUtc(shopToday());
@@ -156,16 +304,20 @@ export async function appointmentCounts() {
       .select("id", { count: "exact", head: true })
       .gte("starts_at", startUtc)
       .lt("starts_at", endUtc)
-      .in("status", ["pending", "confirmed", "arrived"]),
+      .in("payment_status", ["paid", "none"])
+      .in("status", ["pending", "confirmed", "arrived", "completed"]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
-      .gt("starts_at", now)
-      .in("status", ["pending", "confirmed"]),
+      .gt("ends_at", now)
+      .in("status", ["pending", "confirmed", "arrived"])
+      .in("payment_status", ["paid", "none"]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+      .gt("ends_at", now)
+      .in("status", ["pending", "confirmed", "arrived"])
+      .in("payment_status", ["paid", "none"]),
   ]);
 
   return {

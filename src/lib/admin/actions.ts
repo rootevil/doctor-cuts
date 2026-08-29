@@ -10,10 +10,9 @@ import {
 } from "@/lib/supabase/env";
 import { isLocale, type Locale } from "@/i18n/config";
 import { routes, forEachLocaleRoute, type SiteRoutes } from "@/lib/routes";
-import type { AppointmentStatus } from "@/lib/supabase/types";
 import {
   adminAppointmentNotesSchema,
-  adminAppointmentStatusSchema,
+  adminCancelRefundSchema,
   curatedReviewSchema,
   fdToObject,
   serviceSchema,
@@ -21,6 +20,18 @@ import {
 } from "@/lib/security/schemas";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
+import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
+import { bookingAlertAddress, sendEmail } from "@/lib/email/send";
+import {
+  cancellationEmail,
+  shopCancellationAlertEmail,
+  resolveCustomerDisplayName,
+} from "@/lib/email/templates";
+import { getSettings } from "@/lib/data/settings";
+import { localizedServiceName } from "@/lib/services/localize";
+import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
+import { formatEurFromCents } from "@/lib/payments/deposit";
+import { siteUrl } from "@/lib/seo/site-url";
 
 function coerceLocale(value: FormDataEntryValue | null): Locale {
   const raw = typeof value === "string" ? value : "";
@@ -69,18 +80,110 @@ function revalidateReviewsAdmin() {
 /*  Appointments                                                       */
 /* ------------------------------------------------------------------ */
 
-export async function updateAppointmentStatus(formData: FormData) {
-  const { supabase } = await requireAdminClient();
-  const parsed = adminAppointmentStatusSchema.safeParse(fdToObject(formData));
-  if (!parsed.success) return;
-  const { appointment_id, status } = parsed.data;
+export async function cancelAndRefundAppointment(formData: FormData) {
+  await requireAdminClient();
+  if (!supabaseServiceRoleKey) {
+    return { ok: false as const, reason: "unknown" as const, message: "not_configured" };
+  }
+  const parsed = adminCancelRefundSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) return { ok: false as const, reason: "not_found" as const };
+  const { appointment_id, locale } = parsed.data;
 
-  const { error } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: existing } = await admin
     .from("appointments")
-    .update({ status: status as AppointmentStatus })
-    .eq("id", appointment_id);
-  if (error) throw new Error(error.message);
+    .select(
+      `id, starts_at, status, reference_code, deposit_cents, locale,
+       customer_id, guest_name, guest_email, guest_phone, manage_token,
+       service:services ( slug, name, price )`,
+    )
+    .eq("id", appointment_id)
+    .maybeSingle();
+  if (!existing) return { ok: false as const, reason: "not_found" as const };
+
+  const alreadyCancelled = existing.status === "cancelled";
+  const result = await cancelAppointmentAndRefund(appointment_id);
+  if (!result.ok) {
+    return {
+      ok: false as const,
+      reason: result.reason ?? ("unknown" as const),
+      message: result.message,
+    };
+  }
+
+  const service = Array.isArray(existing.service)
+    ? existing.service[0]
+    : existing.service;
+  let to = existing.guest_email as string | null;
+  let customerName: string | null = existing.guest_name;
+  let customerPhone = existing.guest_phone as string | null;
+  if (existing.customer_id) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", existing.customer_id)
+      .maybeSingle();
+    to = profile?.email ?? to;
+    customerName = resolveCustomerDisplayName({
+      fullName: profile?.full_name,
+      guestName: existing.guest_name,
+      email: to,
+    });
+    customerPhone = profile?.phone?.trim() || customerPhone;
+  } else {
+    customerName = resolveCustomerDisplayName({
+      guestName: existing.guest_name,
+      email: to,
+    });
+  }
+
+  if (to && service && !alreadyCancelled) {
+    const settings = await getSettings();
+    const mailLocale = isLocale(locale) ? locale : "it";
+    const refundLabel =
+      result.refunded && Number(existing.deposit_cents) > 0
+        ? formatEurFromCents(Number(existing.deposit_cents), mailLocale)
+        : null;
+    const managePath =
+      !existing.customer_id && existing.manage_token
+        ? routes(mailLocale).manageBooking(
+            existing.reference_code,
+            existing.manage_token,
+          )
+        : routes(mailLocale).account;
+    const origin = siteUrl;
+    const template = cancellationEmail({
+      locale: mailLocale,
+      customerName,
+      serviceName: localizedServiceName(mailLocale, service.slug, service.name),
+      startsAt: existing.starts_at,
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: existing.reference_code,
+      price: Number(service.price),
+      settings,
+      manageUrl: `${origin}${managePath}`,
+      depositRefundedLabel: refundLabel,
+    });
+    await sendEmail({ to, ...template });
+    const alert = shopCancellationAlertEmail({
+      customerName,
+      customerEmail: to,
+      customerPhone,
+      serviceName: localizedServiceName("en", service.slug, service.name),
+      startsAt: existing.starts_at,
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: existing.reference_code,
+      price: Number(service.price),
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+      depositRefundedLabel: refundLabel,
+    });
+    await sendEmail({ to: bookingAlertAddress(), ...alert, replyTo: to });
+  }
+
   revalidatePicked((r) => r.admin, "layout");
+  revalidatePicked((r) => r.account);
+  revalidatePicked((r) => r.accountAppointments);
+  return { ok: true as const, refunded: result.refunded };
 }
 
 export async function updateAppointmentNotes(formData: FormData) {

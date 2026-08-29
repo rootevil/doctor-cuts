@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import { tokensEqual } from "@/lib/booking/token";
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
+import { completePastAppointments } from "@/lib/payments/complete";
 import { syncAppointmentPayment } from "@/lib/payments/sync";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 
@@ -27,6 +28,7 @@ export async function loadPaymentReturn(opts: {
 }): Promise<PaymentReturnAppointment | null> {
   if (!supabaseConfigured || !supabaseServiceRoleKey) return null;
   await expireStalePaymentHolds();
+  await completePastAppointments();
 
   const admin = createSupabaseAdminClient();
   const { data } = await admin

@@ -74,17 +74,24 @@ export async function finalizePaidAppointment(appointmentId: string): Promise<{
 
   if (typed.status === "cancelled") return { ok: false };
 
-  const { error: updateError } = await admin
+  const { data: updated, error: updateError } = await admin
     .from("appointments")
     .update({
       status: "confirmed",
       payment_status: "paid",
     })
     .eq("id", appointmentId)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("id");
 
   if (updateError) {
     console.warn("[payments] finalize update failed:", updateError.message);
+    return { ok: false };
+  }
+  if (!updated?.length) {
+    if (typed.payment_status === "paid" && typed.status === "confirmed") {
+      return { ok: true, already: true };
+    }
     return { ok: false };
   }
 

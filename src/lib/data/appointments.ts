@@ -7,6 +7,7 @@ import type { AppointmentStatus } from "@/lib/supabase/types";
 import type { ExistingBooking } from "@/lib/booking/availability";
 import { shopDateBoundsUtc } from "@/lib/booking/timezone";
 import { getSettings } from "@/lib/data/settings";
+import { completePastAppointments } from "@/lib/payments/complete";
 
 export type AppointmentSummary = {
   id: string;
@@ -58,6 +59,7 @@ export async function getBookingsForDate(dateISO: string): Promise<ExistingBooki
 
 export async function listAppointmentsForCurrentUser() {
   if (!supabaseConfigured) return { upcoming: [], past: [] };
+  await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

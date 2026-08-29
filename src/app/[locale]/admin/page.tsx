@@ -9,7 +9,9 @@ import { AppointmentRow } from "@/components/admin/appointment-row";
 import {
   appointmentCounts,
   listAppointments,
+  listRecentAppointments,
   listTodaysAppointments,
+  listUpcomingAppointments,
 } from "@/lib/admin/data";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -51,14 +53,17 @@ export default async function AdminOverviewPage({
   const r = routes(locale);
   const copy = t.pages.admin.overview;
 
-  const [counts, today, pending] = await Promise.all([
+  const [counts, today, pending, recent, upcoming] = await Promise.all([
     appointmentCounts(),
     listTodaysAppointments(),
-    listAppointments({ status: "pending", limit: 8 }),
+    listAppointments({ bucket: "pending", limit: 8 }),
+    listRecentAppointments(),
+    listUpcomingAppointments(),
   ]);
 
   const todayIds = new Set(today.map((a) => a.id));
   const pendingOffToday = pending.filter((a) => !todayIds.has(a.id));
+  const recentOffToday = recent.filter((a) => !todayIds.has(a.id));
 
   const dateLabel = formatInTimeZone(new Date(), SHOP_TZ, "EEEE d MMMM", {
     locale: locale === "it" ? it : enUS,
@@ -76,7 +81,7 @@ export default async function AdminOverviewPage({
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-body">{copy.lead}</p>
         </div>
-        <Link href={r.adminAppointments} className="admin-btn admin-btn-ghost shrink-0">
+        <Link href={`${r.adminAppointments}?range=week&status=pending`} className="admin-btn admin-btn-ghost shrink-0">
           {copy.viewAll} →
         </Link>
       </header>
@@ -86,19 +91,19 @@ export default async function AdminOverviewPage({
           label={copy.today}
           value={counts.today}
           hint={copy.todayHint}
-          href={`${r.adminAppointments}?range=today`}
+          href={`${r.adminAppointments}?range=today&status=pending`}
         />
         <StatCard
           label={copy.upcoming}
           value={counts.upcoming}
           hint={copy.upcomingHint}
-          href={`${r.adminAppointments}?range=week`}
+          href={`${r.adminAppointments}?range=week&status=pending`}
         />
         <StatCard
           label={copy.pending}
           value={counts.pending}
           hint={copy.pendingHint}
-          href={`${r.adminAppointments}?status=pending`}
+          href={`${r.adminAppointments}?range=week&status=pending`}
           emphasize={counts.pending > 0}
         />
       </div>
@@ -115,7 +120,7 @@ export default async function AdminOverviewPage({
               <p className="mt-1 text-xs text-body">{copy.attentionLead}</p>
             </div>
             <Link
-              href={`${r.adminAppointments}?status=pending`}
+              href={`${r.adminAppointments}?range=week&status=pending`}
               className="admin-btn admin-btn-brass shrink-0"
             >
               {copy.viewAll} →
@@ -128,6 +133,28 @@ export default async function AdminOverviewPage({
               ))}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {recentOffToday.length > 0 ? (
+        <div className="admin-overview-panel">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
+            <div className="min-w-0">
+              <h2 className="admin-overview-panel-title">{copy.recentTitle}</h2>
+              <p className="mt-1 text-xs text-body">{copy.recentLead}</p>
+            </div>
+            <Link
+              href={`${r.adminAppointments}?range=week&status=pending`}
+              className="text-[10px] tracking-[0.16em] text-muted uppercase transition hover:text-foreground"
+            >
+              {copy.viewAll} →
+            </Link>
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {recentOffToday.map((a) => (
+              <AppointmentRow key={a.id} appointment={a} locale={locale} t={t} />
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -148,6 +175,22 @@ export default async function AdminOverviewPage({
           </div>
         )}
       </div>
+
+      {upcoming.length > 0 ? (
+        <div className="admin-overview-panel">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
+            <h2 className="admin-overview-panel-title">{copy.upcomingSchedule}</h2>
+            <span className="text-[10px] tracking-[0.16em] text-muted uppercase">
+              {copy.scheduleCount.replace("{count}", String(upcoming.length))}
+            </span>
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {upcoming.map((a) => (
+              <AppointmentRow key={a.id} appointment={a} locale={locale} t={t} />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

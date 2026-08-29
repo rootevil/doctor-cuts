@@ -4,15 +4,15 @@ import { useState, useTransition } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import type { AdminAppointment } from "@/lib/admin/data";
-import type { AppointmentStatus } from "@/lib/supabase/types";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
+import { formatEurFromCents } from "@/lib/payments/deposit";
 import {
   updateAppointmentNotes,
-  updateAppointmentStatus,
+  cancelAndRefundAppointment,
 } from "@/lib/admin/actions";
 
 type Props = {
@@ -20,15 +20,6 @@ type Props = {
   locale: Locale;
   t: Dictionary;
 };
-
-const STATUS_ORDER: AppointmentStatus[] = [
-  "pending",
-  "confirmed",
-  "arrived",
-  "completed",
-  "cancelled",
-  "no_show",
-];
 
 function fmtCurrency(amount: number, locale: Locale) {
   return new Intl.NumberFormat(locale === "it" ? "it-IT" : "en-GB", {
@@ -38,10 +29,21 @@ function fmtCurrency(amount: number, locale: Locale) {
   }).format(amount);
 }
 
+function bucketLabel(
+  appointment: AdminAppointment,
+  copy: Dictionary["pages"]["admin"]["appointments"],
+  statuses: Dictionary["pages"]["account"]["appointments"]["statuses"],
+) {
+  if (appointment.status === "completed") return statuses.completed;
+  if (appointment.status === "cancelled") return statuses.cancelled;
+  return copy.waitingLabel;
+}
+
 export function AppointmentRow({ appointment, locale, t }: Props) {
   const copy = t.pages.admin.appointments;
   const statusLabels = t.pages.account.appointments.statuses;
   const [saving, startSaving] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [notes, setNotes] = useState(appointment.admin_notes ?? "");
 
@@ -55,16 +57,6 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
     appointment.service?.name,
   );
 
-  const setStatus = (status: AppointmentStatus) => {
-    startSaving(async () => {
-      const form = new FormData();
-      form.set("appointment_id", appointment.id);
-      form.set("status", status);
-      form.set("locale", locale);
-      await updateAppointmentStatus(form);
-    });
-  };
-
   const saveNotes = () => {
     startSaving(async () => {
       const form = new FormData();
@@ -73,6 +65,20 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       form.set("locale", locale);
       await updateAppointmentNotes(form);
       setNotesOpen(false);
+    });
+  };
+
+  const cancelAndRefund = () => {
+    if (!window.confirm(copy.confirmCancelRefund)) return;
+    setError(null);
+    startSaving(async () => {
+      const form = new FormData();
+      form.set("appointment_id", appointment.id);
+      form.set("locale", locale);
+      const res = await cancelAndRefundAppointment(form);
+      if (!res.ok) {
+        setError(copy.refundFailed);
+      }
     });
   };
 
@@ -95,9 +101,17 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
                 {copy.guestBadge}
               </span>
             ) : null}
+            <span className="text-[10px] tracking-[0.22em] text-muted uppercase">
+              {bucketLabel(appointment, copy, statusLabels)}
+            </span>
             {appointment.payment_status === "paid" ? (
               <span className="text-[10px] tracking-[0.22em] text-brass uppercase">
                 {copy.depositPaid}
+              </span>
+            ) : null}
+            {appointment.payment_status === "refunded" ? (
+              <span className="text-[10px] tracking-[0.22em] text-brass uppercase">
+                {copy.refundedBadge}
               </span>
             ) : null}
             <span className="text-[11px] tracking-[0.22em] text-muted uppercase">
@@ -108,6 +122,9 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
             {serviceName}
             {appointment.service
               ? ` · ${fmtCurrency(Number(appointment.service.price), locale)}`
+              : ""}
+            {appointment.deposit_cents > 0 && appointment.payment_status === "paid"
+              ? ` · ${copy.depositPaid} ${formatEurFromCents(appointment.deposit_cents, locale)}`
               : ""}
           </p>
           {appointment.customer?.phone ? (
@@ -134,27 +151,23 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
               {appointment.admin_notes}
             </p>
           ) : null}
+          {error ? <p className="text-xs text-red-400">{error}</p> : null}
         </div>
       </div>
 
       <div className="flex flex-col items-stretch gap-2 md:items-end">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor={`status-${appointment.id}`}>
-            {copy.statusLabel}
-          </label>
-          <select
-            id={`status-${appointment.id}`}
-            defaultValue={appointment.status}
-            disabled={saving}
-            onChange={(event) => setStatus(event.target.value as AppointmentStatus)}
-            className="border border-border bg-background px-3 py-2 text-[11px] tracking-[0.22em] text-foreground uppercase outline-none focus:border-foreground"
-          >
-            {STATUS_ORDER.map((s) => (
-              <option key={s} value={s}>
-                {statusLabelFor(s, statusLabels)}
-              </option>
-            ))}
-          </select>
+          {appointment.can_refund ? (
+            <button
+              type="button"
+              onClick={cancelAndRefund}
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-2 border border-foreground bg-foreground px-3 py-2 text-[11px] tracking-[0.22em] text-background uppercase transition hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
+              {copy.cancelAndRefund}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setNotesOpen((v) => !v)}
@@ -187,24 +200,4 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       </div>
     </article>
   );
-}
-
-function statusLabelFor(
-  status: AppointmentStatus,
-  labels: Dictionary["pages"]["account"]["appointments"]["statuses"],
-) {
-  switch (status) {
-    case "pending":
-      return labels.pending;
-    case "confirmed":
-      return labels.confirmed;
-    case "arrived":
-      return labels.arrived;
-    case "completed":
-      return labels.completed;
-    case "cancelled":
-      return labels.cancelled;
-    case "no_show":
-      return labels.noShow;
-  }
 }

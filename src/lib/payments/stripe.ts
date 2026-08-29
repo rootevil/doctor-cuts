@@ -54,10 +54,43 @@ export async function createStripeCheckoutSession(input: {
 export async function stripeSessionIsPaid(sessionId: string): Promise<boolean> {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.retrieve(sessionId);
-  return (
-    session.payment_status === "paid" ||
-    session.status === "complete"
-  );
+  return session.payment_status === "paid";
+}
+
+export async function refundStripeCheckoutSession(sessionId: string): Promise<{
+  ok: boolean;
+  refundId?: string;
+  already?: boolean;
+  message?: string;
+}> {
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const paymentIntent =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+  if (!paymentIntent) {
+    return { ok: false, message: "missing_payment_intent" };
+  }
+  try {
+    const refund = await stripe.refunds.create(
+      { payment_intent: paymentIntent },
+      { idempotencyKey: `deposit-refund-${sessionId}` },
+    );
+    return { ok: true, refundId: refund.id };
+  } catch (err) {
+    if (
+      err instanceof Stripe.errors.StripeInvalidRequestError &&
+      (err.code === "charge_already_refunded" ||
+        err.message?.toLowerCase().includes("already been refunded"))
+    ) {
+      return { ok: true, already: true };
+    }
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "refund_failed",
+    };
+  }
 }
 
 export function constructStripeWebhookEvent(

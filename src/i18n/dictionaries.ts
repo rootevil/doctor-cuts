@@ -432,6 +432,11 @@ export type Dictionary = {
         pendingHint: string;
         todaySchedule: string;
         emptyToday: string;
+        recentTitle: string;
+        recentLead: string;
+        emptyRecent: string;
+        upcomingSchedule: string;
+        emptyUpcoming: string;
         quickActions: string;
         actionAppointments: string;
         actionServices: string;
@@ -457,6 +462,11 @@ export type Dictionary = {
         unknownCustomer: string;
         guestBadge: string;
         depositPaid: string;
+        waitingLabel: string;
+        cancelAndRefund: string;
+        confirmCancelRefund: string;
+        refundedBadge: string;
+        refundFailed: string;
         customerNotesLabel: string;
         internalNotesLabel: string;
         internalNotesPlaceholder: string;
@@ -1192,17 +1202,22 @@ const it: Dictionary = {
         todayHint: "In agenda oggi",
         upcoming: "In arrivo",
         upcomingHint: "Prossimi giorni",
-        pending: "Da confermare",
-        pendingHint: "Richiedono azione",
+        pending: "In attesa",
+        pendingHint: "Acconto pagato, slot da fare",
         todaySchedule: "Agenda di oggi",
         emptyToday: "Nessun appuntamento oggi.",
+        recentTitle: "Ultime prenotazioni",
+        recentLead: "Create negli ultimi 7 giorni — restano visibili anche se l’orario è già passato.",
+        emptyRecent: "Nessuna prenotazione recente.",
+        upcomingSchedule: "Prossimi giorni",
+        emptyUpcoming: "Niente in arrivo nei prossimi giorni.",
         quickActions: "Scorciatoie",
         actionAppointments: "Appuntamenti",
         actionServices: "Servizi",
         actionHours: "Orari",
         actionSettings: "Impostazioni",
-        attention: "Da confermare",
-        attentionLead: "Conferma o aggiorna queste richieste.",
+        attention: "In attesa",
+        attentionLead: "Acconto pagato, in attesa della data e dell’orario.",
         emptyPending: "Nessuna richiesta in attesa.",
         nextUp: "Prossimo",
         scheduleCount: "{count} in lista",
@@ -1210,7 +1225,7 @@ const it: Dictionary = {
       appointments: {
         kicker: "Appuntamenti",
         title: "Prenotazioni",
-        lead: "Filtra, cerca e aggiorna gli appuntamenti dello studio.",
+        lead: "Filtra per data e stato. In attesa = acconto pagato, slot ancora da fare.",
         metaTitle: "Appuntamenti · Amministrazione — Doctor Cuts",
         ranges: { today: "Oggi", week: "7 giorni", month: "30 giorni", all: "Tutti" },
         allStatuses: "Tutti",
@@ -1221,6 +1236,11 @@ const it: Dictionary = {
         unknownCustomer: "Cliente sconosciuto",
         guestBadge: "Ospite",
         depositPaid: "Acconto pagato",
+        waitingLabel: "In attesa",
+        cancelAndRefund: "Annulla e rimborsa",
+        confirmCancelRefund: "Annullare l’appuntamento e rimborsare l’acconto?",
+        refundedBadge: "Rimborsato",
+        refundFailed: "Rimborso non riuscito. Riprova o controlla Stripe.",
         customerNotesLabel: "Note cliente",
         internalNotesLabel: "Note interne",
         internalNotesPlaceholder: "Solo per lo studio (es. preferenze, allergie, promemoria).",
@@ -1957,17 +1977,22 @@ const en: Dictionary = {
         todayHint: "On the book today",
         upcoming: "Upcoming",
         upcomingHint: "Next days",
-        pending: "To confirm",
-        pendingHint: "Needs your action",
+        pending: "Waiting",
+        pendingHint: "Deposit paid, slot ahead",
         todaySchedule: "Today’s schedule",
         emptyToday: "Nothing on the schedule today.",
+        recentTitle: "Latest bookings",
+        recentLead: "Created in the last 7 days — still listed after the chair time has passed.",
+        emptyRecent: "No recent bookings.",
+        upcomingSchedule: "Coming up",
+        emptyUpcoming: "Nothing booked in the next days.",
         quickActions: "Shortcuts",
         actionAppointments: "Appointments",
         actionServices: "Services",
         actionHours: "Hours",
         actionSettings: "Settings",
-        attention: "Needs confirmation",
-        attentionLead: "Confirm or update these requests.",
+        attention: "Waiting",
+        attentionLead: "Deposit paid, waiting for their date and time.",
         emptyPending: "No pending requests.",
         nextUp: "Next up",
         scheduleCount: "{count} listed",
@@ -1975,7 +2000,7 @@ const en: Dictionary = {
       appointments: {
         kicker: "Appointments",
         title: "Bookings",
-        lead: "Filter, search, and update the studio’s bookings.",
+        lead: "Filter by date and status. Waiting = deposit paid, slot still ahead.",
         metaTitle: "Appointments · Admin — Doctor Cuts",
         ranges: { today: "Today", week: "7 days", month: "30 days", all: "All" },
         allStatuses: "All",
@@ -1986,6 +2011,11 @@ const en: Dictionary = {
         unknownCustomer: "Unknown customer",
         guestBadge: "Guest",
         depositPaid: "Deposit paid",
+        waitingLabel: "Waiting",
+        cancelAndRefund: "Cancel and refund",
+        confirmCancelRefund: "Cancel this appointment and refund the deposit?",
+        refundedBadge: "Refunded",
+        refundFailed: "Refund failed. Try again or check Stripe.",
         customerNotesLabel: "Customer notes",
         internalNotesLabel: "Internal notes",
         internalNotesPlaceholder: "For the studio only (preferences, allergies, reminders).",

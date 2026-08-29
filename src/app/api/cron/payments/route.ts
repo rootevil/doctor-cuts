@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
+import { completePastAppointments } from "@/lib/payments/complete";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,8 @@ async function handle(request: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
   const expired = await expireStalePaymentHolds();
-  return NextResponse.json({ ok: true, expired });
+  const completed = await completePastAppointments();
+  return NextResponse.json({ ok: true, expired, completed });
 }
 
 export async function GET(request: Request) {

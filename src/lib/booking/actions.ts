@@ -39,8 +39,10 @@ import { limitByIp, limitByKey } from "@/lib/security/rate-limit";
 import { generateManageToken, tokensEqual } from "@/lib/booking/token";
 import { isDepositCheckoutReady } from "@/lib/payments/config";
 import { startDepositCheckout, newPaymentToken } from "@/lib/payments/checkout";
-import { PAYMENT_HOLD_MS, depositBreakdown } from "@/lib/payments/deposit";
+import { PAYMENT_HOLD_MS, depositBreakdown, formatEurFromCents } from "@/lib/payments/deposit";
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
+import { completePastAppointments } from "@/lib/payments/complete";
+import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
 import { siteUrl } from "@/lib/seo/site-url";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 
@@ -77,6 +79,7 @@ export async function getAvailableSlots(
   if (!rl.ok) return { ok: false, reason: "invalid_input" };
 
   await expireStalePaymentHolds();
+  await completePastAppointments();
 
   const service = await getServiceById(parsedId.data);
   if (!service) return { ok: false, reason: "unknown_service" };
@@ -204,6 +207,7 @@ export async function createBooking(
   }
 
   await expireStalePaymentHolds();
+  await completePastAppointments();
 
   const startsAt = new Date(validated.startsAtUTC);
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
@@ -430,7 +434,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   const { data: existing, error: fetchErr } = await supabase
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, customer_notes, customer_id, service:services ( id, slug, name, price, duration_minutes )",
+      "id, starts_at, ends_at, status, reference_code, customer_notes, customer_id, deposit_cents, service:services ( id, slug, name, price, duration_minutes )",
     )
     .eq("id", appointmentId)
     .maybeSingle();
@@ -445,13 +449,10 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   );
   if (now > cutoff) return { ok: false, reason: "too_late" };
 
-  const { error } = await supabase
-    .from("appointments")
-    .update({ status: "cancelled" })
-    .eq("id", appointmentId);
-  if (error) {
-    console.warn("[booking] cancel failed:", error.message);
-    return { ok: false, reason: "unknown", message: error.message };
+  const cancelled = await cancelAppointmentAndRefund(appointmentId);
+  if (!cancelled.ok) {
+    console.warn("[booking] cancel failed:", cancelled.message);
+    return { ok: false, reason: "unknown", message: cancelled.message };
   }
 
   const { data: profile } = await supabase
@@ -478,6 +479,10 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
       null;
     const durationMinutes = BOOKING_SLOT_MINUTES;
 
+    const refundLabel =
+      cancelled.refunded && existing.deposit_cents > 0
+        ? formatEurFromCents(Number(existing.deposit_cents), locale)
+        : null;
     const template = cancellationEmail({
       locale,
       customerName,
@@ -488,6 +493,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
       price: Number(service.price),
       settings,
       manageUrl: `${origin}${routes(locale).account}`,
+      depositRefundedLabel: refundLabel,
     });
     await sendEmail({ to, ...template });
 
@@ -501,6 +507,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
       referenceCode: existing.reference_code,
       price: Number(service.price),
       adminUrl: `${origin}${routes("it").adminAppointments}`,
+      depositRefundedLabel: refundLabel,
     });
     await sendEmail({
       to: bookingAlertAddress(),
@@ -528,6 +535,7 @@ export type GuestAppointment = {
   service_slug: string;
   duration_minutes: number;
   price: number;
+  deposit_cents: number;
   can_cancel: boolean;
 };
 
@@ -547,7 +555,7 @@ export async function getGuestAppointment(
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, service:services ( slug, name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, deposit_cents, service:services ( slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -578,6 +586,7 @@ export async function getGuestAppointment(
     service_slug: service.slug,
     duration_minutes: service.duration_minutes,
     price: Number(service.price),
+    deposit_cents: Number(data.deposit_cents ?? 0),
     can_cancel: cancellable,
   };
 }
@@ -598,15 +607,10 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
   if (!appointment) return { ok: false, reason: "not_found" };
   if (!appointment.can_cancel) return { ok: false, reason: "too_late" };
 
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin
-    .from("appointments")
-    .update({ status: "cancelled" })
-    .eq("id", appointment.id)
-    .eq("reference_code", reference_code);
-  if (error) {
-    console.warn("[booking] guest cancel failed:", error.message);
-    return { ok: false, reason: "unknown", message: error.message };
+  const cancelled = await cancelAppointmentAndRefund(appointment.id);
+  if (!cancelled.ok) {
+    console.warn("[booking] guest cancel failed:", cancelled.message);
+    return { ok: false, reason: "unknown", message: cancelled.message };
   }
 
   const settings = await getSettings();
@@ -618,6 +622,10 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
     });
     const durationMinutes = BOOKING_SLOT_MINUTES;
 
+    const refundLabel =
+      cancelled.refunded && appointment.deposit_cents > 0
+        ? formatEurFromCents(appointment.deposit_cents, locale)
+        : null;
     const template = cancellationEmail({
       locale,
       customerName,
@@ -632,6 +640,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
       price: appointment.price,
       settings,
       manageUrl: `${origin}${routes(locale).manageBooking(reference_code, token)}`,
+      depositRefundedLabel: refundLabel,
     });
     await sendEmail({ to: appointment.guest_email, ...template });
 
@@ -649,6 +658,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
       referenceCode: appointment.reference_code,
       price: appointment.price,
       adminUrl: `${origin}${routes("it").adminAppointments}`,
+      depositRefundedLabel: refundLabel,
     });
     await sendEmail({
       to: bookingAlertAddress(),
