@@ -5,6 +5,7 @@ import {
   stripeWebhookSecret,
 } from "@/lib/payments/config";
 import { syncAppointmentPayment } from "@/lib/payments/sync";
+import { expireStalePaymentHolds } from "@/lib/payments/expire";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +49,11 @@ export async function POST(request: Request) {
 
     const applied = await syncAppointmentPayment({ orderId: sessionId });
     return NextResponse.json({ ok: applied.ok, paid: applied.paid });
+  }
+
+  if (event.type === "checkout.session.expired") {
+    await expireStalePaymentHolds();
+    return NextResponse.json({ ok: true, expired: true });
   }
 
   return NextResponse.json({ ok: true, ignored: event.type });

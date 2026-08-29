@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createNexiHostedPayment } from "@/lib/payments/nexi";
 import {
   createStripeCheckoutSession,
   expireStripeCheckoutSession,
@@ -13,13 +12,6 @@ import { routes } from "@/lib/routes";
 import type { Locale } from "@/i18n/config";
 import { requestOrigin } from "@/lib/http/origin";
 
-export function newNexiOrderId() {
-  // Nexi rejects orderIds that are too long (29+ fails; 20 works).
-  const time = Date.now().toString(36);
-  const entropy = crypto.randomUUID().replace(/-/g, "").slice(0, 6);
-  return `dc${time}${entropy}`.slice(0, 18);
-}
-
 export async function startDepositCheckout(input: {
   appointmentId: string;
   referenceCode: string;
@@ -29,10 +21,10 @@ export async function startDepositCheckout(input: {
   customerEmail: string;
   paymentToken: string;
 }): Promise<{ ok: true; checkoutUrl: string } | { ok: false; message: string }> {
-  const provider = paymentProvider();
-  if (provider === "stripe") return startStripeCheckout(input);
-  if (provider === "nexi") return startNexiCheckout(input);
-  return { ok: false, message: "no_payment_provider" };
+  if (paymentProvider() !== "stripe") {
+    return { ok: false, message: "no_payment_provider" };
+  }
+  return startStripeCheckout(input);
 }
 
 async function startStripeCheckout(input: {
@@ -66,6 +58,7 @@ async function startStripeCheckout(input: {
     .maybeSingle();
   if (!existing) return { ok: false, message: "not_payable" };
 
+  // Column name is historical; value is a Stripe Checkout session id (cs_…).
   const previousOrder = existing.nexi_order_id as string | null;
   if (previousOrder?.startsWith("cs_")) {
     await expireStripeCheckoutSession(previousOrder);
@@ -83,7 +76,10 @@ async function startStripeCheckout(input: {
       cancelUrl,
     });
 
-    const expires = new Date(Date.now() + PAYMENT_HOLD_MS).toISOString();
+    const expires =
+      session.expiresAt != null
+        ? new Date(session.expiresAt * 1000).toISOString()
+        : new Date(Date.now() + PAYMENT_HOLD_MS).toISOString();
     const { data: updated, error } = await admin
       .from("appointments")
       .update({
@@ -110,66 +106,21 @@ async function startStripeCheckout(input: {
   }
 }
 
-/** @deprecated Prefer startDepositCheckout — kept for Nexi path internals. */
-export async function startNexiCheckout(input: {
-  appointmentId: string;
-  referenceCode: string;
-  locale: Locale;
-  amountCents: number;
-  customerName: string;
-  customerEmail: string;
-  paymentToken: string;
-}): Promise<{ ok: true; checkoutUrl: string } | { ok: false; message: string }> {
-  const origin = await requestOrigin();
-  const returnPath = routes(input.locale).bookPayment(
-    input.referenceCode,
-    input.paymentToken,
-  );
-  const resultUrl = `${origin}${returnPath}&outcome=return`;
-  const cancelUrl = `${origin}${returnPath}&outcome=cancel`;
-  const notificationUrl = `${origin}/api/payments/nexi`;
-  const orderId = newNexiOrderId();
-
-  try {
-    const hpp = await createNexiHostedPayment({
-      orderId,
-      amountCents: input.amountCents,
-      description: `Doctor Cuts ${input.referenceCode}`,
-      customField: input.appointmentId,
-      customerName: input.customerName,
-      customerEmail: input.customerEmail,
-      language: input.locale === "it" ? "ita" : "eng",
-      resultUrl,
-      cancelUrl,
-      notificationUrl,
-    });
-
-    const admin = createSupabaseAdminClient();
-    const expires = new Date(Date.now() + PAYMENT_HOLD_MS).toISOString();
-    const { error } = await admin
-      .from("appointments")
-      .update({
-        nexi_order_id: orderId,
-        nexi_security_token: hpp.securityToken || null,
-        payment_expires_at: expires,
-        payment_status: "awaiting",
-      })
-      .eq("id", input.appointmentId)
-      .eq("status", "pending")
-      .eq("payment_status", "awaiting");
-
-    if (error) {
-      console.warn("[payments] save order id failed:", error.message);
-      return { ok: false, message: error.message };
-    }
-
-    return { ok: true, checkoutUrl: hpp.hostedPage };
-  } catch (err) {
-    console.warn("[payments] nexi checkout start failed:", err);
-    return { ok: false, message: "nexi_hpp_failed" };
-  }
-}
-
 export function newPaymentToken() {
   return generateManageToken();
 }
+
+// --- Nexi checkout (disabled — Stripe is the only payment method) ---
+// import { createNexiHostedPayment } from "@/lib/payments/nexi";
+//
+// export function newNexiOrderId() {
+//   const time = Date.now().toString(36);
+//   const entropy = crypto.randomUUID().replace(/-/g, "").slice(0, 6);
+//   return `dc${time}${entropy}`.slice(0, 18);
+// }
+//
+// export async function startNexiCheckout(input: { ... }): Promise<...> {
+//   const notificationUrl = `${origin}/api/payments/nexi`;
+//   const hpp = await createNexiHostedPayment({ ... });
+//   ...
+// }

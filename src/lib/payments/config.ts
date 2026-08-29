@@ -2,13 +2,9 @@ import "server-only";
 
 import Stripe from "stripe";
 
-const SANDBOX =
-  "https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1";
-const LIVE = "https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1";
-
 /**
  * Master switch for the €5 confirmation deposit.
- * Set BOOKING_DEPOSIT_ENABLED=true and provide Stripe (or Nexi) keys.
+ * Set BOOKING_DEPOSIT_ENABLED=true and provide STRIPE_SECRET_KEY.
  */
 export function isBookingDepositEnabled() {
   return process.env.BOOKING_DEPOSIT_ENABLED === "true";
@@ -44,30 +40,33 @@ export function getStripe() {
   return stripeClient;
 }
 
-export function nexiApiKey() {
-  return process.env.NEXI_API_KEY?.trim() || "";
-}
-
-export function nexiApiBaseUrl() {
-  const raw = process.env.NEXI_API_BASE_URL?.trim();
-  if (raw) return raw.replace(/\/$/, "");
-  return process.env.NODE_ENV === "production" ? LIVE : SANDBOX;
-}
-
-export function isNexiConfigured() {
-  if (!isBookingDepositEnabled()) return false;
-  return nexiApiKey().length > 0;
-}
-
-/** Prefer Stripe when enabled; fall back to Nexi. */
 export function isDepositCheckoutReady() {
   if (!isBookingDepositEnabled()) return false;
-  return isStripeConfigured() || nexiApiKey().length > 0;
+  return isStripeConfigured();
 }
 
-export function paymentProvider(): "stripe" | "nexi" | null {
+export function paymentProvider(): "stripe" | null {
   if (!isBookingDepositEnabled()) return null;
   if (isStripeConfigured()) return "stripe";
-  if (nexiApiKey().length > 0) return "nexi";
   return null;
 }
+
+// --- Nexi XPay (disabled — Stripe is the only payment method) ---
+// const SANDBOX =
+//   "https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1";
+// const LIVE = "https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1";
+//
+// export function nexiApiKey() {
+//   return process.env.NEXI_API_KEY?.trim() || "";
+// }
+//
+// export function nexiApiBaseUrl() {
+//   const raw = process.env.NEXI_API_BASE_URL?.trim();
+//   if (raw) return raw.replace(/\/$/, "");
+//   return process.env.NODE_ENV === "production" ? LIVE : SANDBOX;
+// }
+//
+// export function isNexiConfigured() {
+//   if (!isBookingDepositEnabled()) return false;
+//   return nexiApiKey().length > 0;
+// }

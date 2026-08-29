@@ -1033,7 +1033,7 @@ const it: Dictionary = {
         payNow: "Paga ora per confermare",
         payInShop: "In studio",
         payInShopZero: "Niente da saldare in studio",
-        holdNote: "L’orario resta tuo per 15 minuti mentre paghi.",
+        holdNote: "L’orario resta tuo per 30 minuti mentre paghi.",
         trustProvider: "Pagamento sicuro con Stripe",
         trustSecure: "La banca può chiedere un codice (3D Secure).",
         cta: "Paga {amount} e conferma",
@@ -1043,7 +1043,7 @@ const it: Dictionary = {
         result: {
           processingTitle: "Stiamo confermando il pagamento",
           processingLead:
-            "Se hai già pagato, attendi qualche secondo e aggiorna la pagina. Se hai chiuso Nexi, puoi riprovare qui sotto.",
+            "Se hai già pagato, attendi qualche secondo e aggiorna la pagina. Se hai chiuso Stripe, puoi riprovare qui sotto.",
           unpaidTitle: "Prenotazione non confermata",
           unpaidLead:
             "Il pagamento non è andato a buon fine o è stato annullato. L’orario è ancora tuo per pochi minuti.",
@@ -1811,7 +1811,7 @@ const en: Dictionary = {
         payNow: "Pay now to confirm",
         payInShop: "In studio",
         payInShopZero: "Nothing left to pay in studio",
-        holdNote: "This time is held for 15 minutes while you pay.",
+        holdNote: "This time is held for 30 minutes while you pay.",
         trustProvider: "Secure payment with Stripe",
         trustSecure: "Your bank may ask for a one-time code (3D Secure).",
         cta: "Pay {amount} and confirm",
@@ -1821,7 +1821,7 @@ const en: Dictionary = {
         result: {
           processingTitle: "Confirming your payment",
           processingLead:
-            "If you’ve already paid, wait a few seconds and refresh. If you closed Nexi, you can try again below.",
+            "If you’ve already paid, wait a few seconds and refresh. If you closed Stripe, you can try again below.",
           unpaidTitle: "Booking not confirmed",
           unpaidLead:
             "Payment didn’t go through or was cancelled. The slot is still yours for a few minutes.",

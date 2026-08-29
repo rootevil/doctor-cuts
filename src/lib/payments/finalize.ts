@@ -82,6 +82,7 @@ export async function finalizePaidAppointment(appointmentId: string): Promise<{
     })
     .eq("id", appointmentId)
     .eq("status", "pending")
+    .eq("payment_status", "awaiting")
     .select("id");
 
   if (updateError) {
@@ -89,7 +90,12 @@ export async function finalizePaidAppointment(appointmentId: string): Promise<{
     return { ok: false };
   }
   if (!updated?.length) {
-    if (typed.payment_status === "paid" && typed.status === "confirmed") {
+    const { data: fresh } = await admin
+      .from("appointments")
+      .select("status, payment_status")
+      .eq("id", appointmentId)
+      .maybeSingle();
+    if (fresh?.payment_status === "paid" && fresh.status === "confirmed") {
       return { ok: true, already: true };
     }
     return { ok: false };

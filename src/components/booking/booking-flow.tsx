@@ -165,6 +165,48 @@ export function BookingFlow({
     [copy.errors],
   );
 
+  const pollSlots = useCallback(
+    (sid: string, iso: string) => {
+      getAvailableSlots(sid, iso)
+        .then((res) => {
+          if (!res.ok) return;
+          setSlots(res.slots);
+          setSlot((current) => {
+            if (!current) return current;
+            const stillFree = res.slots.some(
+              (s) => s.startsAt === current && s.state === "available",
+            );
+            if (stillFree) return current;
+            setSubmitError(copy.errors.slotTaken);
+            return null;
+          });
+        })
+        .catch(() => {
+          /* keep the last grid; submit still re-checks on the server */
+        });
+    },
+    [copy.errors.slotTaken],
+  );
+
+  useEffect(() => {
+    if (!serviceId || !dateISO || success || submitting) return;
+
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      pollSlots(serviceId, dateISO);
+    };
+
+    const id = window.setInterval(tick, 10_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [serviceId, dateISO, success, submitting, pollSlots]);
+
   const scrollToSection = useCallback((el: HTMLElement | null) => {
     if (!el) return;
     const behavior = prefersReducedMotion() ? "auto" : "smooth";

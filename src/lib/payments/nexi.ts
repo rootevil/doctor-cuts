@@ -1,3 +1,11 @@
+/**
+ * Nexi XPay is disabled. Stripe Checkout is the only payment method.
+ * Original client kept below, commented out, and is not imported anywhere.
+ */
+
+export {};
+
+/*
 import "server-only";
 
 import { nexiApiBaseUrl, nexiApiKey } from "@/lib/payments/config";
@@ -146,3 +154,4 @@ function walk(
     walk(v, visit, depth + 1);
   }
 }
+*/

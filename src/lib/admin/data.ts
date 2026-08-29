@@ -14,6 +14,7 @@ import {
   shopToday,
 } from "@/lib/booking/timezone";
 import { completePastAppointments } from "@/lib/payments/complete";
+import { expireStalePaymentHolds } from "@/lib/payments/expire";
 
 /* ------------------------------------------------------------------ */
 /*  Appointments                                                       */
@@ -97,9 +98,15 @@ function normaliseAppointment(row: unknown): AdminAppointment {
   };
 }
 
+/** Release expired unpaid holds before admin lists so chairs are not ghost-blocked. */
+async function refreshAppointmentLists() {
+  await expireStalePaymentHolds();
+  await completePastAppointments();
+}
+
 export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
   if (!supabaseConfigured) return [];
-  await completePastAppointments();
+  await refreshAppointmentLists();
   const supabase = await createSupabaseServerClient();
   const { startUtc, endUtc } = shopDateBoundsUtc(shopToday());
   const { data, error } = await supabase
@@ -123,7 +130,7 @@ export async function listUpcomingAppointments(
   limit = 12,
 ): Promise<AdminAppointment[]> {
   if (!supabaseConfigured) return [];
-  await completePastAppointments();
+  await refreshAppointmentLists();
   const supabase = await createSupabaseServerClient();
   const from = shopDateBoundsUtc(shiftDate(shopToday(), 1)).startUtc;
   const to = shopDateBoundsUtc(shiftDate(shopToday(), days)).endUtc;
@@ -197,7 +204,7 @@ export async function listAppointments(
   filter: AppointmentFilter = {},
 ): Promise<AdminAppointment[]> {
   if (!supabaseConfigured) return [];
-  await completePastAppointments();
+  await refreshAppointmentLists();
   const supabase = await createSupabaseServerClient();
   let query = supabase.from("appointments").select(APPOINTMENT_SELECT);
 
@@ -274,7 +281,7 @@ export async function listAppointments(
 
 export async function appointmentCounts() {
   if (!supabaseConfigured) return { today: 0, waiting: 0, completed: 0 };
-  await completePastAppointments();
+  await refreshAppointmentLists();
   const supabase = await createSupabaseServerClient();
   const now = new Date().toISOString();
   const today = shopToday();

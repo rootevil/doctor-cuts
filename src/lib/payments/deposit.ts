@@ -1,5 +1,6 @@
 export const DEFAULT_DEPOSIT_CENTS = 500;
-export const PAYMENT_HOLD_MS = 15 * 60 * 1000;
+/** Matches Stripe Checkout minimum expiry (30 minutes). */
+export const PAYMENT_HOLD_MS = 30 * 60 * 1000;
 
 export type DepositBreakdown = {
   serviceCents: number;

@@ -57,6 +57,7 @@ export type AppointmentRow = {
   reminder_sent_at: string | null;
   payment_status: "none" | "awaiting" | "paid" | "failed" | "expired" | "refunded";
   deposit_cents: number;
+  /** Historical column name; stores the Stripe Checkout session id (`cs_…`). */
   nexi_order_id: string | null;
   stripe_refund_id?: string | null;
   payment_token: string | null;

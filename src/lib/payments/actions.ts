@@ -35,7 +35,7 @@ export async function retryDepositCheckout(input: {
     .select(
       `
       id, status, payment_status, payment_token, deposit_cents, reference_code,
-      guest_name, guest_email, customer_id, locale,
+      guest_name, guest_email, customer_id, locale, payment_expires_at,
       customer:profiles ( full_name, email ),
       service:services ( price )
     `,
@@ -48,6 +48,12 @@ export async function retryDepositCheckout(input: {
     return { ok: false, reason: "not_found" };
   }
   if (row.status !== "pending" || row.payment_status !== "awaiting") {
+    return { ok: false, reason: "not_payable" };
+  }
+  if (
+    row.payment_expires_at &&
+    new Date(row.payment_expires_at).getTime() <= Date.now()
+  ) {
     return { ok: false, reason: "not_payable" };
   }
 

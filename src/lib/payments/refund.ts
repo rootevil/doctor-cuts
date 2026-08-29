@@ -52,13 +52,19 @@ export async function refundAppointmentDeposit(appointmentId: string): Promise<{
     return { ok: false, refunded: false, message: refund.message };
   }
 
-  await admin
+  const { data: updated } = await admin
     .from("appointments")
     .update({
       payment_status: "refunded",
       stripe_refund_id: refund.refundId ?? row.stripe_refund_id,
     })
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .eq("payment_status", "paid")
+    .select("id");
+
+  if (!updated?.length && row.payment_status === "refunded") {
+    return { ok: true, refunded: true, refundId: row.stripe_refund_id ?? undefined };
+  }
 
   return { ok: true, refunded: true, refundId: refund.refundId };
 }

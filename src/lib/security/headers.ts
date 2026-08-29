@@ -42,9 +42,6 @@ function buildCsp() {
     "base-uri": ["'self'"],
     "form-action": [
       "'self'",
-      "https://*.nexigroup.com",
-      "https://ecommerce.nexi.it",
-      "https://*.nexi.it",
       "https://checkout.stripe.com",
       "https://*.stripe.com",
     ],

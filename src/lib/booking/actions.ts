@@ -5,8 +5,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import { computeSlotGrid, type SlotOption } from "@/lib/booking/availability";
+import { assertSlotBookable } from "@/lib/booking/validate-slot";
 import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
-import { SHOP_TZ, shopDayOfWeek, shopToday } from "@/lib/booking/timezone";
+import { SHOP_TZ, shopDayOfWeek, shopToday, shiftDate } from "@/lib/booking/timezone";
 import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
@@ -41,6 +42,7 @@ import { startDepositCheckout, newPaymentToken } from "@/lib/payments/checkout";
 import { PAYMENT_HOLD_MS, depositBreakdown, formatEurFromCents } from "@/lib/payments/deposit";
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
 import { completePastAppointments } from "@/lib/payments/complete";
+import { expireStripeCheckoutSession } from "@/lib/payments/stripe";
 import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
 import { requestOrigin } from "@/lib/http/origin";
 import type { AppointmentStatus } from "@/lib/supabase/types";
@@ -81,7 +83,7 @@ export async function getAvailableSlots(
   await completePastAppointments();
 
   const service = await getServiceById(parsedId.data);
-  if (!service) return { ok: false, reason: "unknown_service" };
+  if (!service || !service.is_active) return { ok: false, reason: "unknown_service" };
 
   const settings = await getSettings();
   if (!settings.bookings_enabled) {
@@ -90,6 +92,9 @@ export async function getAvailableSlots(
 
   const today = shopToday();
   if (dateISO < today) return { ok: false, reason: "past_date" };
+
+  const lastBookableDay = shiftDate(today, settings.max_booking_days);
+  if (dateISO > lastBookableDay) return { ok: false, reason: "beyond_window" };
 
   const [hours, breaks, blocked, bookings] = await Promise.all([
     getBusinessHours(),
@@ -198,7 +203,7 @@ export async function createBooking(
   }
 
   const service = await getServiceById(validated.serviceId);
-  if (!service) return { ok: false, reason: "unknown_service" };
+  if (!service || !service.is_active) return { ok: false, reason: "unknown_service" };
 
   const settings = await getSettings();
   if (!settings.bookings_enabled) {
@@ -207,6 +212,29 @@ export async function createBooking(
 
   await expireStalePaymentHolds();
   await completePastAppointments();
+
+  const slotCheck = await assertSlotBookable({
+    serviceId: validated.serviceId,
+    startsAtUTC: validated.startsAtUTC,
+  });
+  if (!slotCheck.ok) {
+    if (slotCheck.reason === "beyond_window") {
+      return { ok: false, reason: "invalid_time" };
+    }
+    if (slotCheck.reason === "slot_unavailable") {
+      return { ok: false, reason: "slot_taken" };
+    }
+    if (
+      slotCheck.reason === "unknown_service" ||
+      slotCheck.reason === "inactive_service"
+    ) {
+      return { ok: false, reason: "unknown_service" };
+    }
+    if (slotCheck.reason === "bookings_closed") {
+      return { ok: false, reason: "bookings_closed" };
+    }
+    return { ok: false, reason: "invalid_time" };
+  }
 
   const startsAt = new Date(validated.startsAtUTC);
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
@@ -275,7 +303,7 @@ export async function createBooking(
   if (error) {
     if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
     console.warn("[booking] insert failed:", error.message);
-    return { ok: false, reason: "unknown", message: error.message };
+    return { ok: false, reason: "unknown" };
   }
 
   const isGuest = !user;
@@ -331,7 +359,7 @@ export async function createBooking(
     });
     if (!checkout.ok) {
       await abortUnpaidHold(data.id);
-      return { ok: false, reason: "payment_failed", message: checkout.message };
+      return { ok: false, reason: "payment_failed" };
     }
     return {
       ok: true,
@@ -399,6 +427,18 @@ export async function createBooking(
 async function abortUnpaidHold(appointmentId: string) {
   if (!supabaseServiceRoleKey) return;
   const admin = createSupabaseAdminClient();
+  const { data: row } = await admin
+    .from("appointments")
+    .select("nexi_order_id")
+    .eq("id", appointmentId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  const sessionId = row?.nexi_order_id as string | null;
+  if (sessionId?.startsWith("cs_")) {
+    await expireStripeCheckoutSession(sessionId);
+  }
+
   await admin
     .from("appointments")
     .update({ status: "cancelled", payment_status: "failed" })

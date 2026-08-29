@@ -15,55 +15,65 @@ export async function createStripeCheckoutSession(input: {
   locale: "it" | "en";
   successUrl: string;
   cancelUrl: string;
-}): Promise<{ sessionId: string; checkoutUrl: string }> {
+}): Promise<{ sessionId: string; checkoutUrl: string; expiresAt: number | null }> {
   if (!Number.isInteger(input.amountCents) || input.amountCents < 50) {
     throw new Error("stripe_amount_invalid");
   }
   const stripe = getStripe();
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: input.customerEmail,
-    client_reference_id: input.appointmentId,
-    locale: input.locale === "it" ? "it" : "en",
-    expires_at: Math.floor(Date.now() / 1000) + STRIPE_CHECKOUT_MIN_TTL_SEC,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "eur",
-          unit_amount: input.amountCents,
-          product_data: {
-            name:
-              input.locale === "it"
-                ? `Acconto prenotazione ${input.referenceCode}`
-                : `Booking deposit ${input.referenceCode}`,
-            description:
-              input.locale === "it"
-                ? "Acconto di conferma Doctor Cuts — il resto in studio."
-                : "Doctor Cuts confirmation deposit — remainder paid in studio.",
+  const session = await stripe.checkout.sessions.create(
+    {
+      mode: "payment",
+      customer_email: input.customerEmail,
+      client_reference_id: input.appointmentId,
+      locale: input.locale === "it" ? "it" : "en",
+      expires_at: Math.floor(Date.now() / 1000) + STRIPE_CHECKOUT_MIN_TTL_SEC,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "eur",
+            unit_amount: input.amountCents,
+            product_data: {
+              name:
+                input.locale === "it"
+                  ? `Acconto prenotazione ${input.referenceCode}`
+                  : `Booking deposit ${input.referenceCode}`,
+              description:
+                input.locale === "it"
+                  ? "Acconto di conferma Doctor Cuts — il resto in studio."
+                  : "Doctor Cuts confirmation deposit — remainder paid in studio.",
+            },
           },
         },
+      ],
+      metadata: {
+        appointment_id: input.appointmentId,
+        reference_code: input.referenceCode,
+        customer_name: input.customerName.slice(0, 120),
+        expected_amount_cents: String(input.amountCents),
       },
-    ],
-    metadata: {
-      appointment_id: input.appointmentId,
-      reference_code: input.referenceCode,
-      customer_name: input.customerName.slice(0, 120),
-      expected_amount_cents: String(input.amountCents),
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
     },
-    success_url: input.successUrl,
-    cancel_url: input.cancelUrl,
-  });
+    // Unique per attempt so Retry cannot revive an expired Checkout URL.
+    { idempotencyKey: `checkout-${input.appointmentId}-${crypto.randomUUID()}` },
+  );
 
   if (!session.url) throw new Error("stripe_session_missing_url");
-  return { sessionId: session.id, checkoutUrl: session.url };
+  return {
+    sessionId: session.id,
+    checkoutUrl: session.url,
+    expiresAt: session.expires_at ?? null,
+  };
 }
 
 export type StripeCheckoutInspection = {
   paid: boolean;
+  status: string | null;
   amountTotal: number | null;
   currency: string | null;
   appointmentId: string | null;
+  expiresAt: number | null;
 };
 
 export async function inspectStripeCheckoutSession(
@@ -78,9 +88,11 @@ export async function inspectStripeCheckoutSession(
   const fromMeta = session.metadata?.appointment_id ?? null;
   return {
     paid: session.payment_status === "paid",
+    status: session.status ?? null,
     amountTotal: session.amount_total ?? null,
     currency: session.currency ?? null,
     appointmentId: fromClient || fromMeta,
+    expiresAt: session.expires_at ?? null,
   };
 }
 

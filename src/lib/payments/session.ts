@@ -27,8 +27,6 @@ export async function loadPaymentReturn(opts: {
   paymentToken: string;
 }): Promise<PaymentReturnAppointment | null> {
   if (!supabaseConfigured || !supabaseServiceRoleKey) return null;
-  await expireStalePaymentHolds();
-  await completePastAppointments();
 
   const admin = createSupabaseAdminClient();
   const { data } = await admin
@@ -46,23 +44,29 @@ export async function loadPaymentReturn(opts: {
   if (!data?.payment_token) return null;
   if (!tokensEqual(data.payment_token, opts.paymentToken)) return null;
 
+  // Confirm *this* payment before sweeping stale holds. Otherwise a customer
+  // who paid on time but lands a few seconds after payment_expires_at would
+  // be cancelled and refunded.
   if (data.payment_status === "awaiting" && data.nexi_order_id) {
     await syncAppointmentPayment({ appointmentId: data.id });
-    const { data: fresh } = await admin
-      .from("appointments")
-      .select(
-        `
-        id, reference_code, status, payment_status, starts_at, deposit_cents,
-        manage_token, customer_id,
-        service:services ( name, slug, price )
-      `,
-      )
-      .eq("id", data.id)
-      .maybeSingle();
-    if (fresh) return mapRow(fresh);
   }
 
-  return mapRow(data);
+  await expireStalePaymentHolds();
+  await completePastAppointments();
+
+  const { data: fresh } = await admin
+    .from("appointments")
+    .select(
+      `
+      id, reference_code, status, payment_status, starts_at, deposit_cents,
+      manage_token, customer_id,
+      service:services ( name, slug, price )
+    `,
+    )
+    .eq("id", data.id)
+    .maybeSingle();
+
+  return mapRow(fresh ?? data);
 }
 
 function mapRow(row: Record<string, unknown>): PaymentReturnAppointment | null {
