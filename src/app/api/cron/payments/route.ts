@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
 import { completePastAppointments } from "@/lib/payments/complete";
+import { cronAuthorized } from "@/lib/security/cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function authorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-  const header = request.headers.get("authorization");
-  if (header === `Bearer ${secret}`) return true;
-  const url = new URL(request.url);
-  return url.searchParams.get("secret") === secret;
+  return cronAuthorized(request);
 }
 
 async function handle(request: Request) {

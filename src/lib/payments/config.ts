@@ -14,6 +14,10 @@ export function isBookingDepositEnabled() {
   return process.env.BOOKING_DEPOSIT_ENABLED === "true";
 }
 
+/**
+ * Prefer a restricted key (`rk_live_…` / `rk_test_…`) with Checkout Sessions
+ * and Refunds only. `sk_…` still works; a leaked sk_ can do far more.
+ */
 export function stripeSecretKey() {
   return process.env.STRIPE_SECRET_KEY?.trim() || "";
 }

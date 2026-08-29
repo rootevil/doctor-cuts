@@ -3,6 +3,9 @@ import "server-only";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/payments/config";
 
+/** Stripe Checkout cannot expire sooner than 30 minutes after creation. */
+export const STRIPE_CHECKOUT_MIN_TTL_SEC = 30 * 60;
+
 export async function createStripeCheckoutSession(input: {
   appointmentId: string;
   referenceCode: string;
@@ -13,12 +16,16 @@ export async function createStripeCheckoutSession(input: {
   successUrl: string;
   cancelUrl: string;
 }): Promise<{ sessionId: string; checkoutUrl: string }> {
+  if (!Number.isInteger(input.amountCents) || input.amountCents < 50) {
+    throw new Error("stripe_amount_invalid");
+  }
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer_email: input.customerEmail,
     client_reference_id: input.appointmentId,
     locale: input.locale === "it" ? "it" : "en",
+    expires_at: Math.floor(Date.now() / 1000) + STRIPE_CHECKOUT_MIN_TTL_SEC,
     line_items: [
       {
         quantity: 1,
@@ -42,6 +49,7 @@ export async function createStripeCheckoutSession(input: {
       appointment_id: input.appointmentId,
       reference_code: input.referenceCode,
       customer_name: input.customerName.slice(0, 120),
+      expected_amount_cents: String(input.amountCents),
     },
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
@@ -51,10 +59,51 @@ export async function createStripeCheckoutSession(input: {
   return { sessionId: session.id, checkoutUrl: session.url };
 }
 
-export async function stripeSessionIsPaid(sessionId: string): Promise<boolean> {
+export type StripeCheckoutInspection = {
+  paid: boolean;
+  amountTotal: number | null;
+  currency: string | null;
+  appointmentId: string | null;
+};
+
+export async function inspectStripeCheckoutSession(
+  sessionId: string,
+): Promise<StripeCheckoutInspection> {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.retrieve(sessionId);
-  return session.payment_status === "paid";
+  const fromClient =
+    typeof session.client_reference_id === "string"
+      ? session.client_reference_id
+      : null;
+  const fromMeta = session.metadata?.appointment_id ?? null;
+  return {
+    paid: session.payment_status === "paid",
+    amountTotal: session.amount_total ?? null,
+    currency: session.currency ?? null,
+    appointmentId: fromClient || fromMeta,
+  };
+}
+
+export async function stripeSessionIsPaid(sessionId: string): Promise<boolean> {
+  const snapshot = await inspectStripeCheckoutSession(sessionId);
+  return snapshot.paid;
+}
+
+export async function expireStripeCheckoutSession(sessionId: string): Promise<void> {
+  const stripe = getStripe();
+  try {
+    await stripe.checkout.sessions.expire(sessionId);
+  } catch (err) {
+    if (
+      err instanceof Stripe.errors.StripeInvalidRequestError &&
+      (err.code === "checkout_session_expired" ||
+        err.message?.toLowerCase().includes("already expired") ||
+        err.message?.toLowerCase().includes("already completed"))
+    ) {
+      return;
+    }
+    console.warn("[payments] stripe session expire failed:", err);
+  }
 }
 
 export async function refundStripeCheckoutSession(sessionId: string): Promise<{

@@ -3,16 +3,41 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import { fetchNexiOrder, orderLooksPaid } from "@/lib/payments/nexi";
-import { stripeSessionIsPaid } from "@/lib/payments/stripe";
+import {
+  inspectStripeCheckoutSession,
+  refundStripeCheckoutSession,
+} from "@/lib/payments/stripe";
 import { isStripeConfigured } from "@/lib/payments/config";
 import { finalizePaidAppointment } from "@/lib/payments/finalize";
 import { tokensEqual } from "@/lib/booking/token";
-import { uuidSchema } from "@/lib/security/schemas";
 
 function looksLikeStripeSessionId(id: string) {
   return id.startsWith("cs_");
 }
 
+async function refundOrphanStripeCharge(
+  appointmentId: string,
+  sessionId: string,
+) {
+  const refund = await refundStripeCheckoutSession(sessionId);
+  if (!refund.ok) {
+    console.warn("[payments] orphan refund failed:", refund.message);
+    return;
+  }
+  const admin = createSupabaseAdminClient();
+  await admin
+    .from("appointments")
+    .update({
+      payment_status: "refunded",
+      stripe_refund_id: refund.refundId ?? null,
+    })
+    .eq("id", appointmentId);
+}
+
+/**
+ * Confirms a booking only after the PSP says the expected deposit was paid.
+ * If the hold already expired or was cancelled, the charge is refunded.
+ */
 export async function syncAppointmentPayment(opts: {
   appointmentId?: string;
   orderId?: string;
@@ -26,7 +51,7 @@ export async function syncAppointmentPayment(opts: {
   let query = admin
     .from("appointments")
     .select(
-      "id, status, payment_status, nexi_order_id, nexi_security_token, payment_expires_at",
+      "id, status, payment_status, deposit_cents, nexi_order_id, nexi_security_token",
     );
 
   if (opts.appointmentId) query = query.eq("id", opts.appointmentId);
@@ -40,65 +65,59 @@ export async function syncAppointmentPayment(opts: {
     return { ok: true, paid: true, appointmentId: row.id };
   }
 
-  if (
-    opts.securityToken &&
-    row.nexi_security_token &&
-    !tokensEqual(row.nexi_security_token, opts.securityToken)
-  ) {
-    console.warn("[payments] security token mismatch");
-    return { ok: false, paid: false };
+  const orderId = row.nexi_order_id;
+  const isStripe = looksLikeStripeSessionId(orderId) && isStripeConfigured();
+
+  if (!isStripe) {
+    if (!opts.securityToken || !row.nexi_security_token) {
+      return { ok: false, paid: false };
+    }
+    if (!tokensEqual(row.nexi_security_token, opts.securityToken)) {
+      console.warn("[payments] security token mismatch");
+      return { ok: false, paid: false };
+    }
   }
 
   let paid = false;
-  if (looksLikeStripeSessionId(row.nexi_order_id) && isStripeConfigured()) {
+  if (isStripe) {
     try {
-      paid = await stripeSessionIsPaid(row.nexi_order_id);
+      const snapshot = await inspectStripeCheckoutSession(orderId);
+      const amountOk =
+        snapshot.currency === "eur" &&
+        snapshot.amountTotal === Number(row.deposit_cents) &&
+        snapshot.appointmentId === row.id;
+      if (snapshot.paid && !amountOk) {
+        await refundOrphanStripeCharge(row.id, orderId);
+        console.warn("[payments] stripe amount mismatch, refunded");
+        return { ok: true, paid: false, appointmentId: row.id };
+      }
+      paid = snapshot.paid && amountOk;
     } catch (err) {
       console.warn("[payments] stripe session sync failed:", err);
       return { ok: false, paid: false, appointmentId: row.id };
     }
   } else {
-    const snapshot = await fetchNexiOrder(row.nexi_order_id);
+    const snapshot = await fetchNexiOrder(orderId);
     paid = snapshot?.paid ?? false;
   }
 
   if (!paid) return { ok: true, paid: false, appointmentId: row.id };
 
-  const done = await finalizePaidAppointment(row.id);
-  return { ok: done.ok, paid: done.ok, appointmentId: row.id };
-}
+  const holdGone =
+    row.status === "cancelled" ||
+    row.payment_status === "expired" ||
+    row.payment_status === "failed";
 
-export async function applyPaidNotification(opts: {
-  orderId: string;
-  securityToken?: string | null;
-}): Promise<{ ok: boolean }> {
-  if (!supabaseConfigured || !supabaseServiceRoleKey) return { ok: false };
-  const admin = createSupabaseAdminClient();
-  const byOrder = await admin
-    .from("appointments")
-    .select("id, payment_status, nexi_security_token")
-    .eq("nexi_order_id", opts.orderId)
-    .maybeSingle();
-  let row = byOrder.data;
-  if (!row && uuidSchema.safeParse(opts.orderId).success) {
-    const byId = await admin
-      .from("appointments")
-      .select("id, payment_status, nexi_security_token")
-      .eq("id", opts.orderId)
-      .maybeSingle();
-    row = byId.data;
+  if (holdGone) {
+    if (isStripe) await refundOrphanStripeCharge(row.id, orderId);
+    return { ok: true, paid: false, appointmentId: row.id };
   }
-  if (!row) return { ok: false };
-  if (
-    opts.securityToken &&
-    row.nexi_security_token &&
-    !tokensEqual(row.nexi_security_token, opts.securityToken)
-  ) {
-    return { ok: false };
-  }
-  if (row.payment_status === "paid") return { ok: true };
+
   const done = await finalizePaidAppointment(row.id);
-  return { ok: done.ok };
+  if (!done.ok && isStripe) {
+    await refundOrphanStripeCharge(row.id, orderId);
+  }
+  return { ok: done.ok, paid: done.ok, appointmentId: row.id };
 }
 
 export function notificationLooksPaid(payload: unknown) {

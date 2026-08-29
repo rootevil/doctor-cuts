@@ -49,8 +49,8 @@ export function PaymentRetryButton({
       {error ? (
         <p role="alert" className="text-sm text-body">
           {locale === "it"
-            ? "Non è stato possibile riaprire Nexi. Riprova tra un momento."
-            : "Couldn’t reopen Nexi. Try again in a moment."}
+            ? "Non è stato possibile riaprire il pagamento. Riprova tra un momento."
+            : "Couldn’t reopen checkout. Try again in a moment."}
         </p>
       ) : null}
     </div>

@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import {
-  constructStripeWebhookEvent,
-  stripeSessionIsPaid,
-} from "@/lib/payments/stripe";
+import { constructStripeWebhookEvent } from "@/lib/payments/stripe";
 import {
   isStripeConfigured,
   stripeWebhookSecret,
 } from "@/lib/payments/config";
-import { applyPaidNotification } from "@/lib/payments/sync";
+import { syncAppointmentPayment } from "@/lib/payments/sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,23 +42,12 @@ export async function POST(request: Request) {
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded"
   ) {
-    const session = event.data.object as {
-      id?: string;
-      payment_status?: string;
-      metadata?: { appointment_id?: string };
-    };
+    const session = event.data.object as { id?: string };
     const sessionId = session.id;
     if (!sessionId) return NextResponse.json({ ok: true });
 
-    const paid =
-      session.payment_status === "paid" ||
-      (await stripeSessionIsPaid(sessionId).catch(() => false));
-    if (!paid) return NextResponse.json({ ok: true, paid: false });
-
-    const applied = await applyPaidNotification({
-      orderId: sessionId,
-    });
-    return NextResponse.json({ ok: applied.ok, paid: applied.ok });
+    const applied = await syncAppointmentPayment({ orderId: sessionId });
+    return NextResponse.json({ ok: applied.ok, paid: applied.paid });
   }
 
   return NextResponse.json({ ok: true, ignored: event.type });

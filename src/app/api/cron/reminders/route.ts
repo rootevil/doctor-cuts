@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendTomorrowReminders } from "@/lib/email/reminders";
+import { cronAuthorized } from "@/lib/security/cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,20 +8,10 @@ export const dynamic = "force-dynamic";
 /**
  * Day-before booking reminders.
  * Vercel Cron calls this once daily (see vercel.json).
- * Protect with CRON_SECRET — Authorization: Bearer <secret>
- * or ?secret=<secret> for manual runs.
+ * Protect with CRON_SECRET via Authorization: Bearer <secret>.
  */
 function authorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-
-  const header = request.headers.get("authorization");
-  if (header === `Bearer ${secret}`) return true;
-
-  const url = new URL(request.url);
-  if (url.searchParams.get("secret") === secret) return true;
-
-  return false;
+  return cronAuthorized(request);
 }
 
 async function handle(request: Request) {

@@ -2,7 +2,10 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createNexiHostedPayment } from "@/lib/payments/nexi";
-import { createStripeCheckoutSession } from "@/lib/payments/stripe";
+import {
+  createStripeCheckoutSession,
+  expireStripeCheckoutSession,
+} from "@/lib/payments/stripe";
 import { paymentProvider } from "@/lib/payments/config";
 import { PAYMENT_HOLD_MS } from "@/lib/payments/deposit";
 import { generateManageToken } from "@/lib/booking/token";
@@ -41,6 +44,10 @@ async function startStripeCheckout(input: {
   customerEmail: string;
   paymentToken: string;
 }): Promise<{ ok: true; checkoutUrl: string } | { ok: false; message: string }> {
+  if (input.amountCents < 50) {
+    return { ok: false, message: "stripe_amount_invalid" };
+  }
+
   const origin = await requestOrigin();
   const returnPath = routes(input.locale).bookPayment(
     input.referenceCode,
@@ -48,6 +55,21 @@ async function startStripeCheckout(input: {
   );
   const successUrl = `${origin}${returnPath}&outcome=return`;
   const cancelUrl = `${origin}${returnPath}&outcome=cancel`;
+
+  const admin = createSupabaseAdminClient();
+  const { data: existing } = await admin
+    .from("appointments")
+    .select("nexi_order_id")
+    .eq("id", input.appointmentId)
+    .eq("status", "pending")
+    .eq("payment_status", "awaiting")
+    .maybeSingle();
+  if (!existing) return { ok: false, message: "not_payable" };
+
+  const previousOrder = existing.nexi_order_id as string | null;
+  if (previousOrder?.startsWith("cs_")) {
+    await expireStripeCheckoutSession(previousOrder);
+  }
 
   try {
     const session = await createStripeCheckoutSession({
@@ -61,9 +83,8 @@ async function startStripeCheckout(input: {
       cancelUrl,
     });
 
-    const admin = createSupabaseAdminClient();
     const expires = new Date(Date.now() + PAYMENT_HOLD_MS).toISOString();
-    const { error } = await admin
+    const { data: updated, error } = await admin
       .from("appointments")
       .update({
         nexi_order_id: session.sessionId,
@@ -71,11 +92,15 @@ async function startStripeCheckout(input: {
         payment_expires_at: expires,
         payment_status: "awaiting",
       })
-      .eq("id", input.appointmentId);
+      .eq("id", input.appointmentId)
+      .eq("status", "pending")
+      .eq("payment_status", "awaiting")
+      .select("id");
 
-    if (error) {
-      console.warn("[payments] save stripe session failed:", error.message);
-      return { ok: false, message: error.message };
+    if (error || !updated?.length) {
+      await expireStripeCheckoutSession(session.sessionId);
+      console.warn("[payments] save stripe session failed:", error?.message);
+      return { ok: false, message: error?.message ?? "not_payable" };
     }
 
     return { ok: true, checkoutUrl: session.checkoutUrl };
@@ -129,7 +154,9 @@ export async function startNexiCheckout(input: {
         payment_expires_at: expires,
         payment_status: "awaiting",
       })
-      .eq("id", input.appointmentId);
+      .eq("id", input.appointmentId)
+      .eq("status", "pending")
+      .eq("payment_status", "awaiting");
 
     if (error) {
       console.warn("[payments] save order id failed:", error.message);

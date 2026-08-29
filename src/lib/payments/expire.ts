@@ -2,6 +2,11 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
+import { expireStripeCheckoutSession } from "@/lib/payments/stripe";
+
+function looksLikeStripeSessionId(id: string) {
+  return id.startsWith("cs_");
+}
 
 /** Release unpaid holds so the slot is bookable again. */
 export async function expireStalePaymentHolds(now = new Date()): Promise<number> {
@@ -16,11 +21,19 @@ export async function expireStalePaymentHolds(now = new Date()): Promise<number>
     .eq("status", "pending")
     .eq("payment_status", "awaiting")
     .lt("payment_expires_at", now.toISOString())
-    .select("id");
+    .select("id, nexi_order_id");
 
   if (error) {
     console.warn("[payments] expire holds failed:", error.message);
     return 0;
   }
+
+  for (const row of data ?? []) {
+    const orderId = row.nexi_order_id as string | null;
+    if (orderId && looksLikeStripeSessionId(orderId)) {
+      await expireStripeCheckoutSession(orderId);
+    }
+  }
+
   return data?.length ?? 0;
 }

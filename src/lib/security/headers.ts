@@ -72,8 +72,17 @@ function buildCsp() {
       // we drop it entirely.
       ...(process.env.NODE_ENV !== "production" ? ["'unsafe-eval'"] : []),
     ],
-    "connect-src": ["'self'", ...supabase],
-    "frame-src": ["'self'", ...google],
+    "connect-src": [
+      "'self'",
+      ...supabase,
+      "https://api.stripe.com",
+    ],
+    "frame-src": [
+      "'self'",
+      ...google,
+      "https://js.stripe.com",
+      "https://hooks.stripe.com",
+    ],
     "manifest-src": ["'self'"],
     "worker-src": ["'self'", "blob:"],
     "upgrade-insecure-requests": [],

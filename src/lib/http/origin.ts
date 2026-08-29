@@ -1,11 +1,10 @@
-import { headers } from "next/headers";
 import { siteUrl } from "@/lib/seo/site-url";
 
-/** Prefer configured public URL; fall back to the incoming Host header. */
+/**
+ * Canonical origin for Checkout return URLs and emails.
+ * Never derived from the Host header — that would let an attacker point
+ * Stripe success/cancel URLs at another site.
+ */
 export async function requestOrigin() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return siteUrl;
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
+  return siteUrl;
 }

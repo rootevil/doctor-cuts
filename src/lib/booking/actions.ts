@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
@@ -43,7 +42,7 @@ import { PAYMENT_HOLD_MS, depositBreakdown, formatEurFromCents } from "@/lib/pay
 import { expireStalePaymentHolds } from "@/lib/payments/expire";
 import { completePastAppointments } from "@/lib/payments/complete";
 import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
-import { siteUrl } from "@/lib/seo/site-url";
+import { requestOrigin } from "@/lib/http/origin";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 
 export type SlotList = {
@@ -226,8 +225,8 @@ export async function createBooking(
       ? "pending"
       : "confirmed";
   const manageToken = user ? null : generateManageToken();
-  const writer =
-    !user && supabaseServiceRoleKey ? createSupabaseAdminClient() : supabase;
+  if (!supabaseServiceRoleKey) return { ok: false, reason: "not_configured" };
+  const writer = createSupabaseAdminClient();
 
   const paymentFields = takeDeposit
     ? {
@@ -241,39 +240,37 @@ export async function createBooking(
         deposit_cents: 0,
       };
 
-  const { data, error } = user
-    ? await supabase
-        .from("appointments")
-        .insert({
-          customer_id: user.id,
-          service_id: service.id,
-          starts_at: startsAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          status: initialStatus,
-          customer_notes: validated.notes || null,
-          locale: validated.locale,
-          ...paymentFields,
-        })
-        .select("id, reference_code")
-        .single()
-    : await writer
-        .from("appointments")
-        .insert({
-          customer_id: null,
-          guest_name: guest!.name,
-          guest_email: guest!.email,
-          guest_phone: guest!.phone || null,
-          manage_token: manageToken,
-          service_id: service.id,
-          starts_at: startsAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          status: initialStatus,
-          customer_notes: validated.notes || null,
-          locale: validated.locale,
-          ...paymentFields,
-        })
-        .select("id, reference_code")
-        .single();
+  const { data, error } = await writer
+    .from("appointments")
+    .insert(
+      user
+        ? {
+            customer_id: user.id,
+            service_id: service.id,
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            status: initialStatus,
+            customer_notes: validated.notes || null,
+            locale: validated.locale,
+            ...paymentFields,
+          }
+        : {
+            customer_id: null,
+            guest_name: guest!.name,
+            guest_email: guest!.email,
+            guest_phone: guest!.phone || null,
+            manage_token: manageToken,
+            service_id: service.id,
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            status: initialStatus,
+            customer_notes: validated.notes || null,
+            locale: validated.locale,
+            ...paymentFields,
+          },
+    )
+    .select("id, reference_code")
+    .single();
 
   if (error) {
     if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
@@ -345,7 +342,7 @@ export async function createBooking(
     };
   }
 
-  const origin = await siteOrigin();
+  const origin = await requestOrigin();
   const serviceLabel = localizedServiceName(
     validated.locale,
     service.slug,
@@ -464,7 +461,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   const service = Array.isArray(existing.service) ? existing.service[0] : existing.service;
   const to = profile?.email ?? user.email;
   if (to && service) {
-    const origin = await siteOrigin();
+    const origin = await requestOrigin();
     const meta = user.user_metadata as
       | { full_name?: string; phone?: string }
       | undefined;
@@ -615,7 +612,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
 
   const settings = await getSettings();
   if (appointment.guest_email) {
-    const origin = await siteOrigin();
+    const origin = await requestOrigin();
     const customerName = resolveCustomerDisplayName({
       guestName: appointment.guest_name,
       email: appointment.guest_email,
@@ -669,12 +666,4 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
 
   for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
   return { ok: true };
-}
-
-async function siteOrigin() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return siteUrl;
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
 }
