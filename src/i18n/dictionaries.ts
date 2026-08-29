@@ -430,6 +430,8 @@ export type Dictionary = {
         upcomingHint: string;
         pending: string;
         pendingHint: string;
+        completed: string;
+        completedHint: string;
         todaySchedule: string;
         emptyToday: string;
         recentTitle: string;
@@ -454,6 +456,7 @@ export type Dictionary = {
         lead: string;
         metaTitle: string;
         ranges: { today: string; week: string; month: string; all: string };
+        rangeLabel: string;
         allStatuses: string;
         searchPlaceholder: string;
         search: string;
@@ -1196,14 +1199,16 @@ const it: Dictionary = {
       },
       overview: {
         kicker: "Panoramica",
-        lead: "Cosa fare ora: conferma le richieste, gestisci l’agenda di oggi.",
+        lead: "Agenda di oggi, chi è ancora in attesa, e chi ha già fatto.",
         viewAll: "Tutti gli appuntamenti",
         today: "Oggi",
-        todayHint: "In agenda oggi",
+        todayHint: "Prenotazioni pagate oggi",
         upcoming: "In arrivo",
-        upcomingHint: "Prossimi giorni",
+        upcomingHint: "Dopo oggi",
         pending: "In attesa",
-        pendingHint: "Acconto pagato, slot da fare",
+        pendingHint: "Acconto pagato, orario ancora da fare",
+        completed: "Completati",
+        completedHint: "Fatti negli ultimi 7 giorni",
         todaySchedule: "Agenda di oggi",
         emptyToday: "Nessun appuntamento oggi.",
         recentTitle: "Ultime prenotazioni",
@@ -1225,9 +1230,10 @@ const it: Dictionary = {
       appointments: {
         kicker: "Appuntamenti",
         title: "Prenotazioni",
-        lead: "Filtra per data e stato. In attesa = acconto pagato, slot ancora da fare.",
+        lead: "In attesa = acconto pagato, orario ancora da fare. Completati = lo slot è passato. Annullati = rimborsati.",
         metaTitle: "Appuntamenti · Amministrazione — Doctor Cuts",
         ranges: { today: "Oggi", week: "7 giorni", month: "30 giorni", all: "Tutti" },
+        rangeLabel: "Periodo",
         allStatuses: "Tutti",
         searchPlaceholder: "Cerca per nome, email, telefono o riferimento…",
         search: "Cerca",
@@ -1971,14 +1977,16 @@ const en: Dictionary = {
       },
       overview: {
         kicker: "Overview",
-        lead: "What to do now: confirm requests, run today’s chair.",
+        lead: "Today’s chair, who is still waiting, and who already came in.",
         viewAll: "All appointments",
         today: "Today",
-        todayHint: "On the book today",
+        todayHint: "Paid bookings today",
         upcoming: "Upcoming",
-        upcomingHint: "Next days",
+        upcomingHint: "After today",
         pending: "Waiting",
-        pendingHint: "Deposit paid, slot ahead",
+        pendingHint: "Deposit paid, slot still ahead",
+        completed: "Completed",
+        completedHint: "Done in the last 7 days",
         todaySchedule: "Today’s schedule",
         emptyToday: "Nothing on the schedule today.",
         recentTitle: "Latest bookings",
@@ -2000,9 +2008,10 @@ const en: Dictionary = {
       appointments: {
         kicker: "Appointments",
         title: "Bookings",
-        lead: "Filter by date and status. Waiting = deposit paid, slot still ahead.",
+        lead: "Waiting = deposit paid, time still ahead. Completed = the slot has passed. Cancelled = refunded.",
         metaTitle: "Appointments · Admin — Doctor Cuts",
         ranges: { today: "Today", week: "7 days", month: "30 days", all: "All" },
+        rangeLabel: "When",
         allStatuses: "All",
         searchPlaceholder: "Search by name, email, phone, or reference…",
         search: "Search",

@@ -2532,6 +2532,63 @@ body[data-admin] main {
   color: var(--foreground);
 }
 
+.admin-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.admin-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-filter-label {
+  margin-right: 0.25rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-chip {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--foreground-muted);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.admin-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
+.admin-chip[aria-current="page"] {
+  border-color: var(--foreground);
+  background: var(--admin-panel);
+  color: var(--foreground);
+}
+
+.admin-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;

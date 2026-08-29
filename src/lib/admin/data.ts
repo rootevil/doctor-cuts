@@ -117,29 +117,6 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
   return (data ?? []).map(normaliseAppointment);
 }
 
-/** Newest bookings, by when they were created — not when the chair time is. */
-export async function listRecentAppointments(
-  days = 7,
-  limit = 12,
-): Promise<AdminAppointment[]> {
-  if (!supabaseConfigured) return [];
-  await completePastAppointments();
-  const supabase = await createSupabaseServerClient();
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
-    .from("appointments")
-    .select(APPOINTMENT_SELECT)
-    .gte("created_at", since)
-    .in("payment_status", [...PAID])
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) {
-    console.warn("[admin] recent appointments:", error.message);
-    return [];
-  }
-  return (data ?? []).map(normaliseAppointment);
-}
-
 /** Confirmed/pending chair times after today, for the overview list. */
 export async function listUpcomingAppointments(
   days = 13,
@@ -186,14 +163,10 @@ export function rangeBoundsFor(
   const today = shopToday();
   if (range === "all") return {};
   if (range === "today") return { from: today, to: today };
-  if (range === "week") {
-    if (bucket === "pending") return { from: today, to: shiftDate(today, 6) };
-    if (bucket === "completed") return { from: shiftDate(today, -6), to: today };
-    return { from: shiftDate(today, -6), to: shiftDate(today, 6) };
-  }
-  if (bucket === "pending") return { from: today, to: shiftDate(today, 29) };
-  if (bucket === "completed") return { from: shiftDate(today, -29), to: today };
-  return { from: shiftDate(today, -29), to: shiftDate(today, 29) };
+  const span = range === "week" ? 6 : 29;
+  // Waiting looks forward from today; completed and cancelled look back.
+  if (bucket === "pending") return { from: today, to: shiftDate(today, span) };
+  return { from: shiftDate(today, -span), to: today };
 }
 
 function sanitizeSearch(raw: string) {
@@ -244,13 +217,15 @@ export async function listAppointments(
     if (filter.to) {
       query = query.lt("starts_at", shopDateBoundsUtc(filter.to).endUtc);
     }
-    if (bucket) {
-      query = applyBucket(query, bucket);
-    } else {
-      query = query.in("payment_status", [...PAID_OR_REFUNDED]);
-    }
+  }
+
+  if (bucket) {
+    query = applyBucket(query, bucket);
   } else {
     query = query.in("payment_status", [...PAID_OR_REFUNDED]);
+  }
+
+  if (searching) {
     const safe = sanitizeSearch(filter.q!);
     if (safe) {
       const { data: matches } = await supabase
@@ -298,13 +273,15 @@ export async function listAppointments(
 }
 
 export async function appointmentCounts() {
-  if (!supabaseConfigured) return { today: 0, upcoming: 0, pending: 0 };
+  if (!supabaseConfigured) return { today: 0, waiting: 0, completed: 0 };
   await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   const now = new Date().toISOString();
-  const { startUtc, endUtc } = shopDateBoundsUtc(shopToday());
+  const today = shopToday();
+  const { startUtc, endUtc } = shopDateBoundsUtc(today);
+  const weekAgoUtc = shopDateBoundsUtc(shiftDate(today, -6)).startUtc;
 
-  const [today, upcoming, pending] = await Promise.all([
+  const [todayRes, waitingRes, completedRes] = await Promise.all([
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
@@ -321,15 +298,16 @@ export async function appointmentCounts() {
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
-      .gt("ends_at", now)
-      .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", [...PAID]),
+      .eq("status", "completed")
+      .in("payment_status", [...PAID])
+      .gte("starts_at", weekAgoUtc)
+      .lt("starts_at", endUtc),
   ]);
 
   return {
-    today: today.count ?? 0,
-    upcoming: upcoming.count ?? 0,
-    pending: pending.count ?? 0,
+    today: todayRes.count ?? 0,
+    waiting: waitingRes.count ?? 0,
+    completed: completedRes.count ?? 0,
   };
 }
 

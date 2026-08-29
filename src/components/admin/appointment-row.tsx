@@ -123,8 +123,10 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
             {appointment.service
               ? ` · ${fmtCurrency(Number(appointment.service.price), locale)}`
               : ""}
-            {appointment.deposit_cents > 0 && appointment.payment_status === "paid"
-              ? ` · ${copy.depositPaid} ${formatEurFromCents(appointment.deposit_cents, locale)}`
+            {appointment.deposit_cents > 0 &&
+            (appointment.payment_status === "paid" ||
+              appointment.payment_status === "refunded")
+              ? ` · ${formatEurFromCents(appointment.deposit_cents, locale)}`
               : ""}
           </p>
           {appointment.customer?.phone ? (

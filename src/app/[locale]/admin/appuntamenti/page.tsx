@@ -54,65 +54,65 @@ export default async function AdminAppointmentsPage({
   const statusLabels = t.pages.account.appointments.statuses;
   const r = routes(locale);
 
-  const range = (RANGES.includes(sp.range as AdminRange) ? sp.range : "week") as AdminRange;
   const bucket = (BUCKETS.includes(sp.status as AdminBucket)
     ? sp.status
     : "pending") as AdminBucket;
+  const range = (RANGES.includes(sp.range as AdminRange)
+    ? sp.range
+    : bucket === "pending"
+      ? "all"
+      : "week") as AdminRange;
   const q = (sp.q ?? "").trim();
 
   const bounds = rangeBoundsFor(range, bucket);
   const rows = await listAppointments({ ...bounds, bucket, q });
 
-  const buildHref = (params: {
-    range?: string;
-    status?: string;
-    q?: string;
-  }) => {
+  const buildHref = (next: { range?: string; status?: string; q?: string }) => {
     const u = new URLSearchParams();
-    u.set("range", params.range ?? range);
-    u.set("status", params.status ?? bucket);
-    if (params.q ?? q) u.set("q", params.q ?? q);
+    u.set("range", next.range ?? range);
+    u.set("status", next.status ?? bucket);
+    const query = next.q ?? q;
+    if (query) u.set("q", query);
     return `${r.adminAppointments}?${u.toString()}`;
+  };
+
+  const bucketLabel = (s: AdminBucket) => {
+    if (s === "pending") return copy.waitingLabel;
+    if (s === "completed") return statusLabels.completed;
+    return statusLabels.cancelled;
   };
 
   return (
     <AdminSection kicker={copy.kicker} title={copy.title} lead={copy.lead}>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="admin-filters">
+        <div className="admin-filter-group">
+          <span className="admin-filter-label">{copy.rangeLabel}</span>
           {RANGES.map((rng) => (
             <Link
               key={rng}
               href={buildHref({ range: rng })}
-              className={`border px-3 py-2 text-[11px] tracking-[0.22em] uppercase transition ${
-                range === rng
-                  ? "border-foreground bg-surface"
-                  : "border-border hover:border-foreground/60"
-              }`}
+              aria-current={range === rng ? "page" : undefined}
+              className="admin-chip"
             >
               {copy.ranges[rng]}
             </Link>
           ))}
-          <span className="mx-3 h-4 w-px bg-border" aria-hidden />
+        </div>
+        <div className="admin-filter-group">
+          <span className="admin-filter-label">{copy.statusLabel}</span>
           {BUCKETS.map((s) => (
             <Link
               key={s}
               href={buildHref({ status: s })}
-              className={`border px-3 py-2 text-[11px] tracking-[0.22em] uppercase transition ${
-                bucket === s
-                  ? "border-foreground bg-surface"
-                  : "border-border hover:border-foreground/60"
-              }`}
+              aria-current={bucket === s ? "page" : undefined}
+              className="admin-chip"
             >
-              {s === "pending"
-                ? copy.waitingLabel
-                : s === "completed"
-                  ? statusLabels.completed
-                  : statusLabels.cancelled}
+              {bucketLabel(s)}
             </Link>
           ))}
         </div>
 
-        <form method="GET" action={r.adminAppointments} className="flex flex-wrap gap-2">
+        <form method="GET" action={r.adminAppointments} className="admin-search">
           <input type="hidden" name="range" value={range} />
           <input type="hidden" name="status" value={bucket} />
           <input
@@ -120,19 +120,13 @@ export default async function AdminAppointmentsPage({
             name="q"
             defaultValue={q}
             placeholder={copy.searchPlaceholder}
-            className="flex-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+            className="admin-field min-w-0 flex-1"
           />
-          <button
-            type="submit"
-            className="border border-foreground bg-foreground px-4 py-2 text-[11px] tracking-[0.22em] text-background uppercase transition hover:opacity-90"
-          >
+          <button type="submit" className="admin-btn admin-btn-primary">
             {copy.search}
           </button>
           {q ? (
-            <Link
-              href={buildHref({ q: "" })}
-              className="inline-flex items-center border border-border px-4 py-2 text-[11px] tracking-[0.22em] uppercase transition hover:border-foreground"
-            >
+            <Link href={buildHref({ q: "" })} className="admin-btn admin-btn-ghost">
               {copy.clear}
             </Link>
           ) : null}
