@@ -56,8 +56,10 @@ Checkout Session **before** freeing the chair, so a late card tap cannot
 pay for a slot someone else already took. If Stripe says paid, we confirm
 the booking instead of refunding.
 
-Cron `/api/cron/payments` runs every 5 minutes. The Prenota grid refreshes
-every 10 seconds while the tab is open. Admin lists expire holds on load.
+Holds are also released when Prenota or admin loads, and when Stripe
+sends `checkout.session.expired`. Vercel Hobby only allows the payments
+cron once a day (`18:00 UTC`); that is a backup sweep, not the primary
+path.
 
 ---
 
