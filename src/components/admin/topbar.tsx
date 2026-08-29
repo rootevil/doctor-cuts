@@ -14,7 +14,6 @@ export function AdminTopbar({ locale, t }: { locale: Locale; t: Dictionary }) {
         <Link href={r.admin}>
           <strong>Doctor Cuts</strong>
         </Link>
-        <span>{copy.section}</span>
       </div>
       <div className="admin-topbar-actions">
         <LanguageToggle

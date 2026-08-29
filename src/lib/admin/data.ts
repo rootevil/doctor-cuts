@@ -54,6 +54,10 @@ const APPOINTMENT_SELECT = `
   service:services ( id, slug, name, price, duration_minutes )
 `;
 
+/** Admin lists only real deposits — hide unpaid holds and local/test rows. */
+const PAID = ["paid"] as const;
+const PAID_OR_REFUNDED = ["paid", "refunded"] as const;
+
 function normaliseAppointment(row: unknown): AdminAppointment {
   const r = row as Record<string, unknown>;
   const oneOrArr = <T,>(v: T | T[] | null | undefined): T | null =>
@@ -103,7 +107,7 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
     .select(APPOINTMENT_SELECT)
     .gte("starts_at", startUtc)
     .lt("starts_at", endUtc)
-    .in("payment_status", ["paid", "none", "refunded"])
+    .in("payment_status", [...PAID])
     .not("status", "eq", "cancelled")
     .order("starts_at", { ascending: true });
   if (error) {
@@ -126,6 +130,7 @@ export async function listRecentAppointments(
     .from("appointments")
     .select(APPOINTMENT_SELECT)
     .gte("created_at", since)
+    .in("payment_status", [...PAID])
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -151,7 +156,7 @@ export async function listUpcomingAppointments(
     .gte("starts_at", from)
     .lt("starts_at", to)
     .in("status", ["pending", "confirmed", "arrived"])
-    .in("payment_status", ["paid", "none"])
+    .in("payment_status", [...PAID])
     .order("starts_at", { ascending: true })
     .limit(limit);
   if (error) {
@@ -202,19 +207,17 @@ function applyBucket<T extends {
 }>(query: T, bucket: AdminBucket): T {
   const now = new Date().toISOString();
   if (bucket === "pending") {
-    // Waiting = deposit paid (or legacy free bookings) and the slot is still ahead.
     return query
       .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", ["paid", "none"])
+      .in("payment_status", [...PAID])
       .gt("ends_at", now);
   }
   if (bucket === "completed") {
-    return query.eq("status", "completed");
+    return query.eq("status", "completed").in("payment_status", [...PAID]);
   }
-  // Real cancellations only — hide expired/failed unpaid Stripe holds.
   return query
     .eq("status", "cancelled")
-    .in("payment_status", ["paid", "refunded", "none"]);
+    .in("payment_status", [...PAID_OR_REFUNDED]);
 }
 
 export async function listAppointments(
@@ -243,8 +246,11 @@ export async function listAppointments(
     }
     if (bucket) {
       query = applyBucket(query, bucket);
+    } else {
+      query = query.in("payment_status", [...PAID_OR_REFUNDED]);
     }
   } else {
+    query = query.in("payment_status", [...PAID_OR_REFUNDED]);
     const safe = sanitizeSearch(filter.q!);
     if (safe) {
       const { data: matches } = await supabase
@@ -304,20 +310,20 @@ export async function appointmentCounts() {
       .select("id", { count: "exact", head: true })
       .gte("starts_at", startUtc)
       .lt("starts_at", endUtc)
-      .in("payment_status", ["paid", "none"])
+      .in("payment_status", [...PAID])
       .in("status", ["pending", "confirmed", "arrived", "completed"]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .gt("ends_at", now)
       .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", ["paid", "none"]),
+      .in("payment_status", [...PAID]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .gt("ends_at", now)
       .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", ["paid", "none"]),
+      .in("payment_status", [...PAID]),
   ]);
 
   return {
