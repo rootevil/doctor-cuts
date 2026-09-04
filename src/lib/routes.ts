@@ -18,6 +18,10 @@ function buildRoutes(locale: Locale) {
       `/${locale}/prenota/pagamento?ref=${encodeURIComponent(code)}&p=${encodeURIComponent(token)}`,
     bookService: (slug: string) =>
       `/${locale}/prenota?service=${encodeURIComponent(slug)}`,
+    bookReschedule: (appointmentId: string) =>
+      `/${locale}/prenota?reschedule=${encodeURIComponent(appointmentId)}`,
+    bookRescheduleGuest: (appointmentId: string, code: string, token: string) =>
+      `/${locale}/prenota?reschedule=${encodeURIComponent(appointmentId)}&code=${encodeURIComponent(code)}&t=${encodeURIComponent(token)}`,
     manageBooking: (code: string, token: string) =>
       `/${locale}/gestisci-prenotazione/${encodeURIComponent(code)}?t=${encodeURIComponent(token)}`,
     account: `/${locale}/account`,

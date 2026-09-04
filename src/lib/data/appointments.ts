@@ -16,7 +16,10 @@ export type AppointmentSummary = {
   status: AppointmentStatus;
   reference_code: string;
   customer_notes: string | null;
+  payment_status: string;
+  deposit_cents: number;
   can_cancel: boolean;
+  can_reschedule: boolean;
   service: {
     id: string;
     slug: string;
@@ -35,7 +38,10 @@ const BLOCKING_STATUSES: AppointmentStatus[] = ["pending", "confirmed", "arrived
  * guests / other customers until confirm hit the exclusion constraint.
  * Only `starts_at` / `ends_at` are read (no customer PII).
  */
-export async function getBookingsForDate(dateISO: string): Promise<ExistingBooking[]> {
+export async function getBookingsForDate(
+  dateISO: string,
+  ignoreAppointmentId?: string | null,
+): Promise<ExistingBooking[]> {
   if (!supabaseConfigured) return [];
   const { startUtc, endUtc } = shopDateBoundsUtc(dateISO);
 
@@ -43,18 +49,24 @@ export async function getBookingsForDate(dateISO: string): Promise<ExistingBooki
     ? createSupabaseAdminClient()
     : await createSupabaseServerClient();
 
-  const { data, error } = await client
+  let query = client
     .from("appointments")
-    .select("starts_at, ends_at")
+    .select("id, starts_at, ends_at")
     .in("status", BLOCKING_STATUSES)
     .lt("starts_at", endUtc)
     .gt("ends_at", startUtc);
+
+  if (ignoreAppointmentId) {
+    query = query.neq("id", ignoreAppointmentId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.warn("[appointments] busy-range fetch failed:", error.message);
     return [];
   }
-  return (data ?? []) as ExistingBooking[];
+  return (data ?? []).map(({ starts_at, ends_at }) => ({ starts_at, ends_at }));
 }
 
 export async function listAppointmentsForCurrentUser() {
@@ -71,6 +83,7 @@ export async function listAppointmentsForCurrentUser() {
     .select(
       `
       id, starts_at, ends_at, status, reference_code, customer_notes,
+      payment_status, deposit_cents,
       service:services ( id, slug, name, price, duration_minutes )
     `,
     )
@@ -82,7 +95,10 @@ export async function listAppointmentsForCurrentUser() {
     return { upcoming: [], past: [] };
   }
 
-  const rows = (data ?? []) as unknown as (Omit<AppointmentSummary, "service" | "can_cancel"> & {
+  const rows = (data ?? []) as unknown as (Omit<
+    AppointmentSummary,
+    "service" | "can_cancel" | "can_reschedule"
+  > & {
     service: AppointmentSummary["service"] | AppointmentSummary["service"][] | null;
   })[];
 
@@ -97,10 +113,16 @@ export async function listAppointmentsForCurrentUser() {
       : row.service;
     const cutoffMs =
       new Date(row.starts_at).getTime() - settings.cancellation_hours * 3_600_000;
+    // Match server cancel/reschedule: allowed while now <= cutoff.
+    const mutable =
+      (row.status === "pending" || row.status === "confirmed") && nowMs <= cutoffMs;
     const record: AppointmentSummary = {
       ...row,
+      payment_status: row.payment_status ?? "none",
+      deposit_cents: Number(row.deposit_cents ?? 0),
       service: normalisedService,
-      can_cancel: nowMs < cutoffMs,
+      can_cancel: mutable,
+      can_reschedule: mutable,
     };
     if (
       new Date(row.starts_at).getTime() >= nowMs &&

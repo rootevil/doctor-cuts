@@ -201,14 +201,25 @@ export type Dictionary = {
       notesLabel: string;
       notesPlaceholder: string;
       confirm: string;
+      confirmReschedule: string;
       submitting: string;
+      submittingReschedule: string;
       signInToBook: string;
+      reschedule: {
+        kicker: string;
+        title: string;
+        lead: string;
+        lockedService: string;
+        successTitle: string;
+        successBody: string;
+      };
       nextHint: {
         pickService: string;
         pickDate: string;
         pickTime: string;
         addDetails: string;
         ready: string;
+        readyReschedule: string;
       };
       locked: {
         needService: string;
@@ -292,7 +303,9 @@ export type Dictionary = {
       missingLead: string;
       cancelled: string;
       cancel: string;
+      reschedule: string;
       confirmCancel: string;
+      confirmCancelPaid: string;
       tooLate: string;
       home: string;
       bookAgain: string;
@@ -367,7 +380,11 @@ export type Dictionary = {
         emptyPastLead: string;
         bookCta: string;
         cancel: string;
+        reschedule: string;
         confirmCancel: string;
+        confirmCancelPaid: string;
+        tooLateHint: string;
+        depositPaid: string;
         refLabel: string;
         statuses: {
           pending: string;
@@ -965,14 +982,25 @@ const it: Dictionary = {
       notesLabel: "Note (opzionale)",
       notesPlaceholder: "Preferenze, allergie, richieste…",
       confirm: "Conferma prenotazione",
+      confirmReschedule: "Conferma nuovo orario",
       submitting: "Conferma in corso…",
+      submittingReschedule: "Aggiorno l’appuntamento…",
       signInToBook: "Accedi per confermare",
+      reschedule: {
+        kicker: "Riprogramma",
+        title: "SCEGLI UN NUOVO ORARIO.",
+        lead: "L’acconto già pagato resta valido. Cambia solo data e ora.",
+        lockedService: "Servizio bloccato per questa riprogrammazione.",
+        successTitle: "ORARIO AGGIORNATO.",
+        successBody: "Il tuo appuntamento per {service} è stato spostato. Ti abbiamo inviato una mail.",
+      },
       nextHint: {
         pickService: "Scegli un servizio",
         pickDate: "Scegli una data",
         pickTime: "Scegli un orario",
         addDetails: "Inserisci nome e email",
         ready: "Pronto per confermare",
+        readyReschedule: "Pronto per confermare il nuovo orario",
       },
       locked: {
         needService: "Prima scegli un servizio.",
@@ -1060,13 +1088,16 @@ const it: Dictionary = {
     gestisci: {
       kicker: "Prenotazione",
       title: "La tua prenotazione",
-      lead: "Da qui puoi controllare o cancellare l’appuntamento.",
+      lead: "Da qui puoi riprogrammare o cancellare l’appuntamento.",
       missing: "Prenotazione non trovata.",
       missingLead:
         "Il link non è valido o è scaduto. Controlla l’email di conferma o scrivici.",
       cancelled: "Prenotazione annullata.",
       cancel: "Annulla prenotazione",
+      reschedule: "Riprogramma",
       confirmCancel: "Confermi l’annullamento?",
+      confirmCancelPaid:
+        "Annullare la prenotazione? L’acconto di €5 verrà rimborsato.",
       tooLate: "Troppo tardi per cancellare online. Contatta lo studio.",
       home: "Torna alla home",
       bookAgain: "Prenota di nuovo",
@@ -1143,7 +1174,13 @@ const it: Dictionary = {
         emptyPastLead: "Nessun appuntamento nello storico.",
         bookCta: "Prenota ora",
         cancel: "Annulla",
+        reschedule: "Riprogramma",
         confirmCancel: "Sei sicuro di voler annullare questo appuntamento?",
+        confirmCancelPaid:
+          "Annullare l’appuntamento? L’acconto di €5 verrà rimborsato.",
+        tooLateHint:
+          "Troppo tardi per modificare online. Contatta lo studio via WhatsApp o telefono.",
+        depositPaid: "Acconto pagato",
         refLabel: "Rif.",
         statuses: {
           pending: "In attesa",
@@ -1745,14 +1782,25 @@ const en: Dictionary = {
       notesLabel: "Notes (optional)",
       notesPlaceholder: "Style preferences, allergies, requests…",
       confirm: "Confirm booking",
+      confirmReschedule: "Confirm new time",
       submitting: "Confirming…",
+      submittingReschedule: "Updating appointment…",
       signInToBook: "Sign in to confirm",
+      reschedule: {
+        kicker: "Reschedule",
+        title: "PICK A NEW TIME.",
+        lead: "Your deposit stays valid. Only the date and time change.",
+        lockedService: "Service is locked for this reschedule.",
+        successTitle: "TIME UPDATED.",
+        successBody: "Your appointment for {service} has been moved. We sent you an email.",
+      },
       nextHint: {
         pickService: "Choose a service",
         pickDate: "Pick a date",
         pickTime: "Choose a time",
         addDetails: "Add your name and email",
         ready: "Ready to confirm",
+        readyReschedule: "Ready to confirm the new time",
       },
       locked: {
         needService: "Choose a service first.",
@@ -1838,13 +1886,16 @@ const en: Dictionary = {
     gestisci: {
       kicker: "Booking",
       title: "Your appointment",
-      lead: "Review or cancel this booking from this page.",
+      lead: "Reschedule or cancel this booking from this page.",
       missing: "Booking not found.",
       missingLead:
         "This link is invalid or expired. Check the confirmation email or get in touch.",
       cancelled: "Booking cancelled.",
       cancel: "Cancel booking",
+      reschedule: "Reschedule",
       confirmCancel: "Cancel this appointment?",
+      confirmCancelPaid:
+        "Cancel this booking? Your €5 deposit will be refunded.",
       tooLate: "It’s too late to cancel online. Please contact the studio.",
       home: "Back to home",
       bookAgain: "Book again",
@@ -1921,7 +1972,13 @@ const en: Dictionary = {
         emptyPastLead: "No past appointments yet.",
         bookCta: "Book now",
         cancel: "Cancel",
+        reschedule: "Reschedule",
         confirmCancel: "Are you sure you want to cancel this appointment?",
+        confirmCancelPaid:
+          "Cancel this appointment? Your €5 deposit will be refunded.",
+        tooLateHint:
+          "It’s too late to change this online. Reach us on WhatsApp or by phone.",
+        depositPaid: "Deposit paid",
         refLabel: "Ref.",
         statuses: {
           pending: "Pending",

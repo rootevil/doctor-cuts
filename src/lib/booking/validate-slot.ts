@@ -32,10 +32,15 @@ export type SlotValidationFailure =
 export async function assertSlotBookable(input: {
   serviceId: string;
   startsAtUTC: string;
+  /** When rescheduling, ignore the current appointment so its chair stays free. */
+  ignoreAppointmentId?: string | null;
 }): Promise<{ ok: true } | { ok: false; reason: SlotValidationFailure }> {
   const service = await getServiceById(input.serviceId);
   if (!service) return { ok: false, reason: "unknown_service" };
-  if (!service.is_active) return { ok: false, reason: "inactive_service" };
+  // Reschedule keeps the original service even if it was later deactivated.
+  if (!service.is_active && !input.ignoreAppointmentId) {
+    return { ok: false, reason: "inactive_service" };
+  }
 
   const settings = await getSettings();
   if (!settings.bookings_enabled) return { ok: false, reason: "bookings_closed" };
@@ -54,7 +59,7 @@ export async function assertSlotBookable(input: {
     getBusinessHours(),
     getBreaks(),
     isDateBlocked(dateISO),
-    getBookingsForDate(dateISO),
+    getBookingsForDate(dateISO, input.ignoreAppointmentId),
   ]);
 
   const slots = computeSlotGrid({

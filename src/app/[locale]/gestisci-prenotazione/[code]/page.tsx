@@ -117,15 +117,32 @@ export default async function ManageGuestBookingPage({
         </dl>
         <p className="text-[11px] tracking-[0.28em] text-muted uppercase">{statusLabel}</p>
 
-        {appointment.can_cancel && token ? (
-          <GuestCancelButton
-            locale={locale}
-            referenceCode={appointment.reference_code}
-            token={token}
-            label={copy.cancel}
-            confirmLabel={copy.confirmCancel}
-            tooLate={copy.tooLate}
-          />
+        {!cancelled && (appointment.can_cancel || appointment.can_reschedule) ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {appointment.can_reschedule && token ? (
+              <ButtonLink
+                href={r.bookRescheduleGuest(appointment.id, appointment.reference_code, token)}
+                variant="book"
+                arrow
+              >
+                {copy.reschedule}
+              </ButtonLink>
+            ) : null}
+            {appointment.can_cancel && token ? (
+              <GuestCancelButton
+                locale={locale}
+                referenceCode={appointment.reference_code}
+                token={token}
+                label={copy.cancel}
+                confirmLabel={
+                  appointment.payment_status === "paid" && appointment.deposit_cents > 0
+                    ? copy.confirmCancelPaid
+                    : copy.confirmCancel
+                }
+                tooLate={copy.tooLate}
+              />
+            ) : null}
+          </div>
         ) : cancelled ? null : (
           <p className="text-sm text-muted">{copy.tooLate}</p>
         )}

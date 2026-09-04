@@ -78,6 +78,23 @@ export const guestManageSchema = z.object({
   token: manageTokenSchema,
 });
 
+const startsAtUtcSchema = z
+  .string()
+  .datetime({ offset: true })
+  .or(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/));
+
+export const rescheduleBookingSchema = z.object({
+  appointment_id: uuidSchema,
+  startsAtUTC: startsAtUtcSchema,
+  locale: localeSchema,
+  notes: trimmed(500).optional(),
+});
+
+export const guestRescheduleSchema = guestManageSchema.extend({
+  startsAtUTC: startsAtUtcSchema,
+  notes: trimmed(500).optional(),
+});
+
 // Admin ------------------------------------------------------------------
 
 export const appointmentStatusSchema = z.enum([

@@ -55,9 +55,9 @@ const APPOINTMENT_SELECT = `
   service:services ( id, slug, name, price, duration_minutes )
 `;
 
-/** Admin lists only real deposits — hide unpaid holds and local/test rows. */
-const PAID = ["paid"] as const;
-const PAID_OR_REFUNDED = ["paid", "refunded"] as const;
+/** Live shop bookings (paid deposit or free confirm). Hides unpaid Checkout holds. */
+const VISIBLE_LIVE = ["paid", "none"] as const;
+const VISIBLE_CANCELLED = ["paid", "refunded", "none"] as const;
 
 function normaliseAppointment(row: unknown): AdminAppointment {
   const r = row as Record<string, unknown>;
@@ -114,7 +114,7 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
     .select(APPOINTMENT_SELECT)
     .gte("starts_at", startUtc)
     .lt("starts_at", endUtc)
-    .in("payment_status", [...PAID])
+    .in("payment_status", [...VISIBLE_LIVE])
     .not("status", "eq", "cancelled")
     .order("starts_at", { ascending: true });
   if (error) {
@@ -140,7 +140,7 @@ export async function listUpcomingAppointments(
     .gte("starts_at", from)
     .lt("starts_at", to)
     .in("status", ["pending", "confirmed", "arrived"])
-    .in("payment_status", [...PAID])
+    .in("payment_status", [...VISIBLE_LIVE])
     .order("starts_at", { ascending: true })
     .limit(limit);
   if (error) {
@@ -189,15 +189,15 @@ function applyBucket<T extends {
   if (bucket === "pending") {
     return query
       .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", [...PAID])
+      .in("payment_status", [...VISIBLE_LIVE])
       .gt("ends_at", now);
   }
   if (bucket === "completed") {
-    return query.eq("status", "completed").in("payment_status", [...PAID]);
+    return query.eq("status", "completed").in("payment_status", [...VISIBLE_LIVE]);
   }
   return query
     .eq("status", "cancelled")
-    .in("payment_status", [...PAID_OR_REFUNDED]);
+    .in("payment_status", [...VISIBLE_CANCELLED]);
 }
 
 export async function listAppointments(
@@ -229,7 +229,7 @@ export async function listAppointments(
   if (bucket) {
     query = applyBucket(query, bucket);
   } else {
-    query = query.in("payment_status", [...PAID_OR_REFUNDED]);
+    query = query.in("payment_status", [...VISIBLE_CANCELLED]);
   }
 
   if (searching) {
@@ -294,19 +294,19 @@ export async function appointmentCounts() {
       .select("id", { count: "exact", head: true })
       .gte("starts_at", startUtc)
       .lt("starts_at", endUtc)
-      .in("payment_status", [...PAID])
+      .in("payment_status", [...VISIBLE_LIVE])
       .in("status", ["pending", "confirmed", "arrived", "completed"]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .gt("ends_at", now)
       .in("status", ["pending", "confirmed", "arrived"])
-      .in("payment_status", [...PAID]),
+      .in("payment_status", [...VISIBLE_LIVE]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .eq("status", "completed")
-      .in("payment_status", [...PAID])
+      .in("payment_status", [...VISIBLE_LIVE])
       .gte("starts_at", weekAgoUtc)
       .lt("starts_at", endUtc),
   ]);

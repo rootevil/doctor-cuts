@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import type { AppointmentSummary } from "@/lib/data/appointments";
@@ -10,12 +11,14 @@ import { SHOP_TZ } from "@/lib/booking/timezone";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
 import { cancelBooking } from "@/lib/booking/actions";
+import { routes } from "@/lib/routes";
 
 type Props = {
   appointment: AppointmentSummary;
   locale: Locale;
   t: Dictionary;
   canCancel: boolean;
+  canReschedule: boolean;
 };
 
 function fmtCurrency(amount: number, locale: Locale) {
@@ -26,8 +29,15 @@ function fmtCurrency(amount: number, locale: Locale) {
   }).format(amount);
 }
 
-export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
+export function AppointmentCard({
+  appointment,
+  locale,
+  t,
+  canCancel,
+  canReschedule,
+}: Props) {
   const copy = t.pages.account.appointments;
+  const r = routes(locale);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [dismissed, setDismissed] = useState(false);
@@ -48,10 +58,18 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
   );
   const status = statusLabel(appointment.status, copy.statuses);
   const statusTone = statusClass(appointment.status);
-  const showCancel = canCancel && appointment.status !== "cancelled";
+  const upcoming =
+    appointment.status !== "cancelled" &&
+    appointment.status !== "completed" &&
+    appointment.status !== "no_show";
+  const showCancel = canCancel && upcoming;
+  const showReschedule = canReschedule && upcoming;
+  const depositPaid =
+    appointment.payment_status === "paid" && appointment.deposit_cents > 0;
+  const cancelConfirm = depositPaid ? copy.confirmCancelPaid : copy.confirmCancel;
 
   const onCancel = () => {
-    if (!confirm(copy.confirmCancel)) return;
+    if (!confirm(cancelConfirm)) return;
     setError(null);
     startTransition(async () => {
       const form = new FormData();
@@ -82,6 +100,11 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
             >
               {status}
             </span>
+            {depositPaid ? (
+              <span className="inline-flex items-center px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-brass uppercase">
+                {copy.depositPaid}
+              </span>
+            ) : null}
             <span className="text-[11px] tracking-[0.18em] text-muted uppercase">
               {copy.refLabel} {appointment.reference_code}
             </span>
@@ -111,6 +134,10 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
             </p>
           ) : null}
 
+          {upcoming && !showCancel && !showReschedule ? (
+            <p className="mt-3 text-sm text-muted">{copy.tooLateHint}</p>
+          ) : null}
+
           {error ? (
             <p role="alert" className="mt-3 text-sm text-[#f4b0b0]">
               {error}
@@ -118,16 +145,30 @@ export function AppointmentCard({ appointment, locale, t, canCancel }: Props) {
           ) : null}
         </div>
 
-        {showCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={pending}
-            className="inline-flex min-h-10 shrink-0 items-center gap-2 self-start border border-border px-4 text-[11px] tracking-[0.22em] text-foreground-muted uppercase transition hover:border-foreground hover:text-foreground disabled:opacity-50"
-          >
-            {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            {copy.cancel}
-          </button>
+        {showCancel || showReschedule ? (
+          <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row">
+            {showReschedule ? (
+              <Link
+                href={r.bookReschedule(appointment.id)}
+                className="inline-flex min-h-10 items-center border border-brass/50 px-4 text-[11px] tracking-[0.22em] text-brass uppercase transition hover:bg-brass hover:text-background"
+              >
+                {copy.reschedule}
+              </Link>
+            ) : null}
+            {showCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={pending}
+                className="inline-flex min-h-10 items-center gap-2 border border-border px-4 text-[11px] tracking-[0.22em] text-foreground-muted uppercase transition hover:border-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {pending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : null}
+                {copy.cancel}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </article>

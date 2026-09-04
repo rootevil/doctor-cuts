@@ -160,6 +160,7 @@ export default async function AccountPage({
                   locale={locale}
                   t={t}
                   canCancel={appointment.can_cancel}
+                  canReschedule={appointment.can_reschedule}
                 />
               </li>
             ))}
@@ -192,6 +193,7 @@ export default async function AccountPage({
                   locale={locale}
                   t={t}
                   canCancel={false}
+                  canReschedule={false}
                 />
               </li>
             ))}

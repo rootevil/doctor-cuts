@@ -31,7 +31,9 @@ import {
   bookingInputSchema,
   cancelBookingSchema,
   guestManageSchema,
+  guestRescheduleSchema,
   isoDateSchema,
+  rescheduleBookingSchema,
   uuidSchema,
   fdToObject,
 } from "@/lib/security/schemas";
@@ -67,12 +69,20 @@ export type SlotList = {
 export async function getAvailableSlots(
   serviceId: string,
   dateISO: string,
+  ignoreAppointmentId?: string | null,
 ): Promise<SlotList> {
   if (!supabaseConfigured) return { ok: false, reason: "not_configured" };
 
   const parsedDate = isoDateSchema.safeParse(dateISO);
   const parsedId = uuidSchema.safeParse(serviceId);
   if (!parsedDate.success || !parsedId.success) {
+    return { ok: false, reason: "invalid_input" };
+  }
+
+  const ignoreId = ignoreAppointmentId
+    ? uuidSchema.safeParse(ignoreAppointmentId)
+    : null;
+  if (ignoreAppointmentId && !ignoreId?.success) {
     return { ok: false, reason: "invalid_input" };
   }
 
@@ -83,7 +93,10 @@ export async function getAvailableSlots(
   await completePastAppointments();
 
   const service = await getServiceById(parsedId.data);
-  if (!service || !service.is_active) return { ok: false, reason: "unknown_service" };
+  const allowingReschedule = Boolean(ignoreId?.success);
+  if (!service || (!service.is_active && !allowingReschedule)) {
+    return { ok: false, reason: "unknown_service" };
+  }
 
   const settings = await getSettings();
   if (!settings.bookings_enabled) {
@@ -100,7 +113,7 @@ export async function getAvailableSlots(
     getBusinessHours(),
     getBreaks(),
     isDateBlocked(dateISO),
-    getBookingsForDate(dateISO),
+    getBookingsForDate(dateISO, ignoreId?.success ? ignoreId.data : null),
   ]);
 
   const slots = computeSlotGrid({
@@ -478,13 +491,16 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
 
   if (fetchErr || !existing) return { ok: false, reason: "not_found" };
   if (existing.customer_id !== user.id) return { ok: false, reason: "not_found" };
+  if (existing.status !== "pending" && existing.status !== "confirmed") {
+    return { ok: false, reason: "too_late" };
+  }
 
   const settings = await getSettings();
   const now = new Date();
   const cutoff = new Date(
     new Date(existing.starts_at).getTime() - settings.cancellation_hours * 3_600_000,
   );
-  if (now > cutoff) return { ok: false, reason: "too_late" };
+  if (now.getTime() > cutoff.getTime()) return { ok: false, reason: "too_late" };
 
   const cancelled = await cancelAppointmentAndRefund(appointmentId);
   if (!cancelled.ok) {
@@ -568,12 +584,15 @@ export type GuestAppointment = {
   guest_name: string | null;
   guest_email: string | null;
   guest_phone: string | null;
+  service_id: string;
   service_name: string;
   service_slug: string;
   duration_minutes: number;
   price: number;
   deposit_cents: number;
+  payment_status: string;
   can_cancel: boolean;
+  can_reschedule: boolean;
 };
 
 export async function getGuestAppointment(
@@ -592,7 +611,7 @@ export async function getGuestAppointment(
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, deposit_cents, service:services ( slug, name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, deposit_cents, payment_status, service_id, service:services ( id, slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -607,8 +626,9 @@ export async function getGuestAppointment(
   const service = Array.isArray(data.service) ? data.service[0] : data.service;
   if (!service) return null;
 
-  const cancellable =
-    (data.status === "pending" || data.status === "confirmed") && new Date() <= cutoff;
+  const mutable =
+    (data.status === "pending" || data.status === "confirmed") &&
+    Date.now() <= cutoff.getTime();
 
   return {
     id: data.id,
@@ -619,12 +639,15 @@ export async function getGuestAppointment(
     guest_name: data.guest_name,
     guest_email: data.guest_email,
     guest_phone: data.guest_phone,
+    service_id: (data.service_id as string) || service.id,
     service_name: service.name,
     service_slug: service.slug,
     duration_minutes: service.duration_minutes,
     price: Number(service.price),
     deposit_cents: Number(data.deposit_cents ?? 0),
-    can_cancel: cancellable,
+    payment_status: (data.payment_status as string) ?? "none",
+    can_cancel: mutable,
+    can_reschedule: mutable,
   };
 }
 
@@ -706,4 +729,385 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
 
   for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
   return { ok: true };
+}
+
+export type RescheduleTarget = {
+  appointmentId: string;
+  serviceId: string;
+  referenceCode: string;
+  currentStartsAt: string;
+  manageToken: string | null;
+  isGuest: boolean;
+};
+
+export type RescheduleResult =
+  | {
+      ok: true;
+      referenceCode: string;
+      managePath: string;
+      startsAt: string;
+    }
+  | {
+      ok: false;
+      reason:
+        | "not_configured"
+        | "auth_required"
+        | "not_found"
+        | "too_late"
+        | "slot_taken"
+        | "invalid_time"
+        | "bookings_closed"
+        | "unknown";
+    };
+
+/** Load a mutable appointment for the Prenota reschedule flow. */
+export async function getRescheduleTarget(input: {
+  appointmentId: string;
+  referenceCode?: string | null;
+  manageToken?: string | null;
+}): Promise<RescheduleTarget | null> {
+  if (!supabaseConfigured || !supabaseServiceRoleKey) return null;
+  const id = uuidSchema.safeParse(input.appointmentId);
+  if (!id.success) return null;
+
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
+    .from("appointments")
+    .select(
+      "id, starts_at, status, reference_code, customer_id, manage_token, service_id, payment_status",
+    )
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!data) return null;
+  if (data.payment_status === "awaiting") return null;
+
+  const settings = await getSettings();
+  const cutoff = new Date(
+    new Date(data.starts_at).getTime() - settings.cancellation_hours * 3_600_000,
+  );
+  if (data.status !== "pending" && data.status !== "confirmed") return null;
+  if (Date.now() > cutoff.getTime()) return null;
+
+  if (input.manageToken) {
+    if (!data.manage_token || !tokensEqual(data.manage_token, input.manageToken)) {
+      return null;
+    }
+    if (
+      input.referenceCode &&
+      data.reference_code.toUpperCase() !== input.referenceCode.toUpperCase()
+    ) {
+      return null;
+    }
+    return {
+      appointmentId: data.id,
+      serviceId: data.service_id,
+      referenceCode: data.reference_code,
+      currentStartsAt: data.starts_at,
+      manageToken: data.manage_token,
+      isGuest: true,
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || data.customer_id !== user.id) return null;
+
+  return {
+    appointmentId: data.id,
+    serviceId: data.service_id,
+    referenceCode: data.reference_code,
+    currentStartsAt: data.starts_at,
+    manageToken: null,
+    isGuest: false,
+  };
+}
+
+export async function rescheduleBooking(input: {
+  appointmentId: string;
+  startsAtUTC: string;
+  locale: Locale;
+  notes?: string;
+}): Promise<RescheduleResult> {
+  if (!supabaseConfigured || !supabaseServiceRoleKey) {
+    return { ok: false, reason: "not_configured" };
+  }
+
+  const parsed = rescheduleBookingSchema.safeParse({
+    appointment_id: input.appointmentId,
+    startsAtUTC: input.startsAtUTC,
+    locale: input.locale,
+    notes: input.notes,
+  });
+  if (!parsed.success) return { ok: false, reason: "invalid_time" };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: "auth_required" };
+
+  const rl = await limitByKey("rescheduleBooking", user.id, 20, 60 * 60_000);
+  if (!rl.ok) return { ok: false, reason: "unknown" };
+
+  const admin = createSupabaseAdminClient();
+  const { data: existing } = await admin
+    .from("appointments")
+    .select(
+      "id, starts_at, status, reference_code, customer_id, service_id, customer_notes, payment_status, service:services ( id, slug, name, price, duration_minutes )",
+    )
+    .eq("id", parsed.data.appointment_id)
+    .maybeSingle();
+
+  if (!existing || existing.customer_id !== user.id) {
+    return { ok: false, reason: "not_found" };
+  }
+  if (existing.payment_status === "awaiting") return { ok: false, reason: "too_late" };
+  if (existing.status !== "pending" && existing.status !== "confirmed") {
+    return { ok: false, reason: "too_late" };
+  }
+
+  const settings = await getSettings();
+  const cutoff = new Date(
+    new Date(existing.starts_at).getTime() - settings.cancellation_hours * 3_600_000,
+  );
+  if (Date.now() > cutoff.getTime()) return { ok: false, reason: "too_late" };
+
+  const startsAt = new Date(parsed.data.startsAtUTC);
+  if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
+  if (startsAt.toISOString() === new Date(existing.starts_at).toISOString()) {
+    return {
+      ok: true,
+      referenceCode: existing.reference_code,
+      managePath: routes(parsed.data.locale).account,
+      startsAt: existing.starts_at,
+    };
+  }
+
+  const slotCheck = await assertSlotBookable({
+    serviceId: existing.service_id,
+    startsAtUTC: startsAt.toISOString(),
+    ignoreAppointmentId: existing.id,
+  });
+  if (!slotCheck.ok) {
+    if (slotCheck.reason === "slot_unavailable") return { ok: false, reason: "slot_taken" };
+    if (slotCheck.reason === "bookings_closed") return { ok: false, reason: "bookings_closed" };
+    return { ok: false, reason: "invalid_time" };
+  }
+
+  const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
+  const notes =
+    parsed.data.notes !== undefined
+      ? parsed.data.notes || null
+      : existing.customer_notes;
+
+  const { error } = await admin
+    .from("appointments")
+    .update({
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      customer_notes: notes,
+    })
+    .eq("id", existing.id)
+    .in("status", ["pending", "confirmed"]);
+
+  if (error) {
+    if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
+    console.warn("[booking] reschedule failed:", error.message);
+    return { ok: false, reason: "unknown" };
+  }
+
+  const service = Array.isArray(existing.service) ? existing.service[0] : existing.service;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email, phone")
+    .eq("id", user.id)
+    .maybeSingle();
+  const to = profile?.email ?? user.email;
+  const origin = await requestOrigin();
+  const managePath = routes(parsed.data.locale).account;
+
+  if (to && service) {
+    const meta = user.user_metadata as
+      | { full_name?: string; phone?: string }
+      | undefined;
+    const customerName = resolveCustomerDisplayName({
+      fullName: profile?.full_name,
+      metaFullName: meta?.full_name,
+      email: to,
+    });
+    const customerPhone =
+      profile?.phone?.trim() ||
+      (typeof meta?.phone === "string" ? meta.phone.trim() : "") ||
+      null;
+    const serviceLabel = localizedServiceName(
+      parsed.data.locale,
+      service.slug,
+      service.name,
+    );
+    const template = confirmationEmail({
+      locale: parsed.data.locale,
+      customerName,
+      serviceName: serviceLabel,
+      startsAt: startsAt.toISOString(),
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: existing.reference_code,
+      price: Number(service.price),
+      settings,
+      manageUrl: `${origin}${managePath}`,
+    });
+    await sendEmail({ to, ...template });
+
+    const alert = shopBookingAlertEmail({
+      customerName,
+      customerEmail: to,
+      customerPhone,
+      serviceName: localizedServiceName("en", service.slug, service.name),
+      startsAt: startsAt.toISOString(),
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: existing.reference_code,
+      price: Number(service.price),
+      status: existing.status as AppointmentStatus,
+      notes: typeof notes === "string" ? notes : null,
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+    });
+    await sendEmail({ to: bookingAlertAddress(), ...alert, replyTo: to });
+  }
+
+  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+
+  return {
+    ok: true,
+    referenceCode: existing.reference_code,
+    managePath,
+    startsAt: startsAt.toISOString(),
+  };
+}
+
+export async function rescheduleGuestBooking(formData: FormData): Promise<RescheduleResult> {
+  if (!supabaseConfigured || !supabaseServiceRoleKey) {
+    return { ok: false, reason: "not_configured" };
+  }
+
+  const parsed = guestRescheduleSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) return { ok: false, reason: "not_found" };
+
+  const ipRl = await limitByIp("rescheduleGuest", 10, 60 * 60_000);
+  if (!ipRl.ok) return { ok: false, reason: "unknown" };
+
+  const appointment = await getGuestAppointment(
+    parsed.data.reference_code,
+    parsed.data.token,
+  );
+  if (!appointment) return { ok: false, reason: "not_found" };
+  if (!appointment.can_reschedule) return { ok: false, reason: "too_late" };
+  if (appointment.payment_status === "awaiting") return { ok: false, reason: "too_late" };
+
+  const startsAt = new Date(parsed.data.startsAtUTC);
+  if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
+
+  const managePath = routes(parsed.data.locale).manageBooking(
+    appointment.reference_code,
+    parsed.data.token,
+  );
+
+  if (startsAt.toISOString() === new Date(appointment.starts_at).toISOString()) {
+    return {
+      ok: true,
+      referenceCode: appointment.reference_code,
+      managePath,
+      startsAt: appointment.starts_at,
+    };
+  }
+
+  const slotCheck = await assertSlotBookable({
+    serviceId: appointment.service_id,
+    startsAtUTC: startsAt.toISOString(),
+    ignoreAppointmentId: appointment.id,
+  });
+  if (!slotCheck.ok) {
+    if (slotCheck.reason === "slot_unavailable") return { ok: false, reason: "slot_taken" };
+    if (slotCheck.reason === "bookings_closed") return { ok: false, reason: "bookings_closed" };
+    return { ok: false, reason: "invalid_time" };
+  }
+
+  const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("appointments")
+    .update({
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      ...(parsed.data.notes !== undefined
+        ? { customer_notes: parsed.data.notes || null }
+        : {}),
+    })
+    .eq("id", appointment.id)
+    .in("status", ["pending", "confirmed"]);
+
+  if (error) {
+    if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
+    console.warn("[booking] guest reschedule failed:", error.message);
+    return { ok: false, reason: "unknown" };
+  }
+
+  const settings = await getSettings();
+  const origin = await requestOrigin();
+  if (appointment.guest_email) {
+    const customerName = resolveCustomerDisplayName({
+      guestName: appointment.guest_name,
+      email: appointment.guest_email,
+    });
+    const template = confirmationEmail({
+      locale: parsed.data.locale,
+      customerName,
+      serviceName: localizedServiceName(
+        parsed.data.locale,
+        appointment.service_slug,
+        appointment.service_name,
+      ),
+      startsAt: startsAt.toISOString(),
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: appointment.reference_code,
+      price: appointment.price,
+      settings,
+      manageUrl: `${origin}${managePath}`,
+    });
+    await sendEmail({ to: appointment.guest_email, ...template });
+
+    const alert = shopBookingAlertEmail({
+      customerName,
+      customerEmail: appointment.guest_email,
+      customerPhone: appointment.guest_phone,
+      serviceName: localizedServiceName(
+        "en",
+        appointment.service_slug,
+        appointment.service_name,
+      ),
+      startsAt: startsAt.toISOString(),
+      durationMinutes: BOOKING_SLOT_MINUTES,
+      referenceCode: appointment.reference_code,
+      price: appointment.price,
+      status: appointment.status,
+      notes: parsed.data.notes?.trim() || null,
+      adminUrl: `${origin}${routes("it").adminAppointments}`,
+    });
+    await sendEmail({
+      to: bookingAlertAddress(),
+      ...alert,
+      replyTo: appointment.guest_email,
+    });
+  }
+
+  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  return {
+    ok: true,
+    referenceCode: appointment.reference_code,
+    managePath,
+    startsAt: startsAt.toISOString(),
+  };
 }

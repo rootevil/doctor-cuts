@@ -34,7 +34,8 @@ import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServiceDTO } from "@/lib/data/services";
 import type { SlotOption } from "@/lib/booking/availability";
-import { createBooking, getAvailableSlots } from "@/lib/booking/actions";
+import { createBooking, getAvailableSlots, rescheduleBooking, rescheduleGuestBooking } from "@/lib/booking/actions";
+import type { RescheduleTarget } from "@/lib/booking/actions";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
 import { routes } from "@/lib/routes";
@@ -57,6 +58,8 @@ type Props = {
   depositCents?: number;
   /** Preselect from `/prenota?service=slug` (deep-link continuity). */
   initialServiceSlug?: string | null;
+  /** Move an existing paid/free booking without a new deposit. */
+  reschedule?: RescheduleTarget | null;
 };
 
 type Success = {
@@ -89,15 +92,19 @@ export function BookingFlow({
   depositEnabled = false,
   depositCents = 500,
   initialServiceSlug = null,
+  reschedule = null,
 }: Props) {
   const copy = t.pages.prenota;
   const r = routes(locale);
+  const isReschedule = Boolean(reschedule);
 
   // Intentional choice unless deep-linked (error prevention + clear step 1)
   const initialServiceId =
+    reschedule?.serviceId ??
     (initialServiceSlug
       ? services.find((s) => s.slug === initialServiceSlug)?.id
-      : null) ?? null;
+      : null) ??
+    null;
 
   const [serviceId, setServiceId] = useState<string | null>(initialServiceId);
   const [dateISO, setDateISO] = useState<string | null>(null);
@@ -129,6 +136,7 @@ export function BookingFlow({
   );
 
   const slotsRequestRef = useRef(0);
+  const ignoreAppointmentId = reschedule?.appointmentId ?? null;
   const fetchSlots = useCallback(
     (sid: string, iso: string) => {
       const token = ++slotsRequestRef.current;
@@ -136,7 +144,7 @@ export function BookingFlow({
       setSlots([]);
       setSlot(null);
       setSlotError(null);
-      getAvailableSlots(sid, iso)
+      getAvailableSlots(sid, iso, ignoreAppointmentId)
         .then((res) => {
           if (token !== slotsRequestRef.current) return;
           if (res.ok) {
@@ -162,12 +170,12 @@ export function BookingFlow({
           setLoadingSlots(false);
         });
     },
-    [copy.errors],
+    [copy.errors, ignoreAppointmentId],
   );
 
   const pollSlots = useCallback(
     (sid: string, iso: string) => {
-      getAvailableSlots(sid, iso)
+      getAvailableSlots(sid, iso, ignoreAppointmentId)
         .then((res) => {
           if (!res.ok) return;
           setSlots(res.slots);
@@ -185,7 +193,7 @@ export function BookingFlow({
           /* keep the last grid; submit still re-checks on the server */
         });
     },
-    [copy.errors.slotTaken],
+    [copy.errors.slotTaken, ignoreAppointmentId],
   );
 
   useEffect(() => {
@@ -216,6 +224,7 @@ export function BookingFlow({
   }, []);
 
   const pickService = (id: string) => {
+    if (isReschedule) return;
     if (id === serviceId) return;
     setServiceId(id);
     setSubmitError(null);
@@ -235,7 +244,7 @@ export function BookingFlow({
   const pickSlot = (iso: string) => {
     setSlot(iso);
     setSubmitError(null);
-    if (!isAuthenticated) {
+    if (!isReschedule && !isAuthenticated) {
       requestAnimationFrame(() => {
         scrollToSection(detailsSectionRef.current);
         nameInputRef.current?.focus();
@@ -257,7 +266,7 @@ export function BookingFlow({
 
   const guestReady =
     guestName.trim().length > 0 && /.+@.+\..+/.test(guestEmail.trim());
-  const detailsReady = isAuthenticated || guestReady;
+  const detailsReady = isReschedule || isAuthenticated || guestReady;
   const canConfirm = Boolean(
     serviceId && dateISO && slot && detailsReady && !submitting,
   );
@@ -270,12 +279,16 @@ export function BookingFlow({
     { id: "service", label: copy.steps.service.title, done: Boolean(serviceId) },
     { id: "date", label: copy.steps.date.title, done: Boolean(dateISO) },
     { id: "time", label: copy.steps.time.title, done: Boolean(slot) },
-    {
-      id: "details",
-      label: isAuthenticated ? copy.confirm : copy.guest.title,
-      done: detailsReady && Boolean(slot),
-    },
-    ...(depositEnabled
+    ...(isReschedule
+      ? []
+      : [
+          {
+            id: "details",
+            label: isAuthenticated ? copy.confirm : copy.guest.title,
+            done: detailsReady && Boolean(slot),
+          },
+        ]),
+    ...(depositEnabled && !isReschedule
       ? [
           {
             id: "pay",
@@ -292,11 +305,13 @@ export function BookingFlow({
       ? 1
       : !slot
         ? 2
-        : !detailsReady
-          ? 3
-          : depositEnabled
-            ? 4
-            : 3;
+        : isReschedule
+          ? 2
+          : !detailsReady
+            ? 3
+            : depositEnabled
+              ? 4
+              : 3;
 
   const nextHint = !serviceId
     ? copy.nextHint.pickService
@@ -304,11 +319,13 @@ export function BookingFlow({
       ? copy.nextHint.pickDate
       : !slot
         ? copy.nextHint.pickTime
-        : !detailsReady
-          ? copy.nextHint.addDetails
-          : depositEnabled
-            ? copy.payment.nextHint
-            : copy.nextHint.ready;
+        : isReschedule
+          ? copy.nextHint.readyReschedule
+          : !detailsReady
+            ? copy.nextHint.addDetails
+            : depositEnabled
+              ? copy.payment.nextHint
+              : copy.nextHint.ready;
 
   // When deep-linked with a service, nudge toward the date step once
   useEffect(() => {
@@ -320,7 +337,7 @@ export function BookingFlow({
 
   const submit = () => {
     if (!service || !slot) return;
-    if (!isAuthenticated && !guestReady) {
+    if (!isReschedule && !isAuthenticated && !guestReady) {
       setSubmitError(copy.errors.guestRequired);
       scrollToSection(detailsSectionRef.current);
       nameInputRef.current?.focus();
@@ -328,6 +345,56 @@ export function BookingFlow({
     }
     setSubmitError(null);
     startSubmit(async () => {
+      if (reschedule) {
+        let res;
+        if (reschedule.isGuest && reschedule.manageToken) {
+          const form = new FormData();
+          form.set("locale", locale);
+          form.set("reference_code", reschedule.referenceCode);
+          form.set("token", reschedule.manageToken);
+          form.set("startsAtUTC", slot);
+          if (notes.trim()) form.set("notes", notes.trim());
+          res = await rescheduleGuestBooking(form);
+        } else {
+          res = await rescheduleBooking({
+            appointmentId: reschedule.appointmentId,
+            startsAtUTC: slot,
+            locale,
+            notes: notes.trim() || undefined,
+          });
+        }
+        if (res.ok) {
+          setSuccess({
+            referenceCode: res.referenceCode,
+            serviceName: serviceLabel(service),
+            startsAt: res.startsAt,
+            managePath: res.managePath,
+          });
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+        } else {
+          setSubmitError(
+            res.reason === "slot_taken"
+              ? copy.errors.slotTaken
+              : res.reason === "too_late"
+                ? t.pages.account.appointments.errors.tooLate
+                : res.reason === "bookings_closed"
+                  ? copy.errors.bookingsClosed
+                  : copy.errors.createFailed,
+          );
+          if (res.reason === "slot_taken" && dateISO) {
+            setSlot(null);
+            const refreshed = await getAvailableSlots(
+              service.id,
+              dateISO,
+              ignoreAppointmentId,
+            );
+            if (refreshed.ok) setSlots(refreshed.slots);
+            scrollToSection(timeSectionRef.current);
+          }
+        }
+        return;
+      }
+
       const res = await createBooking({
         serviceId: service.id,
         startsAtUTC: slot,
@@ -391,13 +458,16 @@ export function BookingFlow({
         </div>
         <div className="flex flex-col gap-2">
           <p className="text-[11px] tracking-[0.28em] text-brass uppercase">
-            {copy.success.kicker}
+            {isReschedule ? copy.reschedule.kicker : copy.success.kicker}
           </p>
           <h2 className="font-display text-3xl leading-[0.95] uppercase md:text-5xl">
-            {copy.success.title}
+            {isReschedule ? copy.reschedule.successTitle : copy.success.title}
           </h2>
           <p className="text-base text-body md:text-lg">
-            {copy.success.body.replace("{service}", success.serviceName)}
+            {(isReschedule ? copy.reschedule.successBody : copy.success.body).replace(
+              "{service}",
+              success.serviceName,
+            )}
           </p>
         </div>
         <dl className="grid w-full grid-cols-1 gap-2 border-y border-border py-5 text-left sm:grid-cols-2">
@@ -473,12 +543,14 @@ export function BookingFlow({
           <StepHeader
             step={1}
             title={copy.steps.service.title}
-            lead={copy.steps.service.lead}
+            lead={isReschedule ? copy.reschedule.lockedService : copy.steps.service.lead}
             done={Boolean(serviceId)}
-            active={activeStep === 0}
+            active={activeStep === 0 && !isReschedule}
           />
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2" role="radiogroup" aria-label={copy.steps.service.title}>
-            {services.map((s) => {
+            {services
+              .filter((s) => !isReschedule || s.id === serviceId)
+              .map((s) => {
               const selected = s.id === serviceId;
               return (
                 <li key={s.id}>
@@ -488,7 +560,8 @@ export function BookingFlow({
                     onClick={() => pickService(s.id)}
                     aria-checked={selected}
                     data-selected={selected}
-                    className="select-tile booking-touch flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+                    disabled={isReschedule}
+                    className="select-tile booking-touch flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left disabled:cursor-default"
                   >
                     <div className="min-w-0 flex flex-col gap-0.5">
                       <span className="font-display text-[15px] leading-none tracking-tight">
@@ -586,7 +659,7 @@ export function BookingFlow({
         </div>
 
         {/* 4 — Details only after a time is chosen (progressive disclosure) */}
-        {!isAuthenticated && detailsUnlocked ? (
+        {!isReschedule && !isAuthenticated && detailsUnlocked ? (
           <section
             ref={detailsSectionRef}
             aria-labelledby="book-step-details"
@@ -661,7 +734,7 @@ export function BookingFlow({
         ) : null}
 
         {/* Authenticated: optional notes only (no guest form) */}
-        {isAuthenticated && detailsUnlocked ? (
+        {!isReschedule && isAuthenticated && detailsUnlocked ? (
           <section
             ref={detailsSectionRef}
             aria-labelledby="book-step-notes"
@@ -688,7 +761,7 @@ export function BookingFlow({
           </section>
         ) : null}
 
-        {depositEnabled && detailsUnlocked && detailsReady && service ? (
+        {!isReschedule && depositEnabled && detailsUnlocked && detailsReady && service ? (
           <section
             aria-labelledby="book-step-pay"
             className={`booking-panel ${activeStep === 4 ? "is-active" : ""}`}
@@ -779,25 +852,31 @@ export function BookingFlow({
               <>
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                 <span>
-                  {depositEnabled ? copy.payment.submitting : copy.submitting}
+                  {isReschedule
+                    ? copy.submittingReschedule
+                    : depositEnabled
+                      ? copy.payment.submitting
+                      : copy.submitting}
                 </span>
               </>
             ) : (
               <>
                 <CalendarCheck className="h-4 w-4 shrink-0" aria-hidden />
                 <span>
-                  {depositEnabled && service
-                    ? copy.payment.cta.replace(
-                        "{amount}",
-                        formatEurFromCents(
-                          Math.min(
-                            depositCents,
-                            Math.round(Number(service.price) * 100),
+                  {isReschedule
+                    ? copy.confirmReschedule
+                    : depositEnabled && service
+                      ? copy.payment.cta.replace(
+                          "{amount}",
+                          formatEurFromCents(
+                            Math.min(
+                              depositCents,
+                              Math.round(Number(service.price) * 100),
+                            ),
+                            locale,
                           ),
-                          locale,
-                        ),
-                      )
-                    : copy.confirm}
+                        )
+                      : copy.confirm}
                 </span>
               </>
             )}

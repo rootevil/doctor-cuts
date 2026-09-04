@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingFlow } from "@/components/booking/booking-flow";
 import { Kicker } from "@/components/ui/kicker";
-import { getActiveServices } from "@/lib/data/services";
+import { getActiveServices, getServiceById } from "@/lib/data/services";
 import { getSettings } from "@/lib/data/settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
 import { SHOP_TZ } from "@/lib/booking/timezone";
+import { getRescheduleTarget } from "@/lib/booking/actions";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
 import { italianAlternates } from "@/i18n/public-url";
@@ -52,34 +53,67 @@ export default async function PrenotaPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ service?: string }>;
+  searchParams: Promise<{
+    service?: string;
+    reschedule?: string;
+    code?: string;
+    t?: string;
+  }>;
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale = await requestLocale(raw);
-  const { service: serviceSlug } = await searchParams;
+  const {
+    service: serviceSlug,
+    reschedule: rescheduleId,
+    code,
+    t: manageToken,
+  } = await searchParams;
   const t = getDictionary(locale);
   const copy = t.pages.prenota;
   const r = routes(locale);
 
-  const [services, settings, userId] = await Promise.all([
+  const [services, settings, userId, reschedule] = await Promise.all([
     getActiveServices(),
     getSettings(),
     currentUserId(),
+    rescheduleId
+      ? getRescheduleTarget({
+          appointmentId: rescheduleId,
+          referenceCode: code ?? null,
+          manageToken: manageToken ?? null,
+        })
+      : Promise.resolve(null),
   ]);
+
+  let bookingServices = services;
+  if (reschedule) {
+    const alreadyListed = services.some((s) => s.id === reschedule.serviceId);
+    if (!alreadyListed) {
+      const locked = await getServiceById(reschedule.serviceId);
+      if (locked) bookingServices = [locked, ...services];
+    }
+  }
+
+  const isReschedule = Boolean(reschedule);
+  const headerKicker = isReschedule ? copy.reschedule.kicker : copy.kicker;
+  const headerTitle = isReschedule ? copy.reschedule.title : copy.title.join(" ");
+  const headerLead = isReschedule ? copy.reschedule.lead : copy.lead;
 
   return (
     <>
       <header className="border-b border-border bg-surface">
         <div className="site-wrap-narrow page-top pb-5 md:pb-6">
-          <Kicker accent>{copy.kicker}</Kicker>
+          <Kicker accent>{headerKicker}</Kicker>
           <h1 className="mt-3 font-display text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-[2rem]">
-            {copy.title.join(" ")}
+            {headerTitle}
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-body">{copy.lead}</p>
-          <p className="mt-1.5 text-[10px] tracking-[0.18em] text-muted uppercase">
-            {copy.note}
-          </p>
+          <p className="mt-2 max-w-xl text-sm text-body">{headerLead}</p>
+          {!isReschedule ? (
+            <p className="mt-1.5 text-[10px] tracking-[0.18em] text-muted uppercase">
+              {copy.note}
+            </p>
+          ) : null}
         </div>
       </header>
 
@@ -95,7 +129,36 @@ export default async function PrenotaPage({
           lead={copy.states.closedLead}
           ctas={<FallbackContacts copy={copy} />}
         />
-      ) : services.length === 0 ? (
+      ) : rescheduleId && !reschedule ? (
+        <EmptyState
+          title={t.pages.gestisci.missing}
+          lead={t.pages.gestisci.tooLate}
+          ctas={
+            <Link
+              href={userId ? r.account : r.home}
+              className="inline-flex items-center gap-3 bg-foreground px-6 py-3 text-[11px] tracking-[0.28em] text-background uppercase transition hover:opacity-90"
+            >
+              {userId ? t.pages.account.appointments.backToAccount : t.pages.gestisci.home}
+              <span aria-hidden>→</span>
+            </Link>
+          }
+        />
+      ) : reschedule &&
+        !bookingServices.some((s) => s.id === reschedule.serviceId) ? (
+        <EmptyState
+          title={t.pages.gestisci.missing}
+          lead={copy.errors.unknownService}
+          ctas={
+            <Link
+              href={userId ? r.account : r.home}
+              className="inline-flex items-center gap-3 bg-foreground px-6 py-3 text-[11px] tracking-[0.28em] text-background uppercase transition hover:opacity-90"
+            >
+              {userId ? t.pages.account.appointments.backToAccount : t.pages.gestisci.home}
+              <span aria-hidden>→</span>
+            </Link>
+          }
+        />
+      ) : bookingServices.length === 0 ? (
         <EmptyState
           title={copy.states.emptyTitle}
           lead={copy.states.emptyLead}
@@ -106,13 +169,16 @@ export default async function PrenotaPage({
           <BookingFlow
             locale={locale}
             t={t}
-            services={services}
+            services={bookingServices}
             maxDays={settings.max_booking_days}
             timezone={SHOP_TZ}
-            isAuthenticated={Boolean(userId)}
-            depositEnabled={isDepositCheckoutReady() && settings.deposit_required}
+            isAuthenticated={Boolean(userId) || Boolean(reschedule && !reschedule.isGuest)}
+            depositEnabled={
+              !reschedule && isDepositCheckoutReady() && settings.deposit_required
+            }
             depositCents={settings.deposit_cents}
             initialServiceSlug={serviceSlug?.trim() || null}
+            reschedule={reschedule}
           />
         </section>
       )}
