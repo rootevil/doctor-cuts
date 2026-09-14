@@ -30,6 +30,9 @@ export type AdminAppointment = {
   admin_notes: string | null;
   payment_status: string;
   deposit_cents: number;
+  /** Live booking that admin can cancel (frees the chair). */
+  can_cancel: boolean;
+  /** Paid deposit that can be refunded (live cancel or retry after cancel). */
   can_refund: boolean;
   is_guest: boolean;
   customer: {
@@ -67,22 +70,27 @@ function normaliseAppointment(row: unknown): AdminAppointment {
   const guestEmail = (r.guest_email as string | null) ?? null;
   const guestName = (r.guest_name as string | null) ?? null;
   const guestPhone = (r.guest_phone as string | null) ?? null;
+  const status = r.status as AppointmentStatus;
+  const paymentStatus = (r.payment_status as string) ?? "none";
+  const endsAt = r.ends_at as string;
+  const live =
+    status === "pending" || status === "confirmed" || status === "arrived";
+  const notEnded = new Date(endsAt).getTime() > Date.now();
+  const visiblePay = paymentStatus === "paid" || paymentStatus === "none";
   return {
     id: r.id as string,
     starts_at: r.starts_at as string,
-    ends_at: r.ends_at as string,
-    status: r.status as AppointmentStatus,
+    ends_at: endsAt,
+    status,
     reference_code: r.reference_code as string,
     customer_notes: (r.customer_notes as string | null) ?? null,
     admin_notes: (r.admin_notes as string | null) ?? null,
-    payment_status: (r.payment_status as string) ?? "none",
+    payment_status: paymentStatus,
     deposit_cents: Number(r.deposit_cents ?? 0),
+    can_cancel: live && visiblePay && notEnded,
     can_refund:
-      (r.payment_status as string) === "paid" &&
-      (r.status === "pending" ||
-        r.status === "confirmed" ||
-        r.status === "arrived" ||
-        r.status === "cancelled"),
+      paymentStatus === "paid" &&
+      (live || status === "cancelled"),
     is_guest: !linked && Boolean(guestEmail || guestName),
     customer:
       linked ??

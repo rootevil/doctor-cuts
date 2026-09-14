@@ -72,7 +72,6 @@ export default async function AdminHoursPage({
                   type="time"
                   name={`hours[${dow}][open]`}
                   defaultValue={open}
-                  disabled={closed}
                   className="admin-field"
                 />
               </label>
@@ -82,7 +81,6 @@ export default async function AdminHoursPage({
                   type="time"
                   name={`hours[${dow}][close]`}
                   defaultValue={close}
-                  disabled={closed}
                   className="admin-field"
                 />
               </label>

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import type { AdminAppointment } from "@/lib/admin/data";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import type { AppointmentStatus } from "@/lib/supabase/types";
 import { SHOP_TZ } from "@/lib/booking/timezone";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
@@ -13,6 +15,7 @@ import { formatEurFromCents } from "@/lib/payments/deposit";
 import {
   updateAppointmentNotes,
   cancelAndRefundAppointment,
+  updateAppointmentStatus,
 } from "@/lib/admin/actions";
 
 type Props = {
@@ -29,19 +32,30 @@ function fmtCurrency(amount: number, locale: Locale) {
   }).format(amount);
 }
 
-function bucketLabel(
-  appointment: AdminAppointment,
-  copy: Dictionary["pages"]["admin"]["appointments"],
+function statusLabel(
+  status: AppointmentStatus,
   statuses: Dictionary["pages"]["account"]["appointments"]["statuses"],
 ) {
-  if (appointment.status === "completed") return statuses.completed;
-  if (appointment.status === "cancelled") return statuses.cancelled;
-  return copy.waitingLabel;
+  switch (status) {
+    case "pending":
+      return statuses.pending;
+    case "confirmed":
+      return statuses.confirmed;
+    case "arrived":
+      return statuses.arrived;
+    case "completed":
+      return statuses.completed;
+    case "cancelled":
+      return statuses.cancelled;
+    case "no_show":
+      return statuses.noShow;
+  }
 }
 
 export function AppointmentRow({ appointment, locale, t }: Props) {
   const copy = t.pages.admin.appointments;
   const statusLabels = t.pages.account.appointments.statuses;
+  const router = useRouter();
   const [saving, startSaving] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -56,6 +70,11 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
     appointment.service?.slug,
     appointment.service?.name,
   );
+  const paid = appointment.payment_status === "paid";
+  const live =
+    appointment.status === "pending" ||
+    appointment.status === "confirmed" ||
+    appointment.status === "arrived";
 
   const saveNotes = () => {
     startSaving(async () => {
@@ -65,11 +84,18 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       form.set("locale", locale);
       await updateAppointmentNotes(form);
       setNotesOpen(false);
+      router.refresh();
     });
   };
 
-  const cancelAndRefund = () => {
-    if (!window.confirm(copy.confirmCancelRefund)) return;
+  const runCancel = () => {
+    const confirmMsg =
+      appointment.can_cancel && paid
+        ? copy.confirmCancelRefund
+        : appointment.status === "cancelled" && paid
+          ? copy.confirmRefundOnly
+          : copy.confirmCancel;
+    if (!window.confirm(confirmMsg)) return;
     setError(null);
     startSaving(async () => {
       const form = new FormData();
@@ -78,9 +104,34 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       const res = await cancelAndRefundAppointment(form);
       if (!res.ok) {
         setError(copy.refundFailed);
+        return;
       }
+      router.refresh();
     });
   };
+
+  const setStatus = (status: AppointmentStatus) => {
+    setError(null);
+    startSaving(async () => {
+      const form = new FormData();
+      form.set("appointment_id", appointment.id);
+      form.set("status", status);
+      form.set("locale", locale);
+      const res = await updateAppointmentStatus(form);
+      if (!res.ok) {
+        setError(copy.statusFailed);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  const cancelLabel =
+    appointment.can_cancel && paid
+      ? copy.cancelAndRefund
+      : appointment.status === "cancelled" && paid
+        ? copy.refundOnly
+        : copy.cancel;
 
   return (
     <article className="flex flex-col gap-3 border border-border bg-[var(--admin-panel)] p-3 md:flex-row md:items-center md:justify-between md:gap-4 md:p-3.5">
@@ -102,9 +153,9 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
               </span>
             ) : null}
             <span className="text-[10px] tracking-[0.22em] text-muted uppercase">
-              {bucketLabel(appointment, copy, statusLabels)}
+              {statusLabel(appointment.status, statusLabels)}
             </span>
-            {appointment.payment_status === "paid" ? (
+            {paid ? (
               <span className="text-[10px] tracking-[0.22em] text-brass uppercase">
                 {copy.depositPaid}
               </span>
@@ -158,16 +209,46 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       </div>
 
       <div className="flex flex-col items-stretch gap-2 md:items-end">
+        {live ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {appointment.status === "pending" ? (
+              <ActionButton
+                label={copy.markConfirmed}
+                disabled={saving}
+                onClick={() => setStatus("confirmed")}
+              />
+            ) : null}
+            {appointment.status === "pending" || appointment.status === "confirmed" ? (
+              <ActionButton
+                label={copy.markArrived}
+                disabled={saving}
+                onClick={() => setStatus("arrived")}
+              />
+            ) : null}
+            <ActionButton
+              label={copy.markCompleted}
+              disabled={saving}
+              onClick={() => setStatus("completed")}
+            />
+            <ActionButton
+              label={copy.markNoShow}
+              disabled={saving}
+              onClick={() => setStatus("no_show")}
+              muted
+            />
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          {appointment.can_refund ? (
+          {appointment.can_cancel ||
+          (appointment.status === "cancelled" && appointment.can_refund) ? (
             <button
               type="button"
-              onClick={cancelAndRefund}
+              onClick={runCancel}
               disabled={saving}
               className="inline-flex items-center justify-center gap-2 border border-foreground bg-foreground px-3 py-2 text-[11px] tracking-[0.22em] text-background uppercase transition hover:opacity-90 disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
-              {copy.cancelAndRefund}
+              {cancelLabel}
             </button>
           ) : null}
           <button
@@ -201,5 +282,32 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
         ) : null}
       </div>
     </article>
+  );
+}
+
+function ActionButton({
+  label,
+  onClick,
+  disabled,
+  muted,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  muted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center border px-3 py-2 text-[11px] tracking-[0.22em] uppercase transition disabled:opacity-50 ${
+        muted
+          ? "border-border text-foreground-muted hover:border-foreground hover:text-foreground"
+          : "border-brass/50 text-brass hover:bg-brass hover:text-background"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

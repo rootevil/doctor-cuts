@@ -98,15 +98,16 @@ export function SettingsForm({
           defaultValue={settings.cancellation_hours}
           hint={copy.cancellationHint}
         />
-        <Field
-          label={copy.slotInterval}
-          name="slot_interval_minutes"
-          type="number"
-          min="5"
-          step="5"
-          defaultValue={settings.slot_interval_minutes}
-          hint={copy.slotHint}
-        />
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] tracking-[0.28em] text-muted uppercase">
+            {copy.slotInterval}
+          </span>
+          <input type="hidden" name="slot_interval_minutes" value="40" />
+          <p className="border border-border bg-background px-3 py-2 text-sm text-foreground">
+            40
+          </p>
+          <span className="text-[11px] text-muted">{copy.slotHint}</span>
+        </div>
         <label className="flex flex-col gap-2 md:col-span-4">
           <span className="inline-flex items-center gap-3 text-[11px] tracking-[0.22em] text-foreground uppercase">
             <input

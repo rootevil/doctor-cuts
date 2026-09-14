@@ -12,6 +12,7 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { routes, forEachLocaleRoute, type SiteRoutes } from "@/lib/routes";
 import {
   adminAppointmentNotesSchema,
+  adminAppointmentStatusSchema,
   adminCancelRefundSchema,
   curatedReviewSchema,
   fdToObject,
@@ -32,6 +33,7 @@ import { localizedServiceName } from "@/lib/services/localize";
 import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
 import { formatEurFromCents } from "@/lib/payments/deposit";
 import { siteUrl } from "@/lib/seo/site-url";
+import type { AppointmentStatus } from "@/lib/supabase/types";
 
 function coerceLocale(value: FormDataEntryValue | null): Locale {
   const raw = typeof value === "string" ? value : "";
@@ -186,6 +188,68 @@ export async function cancelAndRefundAppointment(formData: FormData) {
   return { ok: true as const, refunded: result.refunded };
 }
 
+const STATUS_FROM_LIVE: AppointmentStatus[] = ["pending", "confirmed", "arrived"];
+
+const ALLOWED_STATUS_TARGETS: Record<
+  AppointmentStatus,
+  AppointmentStatus[] | undefined
+> = {
+  pending: ["confirmed", "arrived", "completed", "no_show"],
+  confirmed: ["arrived", "completed", "no_show"],
+  arrived: ["completed", "no_show"],
+  completed: undefined,
+  cancelled: undefined,
+  no_show: undefined,
+};
+
+export async function updateAppointmentStatus(formData: FormData) {
+  const { supabase } = await requireAdminClient();
+  const parsed = adminAppointmentStatusSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+  const { appointment_id, status: next } = parsed.data;
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from("appointments")
+    .select("id, status, ends_at, payment_status")
+    .eq("id", appointment_id)
+    .maybeSingle();
+
+  if (fetchErr || !existing) {
+    return { ok: false as const, reason: "not_found" as const };
+  }
+
+  const current = existing.status as AppointmentStatus;
+  const allowed = ALLOWED_STATUS_TARGETS[current];
+  if (!allowed?.includes(next)) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+  if (
+    STATUS_FROM_LIVE.includes(current) &&
+    existing.payment_status !== "paid" &&
+    existing.payment_status !== "none"
+  ) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: next })
+    .eq("id", appointment_id)
+    .in("status", STATUS_FROM_LIVE);
+
+  if (error) {
+    console.warn("[admin] status update failed:", error.message);
+    return { ok: false as const, reason: "unknown" as const };
+  }
+
+  revalidatePicked((r) => r.admin, "layout");
+  revalidatePicked((r) => r.account);
+  revalidatePicked((r) => r.accountAppointments);
+  return { ok: true as const };
+}
+
 export async function updateAppointmentNotes(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const parsed = adminAppointmentNotesSchema.safeParse(fdToObject(formData));
@@ -301,10 +365,12 @@ export async function saveHours(formData: FormData) {
     const closed = formData.get(`hours[${dow}][closed]`) === "on";
     const open = String(formData.get(`hours[${dow}][open]`) ?? "").trim();
     const close = String(formData.get(`hours[${dow}][close]`) ?? "").trim();
+    // Always read open/close from the form (inputs stay enabled even when
+    // "closed" is checked) so reopening a day keeps the last times.
     updates.push({
       day_of_week: dow,
-      open_time: closed ? null : (open || null),
-      close_time: closed ? null : (close || null),
+      open_time: closed ? null : open || null,
+      close_time: closed ? null : close || null,
       is_closed: closed,
     });
   }
@@ -595,7 +661,8 @@ export async function saveSettings(
     bookings_enabled: v.bookings_enabled === "on",
     deposit_required: v.deposit_required === "on",
     deposit_cents: v.deposit_cents ?? 500,
-    slot_interval_minutes: v.slot_interval_minutes,
+    // Online grid is fixed at BOOKING_SLOT_MINUTES — ignore form edits.
+    slot_interval_minutes: BOOKING_SLOT_MINUTES,
   };
 
   const { data: existing } = await supabase.from("settings").select("id").maybeSingle();

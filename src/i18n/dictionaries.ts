@@ -483,10 +483,19 @@ export type Dictionary = {
         guestBadge: string;
         depositPaid: string;
         waitingLabel: string;
+        cancel: string;
+        confirmCancel: string;
         cancelAndRefund: string;
         confirmCancelRefund: string;
+        refundOnly: string;
+        confirmRefundOnly: string;
         refundedBadge: string;
         refundFailed: string;
+        statusFailed: string;
+        markConfirmed: string;
+        markArrived: string;
+        markCompleted: string;
+        markNoShow: string;
         customerNotesLabel: string;
         internalNotesLabel: string;
         internalNotesPlaceholder: string;
@@ -511,6 +520,7 @@ export type Dictionary = {
           slugHint: string;
           price: string;
           duration: string;
+          durationHint: string;
           image: string;
           imageHint: string;
           description: string;
@@ -1239,11 +1249,11 @@ const it: Dictionary = {
         lead: "Agenda di oggi, chi è ancora in attesa, e chi ha già fatto.",
         viewAll: "Tutti gli appuntamenti",
         today: "Oggi",
-        todayHint: "Prenotazioni pagate oggi",
+        todayHint: "Prenotazioni di oggi (acconto o conferma gratuita)",
         upcoming: "In arrivo",
         upcomingHint: "Dopo oggi",
         pending: "In attesa",
-        pendingHint: "Acconto pagato, orario ancora da fare",
+        pendingHint: "Confermate o in attesa, orario ancora da fare",
         completed: "Completati",
         completedHint: "Fatti negli ultimi 7 giorni",
         todaySchedule: "Agenda di oggi",
@@ -1267,7 +1277,7 @@ const it: Dictionary = {
       appointments: {
         kicker: "Appuntamenti",
         title: "Prenotazioni",
-        lead: "In attesa = acconto pagato, orario ancora da fare. Completati = lo slot è passato. Annullati = rimborsati.",
+        lead: "In attesa = ancora da fare. Completati = slot passato. Annullati = cancellati (con rimborso se c’era acconto).",
         metaTitle: "Appuntamenti · Amministrazione — Doctor Cuts",
         ranges: { today: "Oggi", week: "7 giorni", month: "30 giorni", all: "Tutti" },
         rangeLabel: "Periodo",
@@ -1280,10 +1290,19 @@ const it: Dictionary = {
         guestBadge: "Ospite",
         depositPaid: "Acconto pagato",
         waitingLabel: "In attesa",
+        cancel: "Annulla",
+        confirmCancel: "Annullare questo appuntamento?",
         cancelAndRefund: "Annulla e rimborsa",
         confirmCancelRefund: "Annullare l’appuntamento e rimborsare l’acconto?",
+        refundOnly: "Rimborsa acconto",
+        confirmRefundOnly: "Rimborsare l’acconto per questo appuntamento già annullato?",
         refundedBadge: "Rimborsato",
-        refundFailed: "Rimborso non riuscito. Riprova o controlla Stripe.",
+        refundFailed: "Operazione non riuscita. Riprova o controlla Stripe.",
+        statusFailed: "Non è stato possibile aggiornare lo stato. Riprova.",
+        markConfirmed: "Conferma",
+        markArrived: "Arrivato",
+        markCompleted: "Completato",
+        markNoShow: "No-show",
         customerNotesLabel: "Note cliente",
         internalNotesLabel: "Note interne",
         internalNotesPlaceholder: "Solo per lo studio (es. preferenze, allergie, promemoria).",
@@ -1308,6 +1327,8 @@ const it: Dictionary = {
           slugHint: "Se lasci vuoto lo generiamo dal nome.",
           price: "Prezzo (€)",
           duration: "Durata (min)",
+          durationHint:
+            "Mostrata ai clienti. La griglia online usa comunque slot da 40 minuti.",
           image: "URL immagine",
           imageHint: "Un percorso in /images o un URL Supabase Storage.",
           description: "Descrizione",
@@ -1420,10 +1441,11 @@ const it: Dictionary = {
         cancellationHours: "Annullamento (ore)",
         cancellationHint: "Ore minime prima dell’appuntamento per annullare online.",
         slotInterval: "Slot (min)",
-        slotHint: "Griglia di orari mostrata al cliente (es. ogni 15 min).",
+        slotHint:
+          "Fisso a 40 minuti: ogni appuntamento online occupa uno slot di 40 minuti.",
         requireConfirm: "Richiedi approvazione admin (altrimenti conferma automatica)",
         requireConfirmHint:
-          "Se attivo, le prenotazioni restano in attesa finché non le confermi dal pannello.",
+          "Se attivo, le prenotazioni restano in attesa finché le confermi dal pannello Appuntamenti.",
         bookingsEnabled: "Accetta prenotazioni online",
         bookingsEnabledHint:
           "Disattiva per sospendere le nuove prenotazioni. Gli slot liberati dalle cancellazioni tornano disponibili.",
@@ -2037,11 +2059,11 @@ const en: Dictionary = {
         lead: "Today’s chair, who is still waiting, and who already came in.",
         viewAll: "All appointments",
         today: "Today",
-        todayHint: "Paid bookings today",
+        todayHint: "Today’s bookings (deposit or free confirm)",
         upcoming: "Upcoming",
         upcomingHint: "After today",
         pending: "Waiting",
-        pendingHint: "Deposit paid, slot still ahead",
+        pendingHint: "Confirmed or pending, slot still ahead",
         completed: "Completed",
         completedHint: "Done in the last 7 days",
         todaySchedule: "Today’s schedule",
@@ -2065,7 +2087,7 @@ const en: Dictionary = {
       appointments: {
         kicker: "Appointments",
         title: "Bookings",
-        lead: "Waiting = deposit paid, time still ahead. Completed = the slot has passed. Cancelled = refunded.",
+        lead: "Waiting = still ahead. Completed = slot passed. Cancelled = cancelled (refunded when a deposit was paid).",
         metaTitle: "Appointments · Admin — Doctor Cuts",
         ranges: { today: "Today", week: "7 days", month: "30 days", all: "All" },
         rangeLabel: "When",
@@ -2078,10 +2100,19 @@ const en: Dictionary = {
         guestBadge: "Guest",
         depositPaid: "Deposit paid",
         waitingLabel: "Waiting",
+        cancel: "Cancel",
+        confirmCancel: "Cancel this appointment?",
         cancelAndRefund: "Cancel and refund",
         confirmCancelRefund: "Cancel this appointment and refund the deposit?",
+        refundOnly: "Refund deposit",
+        confirmRefundOnly: "Refund the deposit for this already-cancelled appointment?",
         refundedBadge: "Refunded",
-        refundFailed: "Refund failed. Try again or check Stripe.",
+        refundFailed: "That didn’t work. Try again or check Stripe.",
+        statusFailed: "Couldn’t update the status. Try again.",
+        markConfirmed: "Confirm",
+        markArrived: "Arrived",
+        markCompleted: "Completed",
+        markNoShow: "No-show",
         customerNotesLabel: "Customer notes",
         internalNotesLabel: "Internal notes",
         internalNotesPlaceholder: "For the studio only (preferences, allergies, reminders).",
@@ -2106,6 +2137,8 @@ const en: Dictionary = {
           slugHint: "Leave empty to generate from the name.",
           price: "Price (€)",
           duration: "Duration (min)",
+          durationHint:
+            "Shown to customers. The online grid still uses fixed 40-minute slots.",
           image: "Image URL",
           imageHint: "A /images path or a Supabase Storage URL.",
           description: "Description",
@@ -2217,10 +2250,11 @@ const en: Dictionary = {
         cancellationHours: "Cancellation (hours)",
         cancellationHint: "Minimum hours ahead to cancel online.",
         slotInterval: "Slot (min)",
-        slotHint: "Grid the client sees (e.g. every 15 min).",
+        slotHint:
+          "Fixed at 40 minutes: every online booking occupies a 40-minute chair slot.",
         requireConfirm: "Require admin approval (otherwise auto-confirm)",
         requireConfirmHint:
-          "When on, bookings stay pending until you confirm them in admin.",
+          "When on, bookings stay pending until you confirm them in Appointments.",
         bookingsEnabled: "Accept online bookings",
         bookingsEnabledHint:
           "Turn off to pause new bookings. Cancelled appointments free their slots again.",

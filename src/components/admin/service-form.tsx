@@ -61,7 +61,8 @@ export function ServiceForm({
         type="number"
         step="5"
         min="5"
-        defaultValue={service?.duration_minutes ?? 45}
+        defaultValue={service?.duration_minutes ?? 40}
+        hint={copy.durationHint}
         required
       />
       <Field
