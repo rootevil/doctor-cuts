@@ -34,7 +34,7 @@ export type AdminAppointment = {
   can_cancel: boolean;
   /** Paid deposit that can be refunded (live cancel or retry after cancel). */
   can_refund: boolean;
-  /** Safe to permanently remove (holds or old cancelled without open deposit). */
+  /** Safe to permanently remove (unpaid holds / cancelled without open deposit). */
   can_delete: boolean;
   is_guest: boolean;
   customer: {
@@ -52,22 +52,17 @@ export type AdminAppointment = {
   } | null;
 };
 
-/** Cancelled rows must be at least this old before hard-delete (per-row UI). */
-export const HARD_DELETE_CANCELLED_MIN_DAYS = 14;
-
 const HOLD_PAYMENTS = new Set(["awaiting", "expired", "failed"]);
 const SAFE_CANCEL_PAYMENTS = new Set(["none", "refunded", "failed", "expired"]);
 
 /**
- * Hard-delete is only for junk / history cleanup — never for live paid chairs.
+ * Hard-delete is only for junk — never for live paid chairs.
  * - Unpaid Checkout holds (awaiting/expired/failed): anytime
- * - Cancelled without an outstanding paid deposit: after min age
+ * - Cancelled without an outstanding paid deposit: anytime
  */
 export function appointmentIsHardDeletable(input: {
   status: string;
   payment_status: string;
-  ends_at: string;
-  minCancelledAgeDays?: number;
 }): boolean {
   const pay = input.payment_status || "none";
   const status = input.status;
@@ -80,13 +75,7 @@ export function appointmentIsHardDeletable(input: {
     return true;
   }
 
-  if (status === "cancelled" && SAFE_CANCEL_PAYMENTS.has(pay)) {
-    const minDays = input.minCancelledAgeDays ?? HARD_DELETE_CANCELLED_MIN_DAYS;
-    const ageMs = Date.now() - new Date(input.ends_at).getTime();
-    return Number.isFinite(ageMs) && ageMs >= minDays * 86_400_000;
-  }
-
-  return false;
+  return status === "cancelled" && SAFE_CANCEL_PAYMENTS.has(pay);
 }
 
 const APPOINTMENT_SELECT = `
@@ -99,7 +88,9 @@ const APPOINTMENT_SELECT = `
 
 /** Live shop bookings (paid deposit or free confirm). Hides unpaid Checkout holds. */
 const VISIBLE_LIVE = ["paid", "none"] as const;
-const VISIBLE_CANCELLED = ["paid", "refunded", "none"] as const;
+/** Cancelled list includes expired/failed holds so admin can delete them one by one. */
+const VISIBLE_CANCELLED = ["paid", "refunded", "none", "expired", "failed"] as const;
+const HOLD_PAYMENT_STATUSES = ["awaiting", "expired", "failed"] as const;
 
 function normaliseAppointment(row: unknown): AdminAppointment {
   const r = row as Record<string, unknown>;
@@ -133,7 +124,6 @@ function normaliseAppointment(row: unknown): AdminAppointment {
     can_delete: appointmentIsHardDeletable({
       status,
       payment_status: paymentStatus,
-      ends_at: endsAt,
     }),
     is_guest: !linked && Boolean(guestEmail || guestName),
     customer:
@@ -202,7 +192,7 @@ export async function listUpcomingAppointments(
   return (data ?? []).map(normaliseAppointment);
 }
 
-export type AdminBucket = "pending" | "completed" | "cancelled";
+export type AdminBucket = "pending" | "completed" | "cancelled" | "holds";
 export type AdminRange = "today" | "week" | "month" | "all";
 
 export type AppointmentFilter = {
@@ -210,7 +200,7 @@ export type AppointmentFilter = {
   to?: string; // "YYYY-MM-DD"
   bucket?: AdminBucket;
   /** @deprecated use bucket */
-  status?: AppointmentStatus | "all";
+  status?: AppointmentStatus | "all" | "holds";
   q?: string;
   limit?: number;
 };
@@ -223,7 +213,7 @@ export function rangeBoundsFor(
   if (range === "all") return {};
   if (range === "today") return { from: today, to: today };
   const span = range === "week" ? 6 : 29;
-  // Waiting looks forward from today; completed and cancelled look back.
+  // Waiting looks forward from today; completed / cancelled / holds look back.
   if (bucket === "pending") return { from: today, to: shiftDate(today, span) };
   return { from: shiftDate(today, -span), to: today };
 }
@@ -247,6 +237,11 @@ function applyBucket<T extends {
   if (bucket === "completed") {
     return query.eq("status", "completed").in("payment_status", [...VISIBLE_LIVE]);
   }
+  if (bucket === "holds") {
+    return query
+      .in("payment_status", [...HOLD_PAYMENT_STATUSES])
+      .in("status", ["pending", "cancelled"]);
+  }
   return query
     .eq("status", "cancelled")
     .in("payment_status", [...VISIBLE_CANCELLED]);
@@ -264,7 +259,8 @@ export async function listAppointments(
     filter.bucket ??
     (filter.status === "pending" ||
     filter.status === "completed" ||
-    filter.status === "cancelled"
+    filter.status === "cancelled" ||
+    filter.status === "holds"
       ? filter.status
       : undefined);
 
@@ -306,7 +302,8 @@ export async function listAppointments(
     }
   }
 
-  const newestFirst = bucket === "completed" || bucket === "cancelled";
+  const newestFirst =
+    bucket === "completed" || bucket === "cancelled" || bucket === "holds";
   query = query
     .order("starts_at", { ascending: !newestFirst })
     .limit(filter.limit ?? 200);

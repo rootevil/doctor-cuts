@@ -15,7 +15,6 @@ import {
   adminAppointmentStatusSchema,
   adminCancelRefundSchema,
   adminDeleteAppointmentSchema,
-  adminPurgeAppointmentsSchema,
   curatedReviewSchema,
   fdToObject,
   serviceSchema,
@@ -294,7 +293,6 @@ export async function deleteAppointment(formData: FormData) {
     !appointmentIsHardDeletable({
       status: row.status,
       payment_status: row.payment_status,
-      ends_at: row.ends_at,
     })
   ) {
     return { ok: false as const, reason: "not_allowed" as const };
@@ -311,76 +309,6 @@ export async function deleteAppointment(formData: FormData) {
   revalidatePicked((r) => r.account);
   revalidatePicked((r) => r.accountAppointments);
   return { ok: true as const };
-}
-
-export async function purgeAppointments(formData: FormData) {
-  await requireAdminClient();
-  if (!supabaseServiceRoleKey) {
-    return { ok: false as const, reason: "not_configured" as const, deleted: 0 };
-  }
-  const parsed = adminPurgeAppointmentsSchema.safeParse(fdToObject(formData));
-  if (!parsed.success) {
-    return { ok: false as const, reason: "invalid" as const, deleted: 0 };
-  }
-
-  const { scope, older_than_days } = parsed.data;
-  const admin = createSupabaseAdminClient();
-  const cutoff = new Date(
-    Date.now() - older_than_days * 86_400_000,
-  ).toISOString();
-
-  const ids = new Set<string>();
-  const sessionById = new Map<string, string | null>();
-
-  if (scope === "holds" || scope === "both") {
-    const { data } = await admin
-      .from("appointments")
-      .select("id, nexi_order_id")
-      .in("payment_status", ["awaiting", "expired", "failed"])
-      .in("status", ["pending", "cancelled"])
-      .limit(500);
-    for (const row of data ?? []) {
-      ids.add(row.id as string);
-      sessionById.set(row.id as string, (row.nexi_order_id as string | null) ?? null);
-    }
-  }
-
-  if (scope === "cancelled" || scope === "both") {
-    const { data } = await admin
-      .from("appointments")
-      .select("id, nexi_order_id")
-      .eq("status", "cancelled")
-      .in("payment_status", ["none", "refunded", "failed", "expired"])
-      .lt("ends_at", cutoff)
-      .limit(500);
-    for (const row of data ?? []) {
-      ids.add(row.id as string);
-      sessionById.set(row.id as string, (row.nexi_order_id as string | null) ?? null);
-    }
-  }
-
-  if (ids.size === 0) {
-    return { ok: true as const, deleted: 0 };
-  }
-
-  for (const id of ids) {
-    await expireCheckoutIfNeeded(sessionById.get(id));
-  }
-
-  const { error, count } = await admin
-    .from("appointments")
-    .delete({ count: "exact" })
-    .in("id", [...ids]);
-
-  if (error) {
-    console.warn("[admin] purge appointments failed:", error.message);
-    return { ok: false as const, reason: "unknown" as const, deleted: 0 };
-  }
-
-  revalidatePicked((r) => r.admin, "layout");
-  revalidatePicked((r) => r.account);
-  revalidatePicked((r) => r.accountAppointments);
-  return { ok: true as const, deleted: count ?? ids.size };
 }
 
 /* ------------------------------------------------------------------ */

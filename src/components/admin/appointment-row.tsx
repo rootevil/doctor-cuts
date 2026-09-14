@@ -182,6 +182,21 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
                 {copy.refundedBadge}
               </span>
             ) : null}
+            {appointment.payment_status === "awaiting" ? (
+              <span className="text-[10px] tracking-[0.22em] text-[var(--error-text)] uppercase">
+                {copy.holdAwaiting}
+              </span>
+            ) : null}
+            {appointment.payment_status === "expired" ? (
+              <span className="text-[10px] tracking-[0.22em] text-[var(--error-text)] uppercase">
+                {copy.holdExpired}
+              </span>
+            ) : null}
+            {appointment.payment_status === "failed" ? (
+              <span className="text-[10px] tracking-[0.22em] text-[var(--error-text)] uppercase">
+                {copy.holdFailed}
+              </span>
+            ) : null}
             <span className="text-[11px] tracking-[0.22em] text-muted uppercase">
               {appointment.reference_code}
             </span>

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AdminSection } from "@/components/admin/section";
 import { AppointmentRow } from "@/components/admin/appointment-row";
-import { AppointmentCleanupPanel } from "@/components/admin/appointment-cleanup-panel";
 import {
   listAppointments,
   rangeBoundsFor,
@@ -37,7 +36,7 @@ export async function generateMetadata({
 }
 
 const RANGES: AdminRange[] = ["today", "week", "month", "all"];
-const BUCKETS: AdminBucket[] = ["pending", "completed", "cancelled"];
+const BUCKETS: AdminBucket[] = ["pending", "completed", "cancelled", "holds"];
 
 export default async function AdminAppointmentsPage({
   params,
@@ -80,6 +79,7 @@ export default async function AdminAppointmentsPage({
   const bucketLabel = (s: AdminBucket) => {
     if (s === "pending") return copy.waitingLabel;
     if (s === "completed") return statusLabels.completed;
+    if (s === "holds") return copy.holdsLabel;
     return statusLabels.cancelled;
   };
 
@@ -142,10 +142,6 @@ export default async function AdminAppointmentsPage({
             <AppointmentRow key={row.id} appointment={row} locale={locale} t={t} />
           ))
         )}
-      </div>
-
-      <div className="mt-8">
-        <AppointmentCleanupPanel locale={locale} t={t} />
       </div>
     </AdminSection>
   );

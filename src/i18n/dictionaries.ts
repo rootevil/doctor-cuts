@@ -490,6 +490,9 @@ export type Dictionary = {
         refundOnly: string;
         confirmRefundOnly: string;
         refundedBadge: string;
+        holdAwaiting: string;
+        holdExpired: string;
+        holdFailed: string;
         refundFailed: string;
         statusFailed: string;
         markConfirmed: string;
@@ -505,19 +508,7 @@ export type Dictionary = {
         delete: string;
         confirmDelete: string;
         deleteFailed: string;
-        cleanupTitle: string;
-        cleanupLead: string;
-        cleanupScope: string;
-        cleanupScopeHolds: string;
-        cleanupScopeCancelled: string;
-        cleanupScopeBoth: string;
-        cleanupOlderThan: string;
-        cleanupRun: string;
-        confirmPurgeHolds: string;
-        confirmPurgeCancelled: string;
-        confirmPurgeBoth: string;
-        purgeDone: string;
-        purgeFailed: string;
+        holdsLabel: string;
       };
       services: {
         kicker: string;
@@ -1306,6 +1297,7 @@ const it: Dictionary = {
         guestBadge: "Ospite",
         depositPaid: "Acconto pagato",
         waitingLabel: "In attesa",
+        holdsLabel: "Hold non pagati",
         cancel: "Annulla",
         confirmCancel: "Annullare questo appuntamento?",
         cancelAndRefund: "Annulla e rimborsa",
@@ -1313,6 +1305,9 @@ const it: Dictionary = {
         refundOnly: "Rimborsa acconto",
         confirmRefundOnly: "Rimborsare l’acconto per questo appuntamento già annullato?",
         refundedBadge: "Rimborsato",
+        holdAwaiting: "Hold pagamento",
+        holdExpired: "Hold scaduto",
+        holdFailed: "Pagamento fallito",
         refundFailed: "Operazione non riuscita. Riprova o controlla Stripe.",
         statusFailed: "Non è stato possibile aggiornare lo stato. Riprova.",
         markConfirmed: "Conferma",
@@ -1329,23 +1324,6 @@ const it: Dictionary = {
         confirmDelete:
           "Eliminare definitivamente questa prenotazione? L’azione non si può annullare.",
         deleteFailed: "Eliminazione non riuscita. Riprova.",
-        cleanupTitle: "Pulizia archivio",
-        cleanupLead:
-          "Rimuove in modo permanente hold non pagati e prenotazioni annullate vecchie (senza acconto ancora da rimborsare). Le prenotazioni live e gli acconti pagati non vengono toccati.",
-        cleanupScope: "Cosa eliminare",
-        cleanupScopeHolds: "Solo hold non pagati",
-        cleanupScopeCancelled: "Solo annullate vecchie",
-        cleanupScopeBoth: "Hold + annullate vecchie",
-        cleanupOlderThan: "Annullate più vecchie di (giorni)",
-        cleanupRun: "Esegui pulizia",
-        confirmPurgeHolds:
-          "Eliminare tutti gli hold di pagamento non conclusi (awaiting/expired/failed)?",
-        confirmPurgeCancelled:
-          "Eliminare le prenotazioni annullate (senza acconto da rimborsare) più vecchie di {days} giorni?",
-        confirmPurgeBoth:
-          "Eliminare hold non pagati e annullate (senza acconto da rimborsare) più vecchie di {days} giorni?",
-        purgeDone: "Eliminate {count} prenotazioni.",
-        purgeFailed: "Pulizia non riuscita. Riprova.",
       },
       services: {
         kicker: "Servizi",
@@ -2137,6 +2115,7 @@ const en: Dictionary = {
         guestBadge: "Guest",
         depositPaid: "Deposit paid",
         waitingLabel: "Waiting",
+        holdsLabel: "Unpaid holds",
         cancel: "Cancel",
         confirmCancel: "Cancel this appointment?",
         cancelAndRefund: "Cancel and refund",
@@ -2144,6 +2123,9 @@ const en: Dictionary = {
         refundOnly: "Refund deposit",
         confirmRefundOnly: "Refund the deposit for this already-cancelled appointment?",
         refundedBadge: "Refunded",
+        holdAwaiting: "Payment hold",
+        holdExpired: "Hold expired",
+        holdFailed: "Payment failed",
         refundFailed: "That didn’t work. Try again or check Stripe.",
         statusFailed: "Couldn’t update the status. Try again.",
         markConfirmed: "Confirm",
@@ -2160,23 +2142,6 @@ const en: Dictionary = {
         confirmDelete:
           "Permanently delete this booking? This cannot be undone.",
         deleteFailed: "Delete failed. Try again.",
-        cleanupTitle: "Archive cleanup",
-        cleanupLead:
-          "Permanently removes unpaid holds and old cancelled bookings (with no deposit still owed). Live bookings and paid deposits are never touched.",
-        cleanupScope: "What to delete",
-        cleanupScopeHolds: "Unpaid holds only",
-        cleanupScopeCancelled: "Old cancelled only",
-        cleanupScopeBoth: "Holds + old cancelled",
-        cleanupOlderThan: "Cancelled older than (days)",
-        cleanupRun: "Run cleanup",
-        confirmPurgeHolds:
-          "Delete all unfinished payment holds (awaiting/expired/failed)?",
-        confirmPurgeCancelled:
-          "Delete cancelled bookings (with no deposit still owed) older than {days} days?",
-        confirmPurgeBoth:
-          "Delete unpaid holds and cancelled bookings (with no deposit still owed) older than {days} days?",
-        purgeDone: "Deleted {count} bookings.",
-        purgeFailed: "Cleanup failed. Try again.",
       },
       services: {
         kicker: "Services",
