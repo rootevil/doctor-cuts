@@ -42,29 +42,29 @@ export default async function AdminCustomersPage({
       {customers.length === 0 ? (
         <p className="text-sm text-muted">{copy.empty}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border border-border text-sm">
+        <div className="overflow-x-auto border border-border">
+          <table className="admin-table min-w-[720px]">
             <thead>
-              <tr className="text-left text-[10px] tracking-[0.22em] text-muted uppercase">
-                <th className="border-b border-border p-3">{copy.name}</th>
-                <th className="border-b border-border p-3">{copy.email}</th>
-                <th className="border-b border-border p-3">{copy.phone}</th>
-                <th className="border-b border-border p-3">{copy.role}</th>
-                <th className="border-b border-border p-3">{copy.bookings}</th>
-                <th className="border-b border-border p-3">{copy.last}</th>
-                <th className="border-b border-border p-3">{copy.joined}</th>
+              <tr>
+                <th>{copy.name}</th>
+                <th>{copy.email}</th>
+                <th>{copy.phone}</th>
+                <th>{copy.role}</th>
+                <th>{copy.bookings}</th>
+                <th>{copy.last}</th>
+                <th>{copy.joined}</th>
               </tr>
             </thead>
             <tbody>
               {customers.map((c) => (
-                <tr key={c.id} className="border-b border-border/60">
-                  <td className="p-3">{c.full_name?.trim() || "—"}</td>
-                  <td className="p-3 text-body">
+                <tr key={c.id}>
+                  <td>{c.full_name?.trim() || "—"}</td>
+                  <td>
                     <a href={`mailto:${c.email}`} className="hover:text-foreground">
                       {c.email}
                     </a>
                   </td>
-                  <td className="p-3 text-body">
+                  <td>
                     {c.phone ? (
                       <a href={`tel:${c.phone}`} className="hover:text-foreground">
                         {c.phone}
@@ -73,7 +73,7 @@ export default async function AdminCustomersPage({
                       "—"
                     )}
                   </td>
-                  <td className="p-3">
+                  <td>
                     <span
                       className={`inline-flex items-center gap-1 border px-2 py-1 text-[10px] tracking-[0.22em] uppercase ${
                         c.role === "admin"
@@ -86,13 +86,11 @@ export default async function AdminCustomersPage({
                         : t.pages.admin.roles.customer}
                     </span>
                   </td>
-                  <td className="p-3">{c.appointment_count}</td>
-                  <td className="p-3 text-body">
+                  <td>{c.appointment_count}</td>
+                  <td>
                     {c.last_appointment_at ? dateFmt.format(new Date(c.last_appointment_at)) : "—"}
                   </td>
-                  <td className="p-3 text-body">
-                    {dateFmt.format(new Date(c.created_at))}
-                  </td>
+                  <td>{dateFmt.format(new Date(c.created_at))}</td>
                 </tr>
               ))}
             </tbody>

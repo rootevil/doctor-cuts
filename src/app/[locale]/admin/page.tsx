@@ -79,13 +79,39 @@ export default async function AdminOverviewPage({
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-body">{copy.lead}</p>
         </div>
-        <Link
-          href={`${r.adminAppointments}?range=all&status=pending`}
-          className="admin-btn admin-btn-ghost shrink-0"
-        >
-          {copy.viewAll} →
-        </Link>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`${r.adminCalendar}?date=${formatInTimeZone(new Date(), SHOP_TZ, "yyyy-MM-dd")}&view=day`}
+            className="admin-btn admin-btn-brass"
+          >
+            {copy.actionCalendar}
+          </Link>
+          <Link
+            href={`${r.adminAppointments}?range=all&status=pending`}
+            className="admin-btn admin-btn-ghost"
+          >
+            {copy.viewAll}
+          </Link>
+        </div>
       </header>
+
+      <div className="admin-overview-actions">
+        <Link href={r.adminCalendar} className="admin-overview-action">
+          {copy.actionCalendar}
+        </Link>
+        <Link href={r.adminAppointments} className="admin-overview-action">
+          {copy.actionAppointments}
+        </Link>
+        <Link href={r.adminPayments} className="admin-overview-action">
+          {copy.actionPayments}
+        </Link>
+        <Link href={r.adminHours} className="admin-overview-action">
+          {copy.actionHours}
+        </Link>
+        <Link href={r.adminSettings} className="admin-overview-action">
+          {copy.actionSettings}
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <StatCard

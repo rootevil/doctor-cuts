@@ -14,7 +14,9 @@ import {
   adminAppointmentNotesSchema,
   adminAppointmentStatusSchema,
   adminCancelRefundSchema,
+  adminCreateAppointmentSchema,
   adminDeleteAppointmentSchema,
+  adminRescheduleAppointmentSchema,
   curatedReviewSchema,
   fdToObject,
   serviceSchema,
@@ -37,6 +39,12 @@ import { formatEurFromCents } from "@/lib/payments/deposit";
 import { siteUrl } from "@/lib/seo/site-url";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 import { appointmentIsHardDeletable } from "@/lib/admin/data";
+import { assertSlotBookable } from "@/lib/booking/validate-slot";
+import { generateManageToken } from "@/lib/booking/token";
+import { getServiceById } from "@/lib/data/services";
+import { syncAwaitingPayments } from "@/lib/admin/payments-data";
+import { expireStalePaymentHolds } from "@/lib/payments/expire";
+import { completePastAppointments } from "@/lib/payments/complete";
 
 function coerceLocale(value: FormDataEntryValue | null): Locale {
   const raw = typeof value === "string" ? value : "";
@@ -309,6 +317,150 @@ export async function deleteAppointment(formData: FormData) {
   revalidatePicked((r) => r.account);
   revalidatePicked((r) => r.accountAppointments);
   return { ok: true as const };
+}
+
+export async function createAdminAppointment(formData: FormData) {
+  await requireAdminClient();
+  if (!supabaseServiceRoleKey) {
+    return { ok: false as const, reason: "not_configured" as const };
+  }
+  const parsed = adminCreateAppointmentSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) return { ok: false as const, reason: "invalid" as const };
+
+  const {
+    locale,
+    service_id,
+    starts_at,
+    guest_name,
+    guest_phone,
+    guest_email,
+    admin_notes,
+  } = parsed.data;
+
+  const service = await getServiceById(service_id);
+  if (!service || !service.is_active) {
+    return { ok: false as const, reason: "unknown_service" as const };
+  }
+
+  await expireStalePaymentHolds();
+  await completePastAppointments();
+
+  const slotCheck = await assertSlotBookable({
+    serviceId: service_id,
+    startsAtUTC: starts_at,
+    adminOverride: true,
+  });
+  if (!slotCheck.ok) {
+    return { ok: false as const, reason: "slot_taken" as const };
+  }
+
+  const startsAt = new Date(starts_at);
+  const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
+  const email =
+    guest_email && guest_email.length > 0
+      ? guest_email
+      : `walkin+${Date.now().toString(36)}@dr-cuts.com`;
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("appointments")
+    .insert({
+      customer_id: null,
+      guest_name,
+      guest_email: email,
+      guest_phone,
+      manage_token: generateManageToken(),
+      service_id,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      status: "confirmed",
+      payment_status: "none",
+      deposit_cents: 0,
+      admin_notes: admin_notes || "Walk-in / admin",
+      locale,
+    })
+    .select("id, reference_code")
+    .single();
+
+  if (error) {
+    if (error.code === "23P01") return { ok: false as const, reason: "slot_taken" as const };
+    console.warn("[admin] create appointment failed:", error.message);
+    return { ok: false as const, reason: "unknown" as const };
+  }
+
+  revalidatePicked((r) => r.admin, "layout");
+  return {
+    ok: true as const,
+    id: data.id as string,
+    referenceCode: data.reference_code as string,
+  };
+}
+
+export async function rescheduleAdminAppointment(formData: FormData) {
+  await requireAdminClient();
+  if (!supabaseServiceRoleKey) {
+    return { ok: false as const, reason: "not_configured" as const };
+  }
+  const parsed = adminRescheduleAppointmentSchema.safeParse(fdToObject(formData));
+  if (!parsed.success) return { ok: false as const, reason: "invalid" as const };
+
+  const admin = createSupabaseAdminClient();
+  const { data: existing } = await admin
+    .from("appointments")
+    .select("id, status, payment_status, service_id, ends_at")
+    .eq("id", parsed.data.appointment_id)
+    .maybeSingle();
+
+  if (!existing) return { ok: false as const, reason: "not_found" as const };
+  const status = existing.status as AppointmentStatus;
+  if (!["pending", "confirmed", "arrived"].includes(status)) {
+    return { ok: false as const, reason: "not_allowed" as const };
+  }
+  if (new Date(existing.ends_at) <= new Date()) {
+    return { ok: false as const, reason: "not_allowed" as const };
+  }
+
+  await expireStalePaymentHolds();
+  await completePastAppointments();
+
+  const slotCheck = await assertSlotBookable({
+    serviceId: existing.service_id as string,
+    startsAtUTC: parsed.data.starts_at,
+    ignoreAppointmentId: existing.id as string,
+    adminOverride: true,
+  });
+  if (!slotCheck.ok) {
+    return { ok: false as const, reason: "slot_taken" as const };
+  }
+
+  const startsAt = new Date(parsed.data.starts_at);
+  const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
+  const { error } = await admin
+    .from("appointments")
+    .update({
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+    })
+    .eq("id", existing.id)
+    .in("status", ["pending", "confirmed", "arrived"]);
+
+  if (error) {
+    if (error.code === "23P01") return { ok: false as const, reason: "slot_taken" as const };
+    console.warn("[admin] reschedule failed:", error.message);
+    return { ok: false as const, reason: "unknown" as const };
+  }
+
+  revalidatePicked((r) => r.admin, "layout");
+  revalidatePicked((r) => r.account);
+  revalidatePicked((r) => r.accountAppointments);
+  return { ok: true as const };
+}
+
+export async function syncAdminPayments() {
+  await requireAdminClient();
+  const result = await syncAwaitingPayments();
+  revalidatePicked((r) => r.admin, "layout");
+  return { ok: true as const, ...result };
 }
 
 /* ------------------------------------------------------------------ */

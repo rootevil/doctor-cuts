@@ -34,6 +34,8 @@ export async function assertSlotBookable(input: {
   startsAtUTC: string;
   /** When rescheduling, ignore the current appointment so its chair stays free. */
   ignoreAppointmentId?: string | null;
+  /** Admin walk-in / move: ignore public notice hours. */
+  adminOverride?: boolean;
 }): Promise<{ ok: true } | { ok: false; reason: SlotValidationFailure }> {
   const service = await getServiceById(input.serviceId);
   if (!service) return { ok: false, reason: "unknown_service" };
@@ -43,7 +45,9 @@ export async function assertSlotBookable(input: {
   }
 
   const settings = await getSettings();
-  if (!settings.bookings_enabled) return { ok: false, reason: "bookings_closed" };
+  if (!settings.bookings_enabled && !input.adminOverride) {
+    return { ok: false, reason: "bookings_closed" };
+  }
 
   const startsAt = new Date(input.startsAtUTC);
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
@@ -53,7 +57,9 @@ export async function assertSlotBookable(input: {
   if (dateISO < today) return { ok: false, reason: "invalid_time" };
 
   const lastBookableDay = shiftDate(today, settings.max_booking_days);
-  if (dateISO > lastBookableDay) return { ok: false, reason: "beyond_window" };
+  if (!input.adminOverride && dateISO > lastBookableDay) {
+    return { ok: false, reason: "beyond_window" };
+  }
 
   const [hours, breaks, blocked, bookings] = await Promise.all([
     getBusinessHours(),
@@ -67,7 +73,7 @@ export async function assertSlotBookable(input: {
     dayOfWeek: shopDayOfWeek(dateISO),
     serviceDurationMinutes: BOOKING_SLOT_MINUTES,
     slotIntervalMinutes: BOOKING_SLOT_MINUTES,
-    bookingNoticeHours: settings.booking_notice_hours,
+    bookingNoticeHours: input.adminOverride ? 0 : settings.booking_notice_hours,
     now: new Date(),
     hours,
     breaks,

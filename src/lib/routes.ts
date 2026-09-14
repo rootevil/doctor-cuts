@@ -30,6 +30,8 @@ function buildRoutes(locale: Locale) {
     signUp: `/${locale}/registrati`,
     admin: `/${locale}/admin`,
     adminAppointments: `/${locale}/admin/appuntamenti`,
+    adminCalendar: `/${locale}/admin/calendario`,
+    adminPayments: `/${locale}/admin/pagamenti`,
     adminServices: `/${locale}/admin/servizi`,
     adminServiceNew: `/${locale}/admin/servizi/nuovo`,
     adminServiceEdit: (id: string) => `/${locale}/admin/servizi/${id}`,

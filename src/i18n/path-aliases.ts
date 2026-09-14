@@ -26,6 +26,8 @@ const REST_RULES: Array<{
 }> = [
   { match: /^\/account\/appointments(?=\/|$)/, to: "/account/appuntamenti" },
   { match: /^\/admin\/appointments(?=\/|$)/, to: "/admin/appuntamenti" },
+  { match: /^\/admin\/calendar(?=\/|$)/, to: "/admin/calendario" },
+  { match: /^\/admin\/payments(?=\/|$)/, to: "/admin/pagamenti" },
   { match: /^\/admin\/services(?=\/|$)/, to: "/admin/servizi" },
   { match: /^\/admin\/hours(?=\/|$)/, to: "/admin/orari" },
   { match: /^\/admin\/customers(?=\/|$)/, to: "/admin/clienti" },

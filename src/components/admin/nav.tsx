@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import {
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   ChartBar,
   Image as ImageIcon,
   MessageSquareQuote,
   Scissors,
   Settings,
   Users,
+  Wallet,
 } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -27,7 +29,9 @@ function useAdminItems(locale: Locale, t: Dictionary) {
   const copy = t.pages.admin.nav;
   const items: Item[] = [
     { href: r.admin, label: copy.overview, icon: ChartBar },
+    { href: r.adminCalendar, label: copy.calendar, icon: CalendarRange },
     { href: r.adminAppointments, label: copy.appointments, icon: CalendarClock },
+    { href: r.adminPayments, label: copy.payments, icon: Wallet },
     { href: r.adminServices, label: copy.services, icon: Scissors },
     { href: r.adminHours, label: copy.hours, icon: CalendarDays },
     { href: r.adminCustomers, label: copy.customers, icon: Users },

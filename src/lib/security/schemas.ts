@@ -128,6 +128,28 @@ export const adminDeleteAppointmentSchema = z.object({
   appointment_id: uuidSchema,
 });
 
+export const adminCreateAppointmentSchema = z.object({
+  locale: localeSchema,
+  service_id: uuidSchema,
+  starts_at: z
+    .string()
+    .datetime({ offset: true })
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)),
+  guest_name: trimmed(120).pipe(z.string().min(1)),
+  guest_phone: trimmed(40).pipe(z.string().min(5)),
+  guest_email: emailSchema.optional().or(z.literal("")),
+  admin_notes: trimmed(2000).optional(),
+});
+
+export const adminRescheduleAppointmentSchema = z.object({
+  locale: localeSchema,
+  appointment_id: uuidSchema,
+  starts_at: z
+    .string()
+    .datetime({ offset: true })
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)),
+});
+
 export const serviceSchema = z.object({
   locale: localeSchema,
   id: uuidSchema.optional().nullable(),

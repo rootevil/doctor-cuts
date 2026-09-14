@@ -429,7 +429,9 @@ export type Dictionary = {
         section: string;
         backToSite: string;
         overview: string;
+        calendar: string;
         appointments: string;
+        payments: string;
         services: string;
         hours: string;
         customers: string;
@@ -458,6 +460,8 @@ export type Dictionary = {
         emptyUpcoming: string;
         quickActions: string;
         actionAppointments: string;
+        actionCalendar: string;
+        actionPayments: string;
         actionServices: string;
         actionHours: string;
         actionSettings: string;
@@ -509,6 +513,74 @@ export type Dictionary = {
         confirmDelete: string;
         deleteFailed: string;
         holdsLabel: string;
+      };
+      calendar: {
+        kicker: string;
+        title: string;
+        lead: string;
+        metaTitle: string;
+        viewLabel: string;
+        dayView: string;
+        weekView: string;
+        today: string;
+        prevWeek: string;
+        nextWeek: string;
+        weekOf: string;
+        legendFree: string;
+        legendBooked: string;
+        legendBlocked: string;
+        freeSlot: string;
+        blockedSlot: string;
+        closedDay: string;
+        blockedDay: string;
+        emptyDay: string;
+        bookTitle: string;
+        detailTitle: string;
+        moveTitle: string;
+        moveLead: string;
+        noMoveSlots: string;
+        nameLabel: string;
+        phoneLabel: string;
+        emailLabel: string;
+        emailOptional: string;
+        serviceLabel: string;
+        notesLabel: string;
+        bookSubmit: string;
+        formRequired: string;
+        slotTaken: string;
+        actionFailed: string;
+        cancel: string;
+        cancelRefund: string;
+        confirmCancel: string;
+        confirmCancelRefund: string;
+        move: string;
+        delete: string;
+        confirmDelete: string;
+        close: string;
+      };
+      payments: {
+        kicker: string;
+        title: string;
+        lead: string;
+        metaTitle: string;
+        rangeLabel: string;
+        ranges: { today: string; week: string; month: string; all: string };
+        syncStripe: string;
+        exportCsv: string;
+        collected: string;
+        refunded: string;
+        awaiting: string;
+        payments: string;
+        empty: string;
+        colRef: string;
+        colWhen: string;
+        colCustomer: string;
+        colService: string;
+        colPayment: string;
+        colAmount: string;
+        statusPaid: string;
+        statusRefunded: string;
+        statusAwaiting: string;
       };
       services: {
         kicker: string;
@@ -1243,7 +1315,9 @@ const it: Dictionary = {
         section: "Amministrazione",
         backToSite: "Torna al sito",
         overview: "Panoramica",
+        calendar: "Calendario",
         appointments: "Appuntamenti",
+        payments: "Pagamenti",
         services: "Servizi",
         hours: "Orari",
         customers: "Clienti",
@@ -1272,6 +1346,8 @@ const it: Dictionary = {
         emptyUpcoming: "Niente in arrivo nei prossimi giorni.",
         quickActions: "Scorciatoie",
         actionAppointments: "Appuntamenti",
+        actionCalendar: "Calendario",
+        actionPayments: "Pagamenti",
         actionServices: "Servizi",
         actionHours: "Orari",
         actionSettings: "Impostazioni",
@@ -1324,6 +1400,74 @@ const it: Dictionary = {
         confirmDelete:
           "Eliminare definitivamente questa prenotazione? L’azione non si può annullare.",
         deleteFailed: "Eliminazione non riuscita. Riprova.",
+      },
+      calendar: {
+        kicker: "Calendario",
+        title: "Agenda sedia",
+        lead: "Giorno o settimana: slot liberi e occupati. Tocca un libero per un walk-in, un occupato per spostare o annullare.",
+        metaTitle: "Calendario · Amministrazione — Doctor Cuts",
+        viewLabel: "Vista",
+        dayView: "Giorno",
+        weekView: "Settimana",
+        today: "Oggi",
+        prevWeek: "Settimana −",
+        nextWeek: "Settimana +",
+        weekOf: "Settimana del {date}",
+        legendFree: "Libero",
+        legendBooked: "Prenotato",
+        legendBlocked: "Non disponibile",
+        freeSlot: "Libero — prenota",
+        blockedSlot: "Chiuso / passato",
+        closedDay: "Chiuso",
+        blockedDay: "Data bloccata",
+        emptyDay: "Nessuno slot in questa giornata.",
+        bookTitle: "Nuova prenotazione",
+        detailTitle: "Prenotazione",
+        moveTitle: "Sposta orario",
+        moveLead: "Scegli uno slot libero in quella giornata.",
+        noMoveSlots: "Nessuno slot libero in quella giornata.",
+        nameLabel: "Nome",
+        phoneLabel: "Telefono",
+        emailLabel: "Email",
+        emailOptional: "Opzionale",
+        serviceLabel: "Servizio",
+        notesLabel: "Note interne",
+        bookSubmit: "Conferma walk-in",
+        formRequired: "Nome e telefono sono obbligatori.",
+        slotTaken: "Questo orario non è più libero.",
+        actionFailed: "Operazione non riuscita. Riprova.",
+        cancel: "Annulla",
+        cancelRefund: "Annulla e rimborsa",
+        confirmCancel: "Annullare questa prenotazione?",
+        confirmCancelRefund: "Annullare e rimborsare l’acconto?",
+        move: "Sposta",
+        delete: "Elimina",
+        confirmDelete: "Eliminare definitivamente?",
+        close: "Chiudi",
+      },
+      payments: {
+        kicker: "Pagamenti",
+        title: "Acconti",
+        lead: "Acconti Stripe raccolti, in attesa e rimborsati. Esporta CSV per il commercialista.",
+        metaTitle: "Pagamenti · Amministrazione — Doctor Cuts",
+        rangeLabel: "Periodo",
+        ranges: { today: "Oggi", week: "7 giorni", month: "30 giorni", all: "Tutti" },
+        syncStripe: "Sincronizza Stripe",
+        exportCsv: "Esporta CSV",
+        collected: "Incassati",
+        refunded: "Rimborsati",
+        awaiting: "In attesa",
+        payments: "pagamenti",
+        empty: "Nessun movimento in questo periodo.",
+        colRef: "Rif.",
+        colWhen: "Creato",
+        colCustomer: "Cliente",
+        colService: "Servizio",
+        colPayment: "Stato",
+        colAmount: "Importo",
+        statusPaid: "Pagato",
+        statusRefunded: "Rimborsato",
+        statusAwaiting: "In attesa",
       },
       services: {
         kicker: "Servizi",
@@ -2061,7 +2205,9 @@ const en: Dictionary = {
         section: "Admin",
         backToSite: "Back to site",
         overview: "Overview",
+        calendar: "Calendar",
         appointments: "Appointments",
+        payments: "Payments",
         services: "Services",
         hours: "Hours",
         customers: "Customers",
@@ -2090,6 +2236,8 @@ const en: Dictionary = {
         emptyUpcoming: "Nothing booked in the next days.",
         quickActions: "Shortcuts",
         actionAppointments: "Appointments",
+        actionCalendar: "Calendar",
+        actionPayments: "Payments",
         actionServices: "Services",
         actionHours: "Hours",
         actionSettings: "Settings",
@@ -2142,6 +2290,74 @@ const en: Dictionary = {
         confirmDelete:
           "Permanently delete this booking? This cannot be undone.",
         deleteFailed: "Delete failed. Try again.",
+      },
+      calendar: {
+        kicker: "Calendar",
+        title: "Chair schedule",
+        lead: "Day or week: free vs booked slots. Tap free to book a walk-in, booked to move or cancel.",
+        metaTitle: "Calendar · Admin — Doctor Cuts",
+        viewLabel: "View",
+        dayView: "Day",
+        weekView: "Week",
+        today: "Today",
+        prevWeek: "Week −",
+        nextWeek: "Week +",
+        weekOf: "Week of {date}",
+        legendFree: "Free",
+        legendBooked: "Booked",
+        legendBlocked: "Unavailable",
+        freeSlot: "Free — book",
+        blockedSlot: "Closed / past",
+        closedDay: "Closed",
+        blockedDay: "Blocked date",
+        emptyDay: "No slots this day.",
+        bookTitle: "New booking",
+        detailTitle: "Booking",
+        moveTitle: "Move time",
+        moveLead: "Pick a free slot on that day.",
+        noMoveSlots: "No free slots on that day.",
+        nameLabel: "Name",
+        phoneLabel: "Phone",
+        emailLabel: "Email",
+        emailOptional: "Optional",
+        serviceLabel: "Service",
+        notesLabel: "Internal notes",
+        bookSubmit: "Confirm walk-in",
+        formRequired: "Name and phone are required.",
+        slotTaken: "That time is no longer free.",
+        actionFailed: "That didn’t work. Try again.",
+        cancel: "Cancel",
+        cancelRefund: "Cancel & refund",
+        confirmCancel: "Cancel this booking?",
+        confirmCancelRefund: "Cancel and refund the deposit?",
+        move: "Move",
+        delete: "Delete",
+        confirmDelete: "Delete permanently?",
+        close: "Close",
+      },
+      payments: {
+        kicker: "Payments",
+        title: "Deposits",
+        lead: "Stripe deposits collected, awaiting, and refunded. Export CSV for accounting.",
+        metaTitle: "Payments · Admin — Doctor Cuts",
+        rangeLabel: "Range",
+        ranges: { today: "Today", week: "7 days", month: "30 days", all: "All" },
+        syncStripe: "Sync Stripe",
+        exportCsv: "Export CSV",
+        collected: "Collected",
+        refunded: "Refunded",
+        awaiting: "Awaiting",
+        payments: "payments",
+        empty: "No payment activity in this range.",
+        colRef: "Ref.",
+        colWhen: "Created",
+        colCustomer: "Customer",
+        colService: "Service",
+        colPayment: "Status",
+        colAmount: "Amount",
+        statusPaid: "Paid",
+        statusRefunded: "Refunded",
+        statusAwaiting: "Awaiting",
       },
       services: {
         kicker: "Services",
