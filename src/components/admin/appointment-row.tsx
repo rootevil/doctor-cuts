@@ -16,6 +16,7 @@ import {
   updateAppointmentNotes,
   cancelAndRefundAppointment,
   updateAppointmentStatus,
+  deleteAppointment,
 } from "@/lib/admin/actions";
 
 type Props = {
@@ -120,6 +121,22 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
       const res = await updateAppointmentStatus(form);
       if (!res.ok) {
         setError(copy.statusFailed);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  const runDelete = () => {
+    if (!window.confirm(copy.confirmDelete)) return;
+    setError(null);
+    startSaving(async () => {
+      const form = new FormData();
+      form.set("appointment_id", appointment.id);
+      form.set("locale", locale);
+      const res = await deleteAppointment(form);
+      if (!res.ok) {
+        setError(copy.deleteFailed);
         return;
       }
       router.refresh();
@@ -249,6 +266,17 @@ export function AppointmentRow({ appointment, locale, t }: Props) {
             >
               {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
               {cancelLabel}
+            </button>
+          ) : null}
+          {appointment.can_delete ? (
+            <button
+              type="button"
+              onClick={runDelete}
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-2 border border-[var(--error-text)]/40 px-3 py-2 text-[11px] tracking-[0.22em] text-[var(--error-text)] uppercase transition hover:border-[var(--error-text)] disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
+              {copy.delete}
             </button>
           ) : null}
           <button

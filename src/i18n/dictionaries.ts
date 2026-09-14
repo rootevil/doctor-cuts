@@ -502,6 +502,22 @@ export type Dictionary = {
         statusLabel: string;
         saveNotes: string;
         close: string;
+        delete: string;
+        confirmDelete: string;
+        deleteFailed: string;
+        cleanupTitle: string;
+        cleanupLead: string;
+        cleanupScope: string;
+        cleanupScopeHolds: string;
+        cleanupScopeCancelled: string;
+        cleanupScopeBoth: string;
+        cleanupOlderThan: string;
+        cleanupRun: string;
+        confirmPurgeHolds: string;
+        confirmPurgeCancelled: string;
+        confirmPurgeBoth: string;
+        purgeDone: string;
+        purgeFailed: string;
       };
       services: {
         kicker: string;
@@ -1309,6 +1325,27 @@ const it: Dictionary = {
         statusLabel: "Stato",
         saveNotes: "Salva note",
         close: "Chiudi",
+        delete: "Elimina",
+        confirmDelete:
+          "Eliminare definitivamente questa prenotazione? L’azione non si può annullare.",
+        deleteFailed: "Eliminazione non riuscita. Riprova.",
+        cleanupTitle: "Pulizia archivio",
+        cleanupLead:
+          "Rimuove in modo permanente hold non pagati e prenotazioni annullate vecchie (senza acconto ancora da rimborsare). Le prenotazioni live e gli acconti pagati non vengono toccati.",
+        cleanupScope: "Cosa eliminare",
+        cleanupScopeHolds: "Solo hold non pagati",
+        cleanupScopeCancelled: "Solo annullate vecchie",
+        cleanupScopeBoth: "Hold + annullate vecchie",
+        cleanupOlderThan: "Annullate più vecchie di (giorni)",
+        cleanupRun: "Esegui pulizia",
+        confirmPurgeHolds:
+          "Eliminare tutti gli hold di pagamento non conclusi (awaiting/expired/failed)?",
+        confirmPurgeCancelled:
+          "Eliminare le prenotazioni annullate (senza acconto da rimborsare) più vecchie di {days} giorni?",
+        confirmPurgeBoth:
+          "Eliminare hold non pagati e annullate (senza acconto da rimborsare) più vecchie di {days} giorni?",
+        purgeDone: "Eliminate {count} prenotazioni.",
+        purgeFailed: "Pulizia non riuscita. Riprova.",
       },
       services: {
         kicker: "Servizi",
@@ -2119,6 +2156,27 @@ const en: Dictionary = {
         statusLabel: "Status",
         saveNotes: "Save notes",
         close: "Close",
+        delete: "Delete",
+        confirmDelete:
+          "Permanently delete this booking? This cannot be undone.",
+        deleteFailed: "Delete failed. Try again.",
+        cleanupTitle: "Archive cleanup",
+        cleanupLead:
+          "Permanently removes unpaid holds and old cancelled bookings (with no deposit still owed). Live bookings and paid deposits are never touched.",
+        cleanupScope: "What to delete",
+        cleanupScopeHolds: "Unpaid holds only",
+        cleanupScopeCancelled: "Old cancelled only",
+        cleanupScopeBoth: "Holds + old cancelled",
+        cleanupOlderThan: "Cancelled older than (days)",
+        cleanupRun: "Run cleanup",
+        confirmPurgeHolds:
+          "Delete all unfinished payment holds (awaiting/expired/failed)?",
+        confirmPurgeCancelled:
+          "Delete cancelled bookings (with no deposit still owed) older than {days} days?",
+        confirmPurgeBoth:
+          "Delete unpaid holds and cancelled bookings (with no deposit still owed) older than {days} days?",
+        purgeDone: "Deleted {count} bookings.",
+        purgeFailed: "Cleanup failed. Try again.",
       },
       services: {
         kicker: "Services",

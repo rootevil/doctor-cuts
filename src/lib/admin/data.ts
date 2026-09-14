@@ -34,6 +34,8 @@ export type AdminAppointment = {
   can_cancel: boolean;
   /** Paid deposit that can be refunded (live cancel or retry after cancel). */
   can_refund: boolean;
+  /** Safe to permanently remove (holds or old cancelled without open deposit). */
+  can_delete: boolean;
   is_guest: boolean;
   customer: {
     id: string;
@@ -49,6 +51,43 @@ export type AdminAppointment = {
     duration_minutes: number;
   } | null;
 };
+
+/** Cancelled rows must be at least this old before hard-delete (per-row UI). */
+export const HARD_DELETE_CANCELLED_MIN_DAYS = 14;
+
+const HOLD_PAYMENTS = new Set(["awaiting", "expired", "failed"]);
+const SAFE_CANCEL_PAYMENTS = new Set(["none", "refunded", "failed", "expired"]);
+
+/**
+ * Hard-delete is only for junk / history cleanup — never for live paid chairs.
+ * - Unpaid Checkout holds (awaiting/expired/failed): anytime
+ * - Cancelled without an outstanding paid deposit: after min age
+ */
+export function appointmentIsHardDeletable(input: {
+  status: string;
+  payment_status: string;
+  ends_at: string;
+  minCancelledAgeDays?: number;
+}): boolean {
+  const pay = input.payment_status || "none";
+  const status = input.status;
+  if (pay === "paid") return false;
+
+  if (
+    HOLD_PAYMENTS.has(pay) &&
+    (status === "pending" || status === "cancelled")
+  ) {
+    return true;
+  }
+
+  if (status === "cancelled" && SAFE_CANCEL_PAYMENTS.has(pay)) {
+    const minDays = input.minCancelledAgeDays ?? HARD_DELETE_CANCELLED_MIN_DAYS;
+    const ageMs = Date.now() - new Date(input.ends_at).getTime();
+    return Number.isFinite(ageMs) && ageMs >= minDays * 86_400_000;
+  }
+
+  return false;
+}
 
 const APPOINTMENT_SELECT = `
   id, starts_at, ends_at, status, reference_code, customer_notes, admin_notes,
@@ -91,6 +130,11 @@ function normaliseAppointment(row: unknown): AdminAppointment {
     can_refund:
       paymentStatus === "paid" &&
       (live || status === "cancelled"),
+    can_delete: appointmentIsHardDeletable({
+      status,
+      payment_status: paymentStatus,
+      ends_at: endsAt,
+    }),
     is_guest: !linked && Boolean(guestEmail || guestName),
     customer:
       linked ??

@@ -123,6 +123,17 @@ export const adminCancelRefundSchema = z.object({
   appointment_id: uuidSchema,
 });
 
+export const adminDeleteAppointmentSchema = z.object({
+  locale: localeSchema,
+  appointment_id: uuidSchema,
+});
+
+export const adminPurgeAppointmentsSchema = z.object({
+  locale: localeSchema,
+  scope: z.enum(["holds", "cancelled", "both"]),
+  older_than_days: z.coerce.number().int().min(1).max(365),
+});
+
 export const serviceSchema = z.object({
   locale: localeSchema,
   id: uuidSchema.optional().nullable(),
