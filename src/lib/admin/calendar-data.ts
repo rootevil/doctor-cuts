@@ -101,10 +101,11 @@ async function listLiveAppointmentsForDate(dateISO: string) {
   if (!supabaseConfigured || !supabaseServiceRoleKey) return [];
   const admin = createSupabaseAdminClient();
   const { startUtc, endUtc } = shopDateBoundsUtc(dateISO);
+  // Include completed so today’s calendar still shows who already came in.
   const { data, error } = await admin
     .from("appointments")
     .select(APPOINTMENT_SELECT)
-    .in("status", ["pending", "confirmed", "arrived"])
+    .in("status", ["pending", "confirmed", "arrived", "completed"])
     .lt("starts_at", endUtc)
     .gt("ends_at", startUtc)
     .order("starts_at", { ascending: true });

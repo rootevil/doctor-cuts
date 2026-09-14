@@ -452,6 +452,8 @@ export type Dictionary = {
         completed: string;
         completedHint: string;
         todaySchedule: string;
+        todayCalendar: string;
+        calendarBookedCount: string;
         emptyToday: string;
         recentTitle: string;
         recentLead: string;
@@ -1338,6 +1340,8 @@ const it: Dictionary = {
         completed: "Completati",
         completedHint: "Fatti negli ultimi 7 giorni",
         todaySchedule: "Agenda di oggi",
+        todayCalendar: "Calendario di oggi",
+        calendarBookedCount: "{count} prenotati",
         emptyToday: "Nessun appuntamento oggi.",
         recentTitle: "Ultime prenotazioni",
         recentLead: "Create negli ultimi 7 giorni — restano visibili anche se l’orario è già passato.",
@@ -2228,6 +2232,8 @@ const en: Dictionary = {
         completed: "Completed",
         completedHint: "Done in the last 7 days",
         todaySchedule: "Today’s schedule",
+        todayCalendar: "Today’s calendar",
+        calendarBookedCount: "{count} booked",
         emptyToday: "Nothing on the schedule today.",
         recentTitle: "Latest bookings",
         recentLead: "Created in the last 7 days — still listed after the chair time has passed.",

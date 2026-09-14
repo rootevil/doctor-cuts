@@ -24,7 +24,8 @@ type Props = {
   range: PaymentRange;
   rows: PaymentLedgerRow[];
   totals: PaymentTotals;
-  rangeHref: (range: PaymentRange) => string;
+  /** Base path only — query strings are built on the client (no functions across RSC). */
+  paymentsPath: string;
 };
 
 export function AdminPaymentsView({
@@ -33,13 +34,14 @@ export function AdminPaymentsView({
   range,
   rows,
   totals,
-  rangeHref,
+  paymentsPath,
 }: Props) {
   const copy = t.pages.admin.payments;
   const router = useRouter();
   const [pending, start] = useTransition();
 
   const ranges: PaymentRange[] = ["today", "week", "month", "all"];
+  const rangeHref = (rng: PaymentRange) => `${paymentsPath}?range=${rng}`;
 
   const downloadCsv = () => {
     const csv = paymentLedgerToCsv(rows);

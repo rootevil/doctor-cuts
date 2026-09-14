@@ -71,13 +71,6 @@ export default async function AdminCalendarPage({
       price: Number(s.price),
     }));
 
-  const build = (next: { date?: string; view?: string }) => {
-    const u = new URLSearchParams();
-    u.set("date", next.date ?? dateISO);
-    u.set("view", next.view ?? mode);
-    return `${r.adminCalendar}?${u.toString()}`;
-  };
-
   return (
     <AdminSection kicker={copy.kicker} title={copy.title} lead={copy.lead}>
       <AdminCalendarView
@@ -89,9 +82,7 @@ export default async function AdminCalendarPage({
         day={day}
         week={week}
         services={activeServices}
-        dayHref={(iso) => build({ date: iso, view: "day" })}
-        weekHref={(iso) => build({ date: iso, view: "week" })}
-        modeHref={(view) => build({ view })}
+        calendarPath={r.adminCalendar}
       />
     </AdminSection>
   );

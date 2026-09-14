@@ -31,9 +31,8 @@ type Props = {
   day: AdminCalendarDay;
   week: AdminCalendarDay[];
   services: ServiceOption[];
-  dayHref: (iso: string) => string;
-  weekHref: (iso: string) => string;
-  modeHref: (mode: "day" | "week") => string;
+  /** Base path only — query strings are built on the client (no functions across RSC). */
+  calendarPath: string;
 };
 
 type Panel =
@@ -50,9 +49,7 @@ export function AdminCalendarView({
   day,
   week,
   services,
-  dayHref,
-  weekHref,
-  modeHref,
+  calendarPath,
 }: Props) {
   const copy = t.pages.admin.calendar;
   const router = useRouter();
@@ -64,6 +61,13 @@ export function AdminCalendarView({
   const [email, setEmail] = useState("");
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
   const [notes, setNotes] = useState("");
+
+  const dayHref = (iso: string) =>
+    `${calendarPath}?date=${iso}&view=day`;
+  const weekHref = (iso: string) =>
+    `${calendarPath}?date=${iso}&view=week`;
+  const modeHref = (view: "day" | "week") =>
+    `${calendarPath}?date=${dateISO}&view=${view}`;
 
   const moveTargets = useMemo(() => {
     if (panel?.kind !== "move" || !panel.slot.appointment) return [];

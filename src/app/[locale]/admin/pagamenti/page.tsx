@@ -62,7 +62,7 @@ export default async function AdminPaymentsPage({
         range={range}
         rows={rows}
         totals={totals}
-        rangeHref={(next) => `${r.adminPayments}?range=${next}`}
+        paymentsPath={r.adminPayments}
       />
     </AdminSection>
   );

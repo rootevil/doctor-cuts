@@ -5,12 +5,14 @@ import { formatInTimeZone } from "date-fns-tz";
 import { enUS, it } from "date-fns/locale";
 import { StatCard } from "@/components/admin/section";
 import { AppointmentRow } from "@/components/admin/appointment-row";
+import { AdminOverviewDayCalendar } from "@/components/admin/admin-overview-day-calendar";
 import {
   appointmentCounts,
   listTodaysAppointments,
   listUpcomingAppointments,
 } from "@/lib/admin/data";
-import { SHOP_TZ } from "@/lib/booking/timezone";
+import { getAdminCalendarDay } from "@/lib/admin/calendar-data";
+import { SHOP_TZ, shopToday } from "@/lib/booking/timezone";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
 import { requestLocale } from "@/i18n/request-locale";
@@ -50,10 +52,14 @@ export default async function AdminOverviewPage({
   const r = routes(locale);
   const copy = t.pages.admin.overview;
 
-  const [counts, today, upcoming] = await Promise.all([
+  const todayISO = shopToday();
+  const calendarHref = `${r.adminCalendar}?date=${todayISO}&view=day`;
+
+  const [counts, today, upcoming, calendarDay] = await Promise.all([
     appointmentCounts(),
     listTodaysAppointments(),
     listUpcomingAppointments(),
+    getAdminCalendarDay(todayISO),
   ]);
 
   const remainingToday = today.filter(
@@ -80,10 +86,7 @@ export default async function AdminOverviewPage({
           <p className="mt-1.5 max-w-xl text-sm text-body">{copy.lead}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Link
-            href={`${r.adminCalendar}?date=${formatInTimeZone(new Date(), SHOP_TZ, "yyyy-MM-dd")}&view=day`}
-            className="admin-btn admin-btn-brass"
-          >
+          <Link href={calendarHref} className="admin-btn admin-btn-brass">
             {copy.actionCalendar}
           </Link>
           <Link
@@ -138,6 +141,13 @@ export default async function AdminOverviewPage({
           href={`${r.adminAppointments}?range=week&status=completed`}
         />
       </div>
+
+      <AdminOverviewDayCalendar
+        locale={locale}
+        t={t}
+        day={calendarDay}
+        calendarHref={calendarHref}
+      />
 
       <div className="admin-overview-panel">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
