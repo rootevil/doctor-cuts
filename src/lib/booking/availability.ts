@@ -48,6 +48,8 @@ export type SlotState = "available" | "booked" | "break" | "unavailable";
 export type SlotOption = {
   startsAt: string;
   state: SlotState;
+  /** When state is "break": shop-local window that blocked this slot, e.g. "14:00–16:00". */
+  breakWindow?: string;
 };
 
 function hhmmToMinutes(hhmm: string): number {
@@ -97,6 +99,16 @@ function breakRanges(dayOfWeek: number, breaks: Break[]): Array<[number, number]
     ranges.push([start, end]);
   }
   return ranges;
+}
+
+function overlappingBreakWindow(
+  start: number,
+  end: number,
+  ranges: Array<[number, number]>,
+): string | undefined {
+  const hit = ranges.find(([bs, be]) => start < be && end > bs);
+  if (!hit) return undefined;
+  return `${minutesToHHMM(hit[0])}–${minutesToHHMM(hit[1])}`;
 }
 
 /**
@@ -155,15 +167,17 @@ export function computeSlotGrid(input: AvailabilityInput): SlotOption[] {
     const startUtc = shopLocalToUtc(input.dateISO, minutesToHHMM(start));
 
     let state: SlotState = "available";
+    let breakWindow: string | undefined;
     if (overlapsRange(start, end, paused)) {
       state = "break";
+      breakWindow = overlappingBreakWindow(start, end, paused);
     } else if (startUtc < noticeCutoff) {
       state = "unavailable";
     } else if (overlapsRange(start, end, taken)) {
       state = "booked";
     }
 
-    slots.push({ startsAt: startUtc.toISOString(), state });
+    slots.push({ startsAt: startUtc.toISOString(), state, breakWindow });
   }
 
   return slots;

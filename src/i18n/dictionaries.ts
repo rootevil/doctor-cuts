@@ -208,6 +208,7 @@ export type Dictionary = {
           booked: string;
           unavailable: string;
           onBreak: string;
+          onBreakWindow: string;
           legendLabel: string;
         };
       };
@@ -551,6 +552,7 @@ export type Dictionary = {
         freeSlot: string;
         blockedSlot: string;
         breakSlot: string;
+        breakSlotWindow: string;
         closedDay: string;
         blockedDay: string;
         emptyDay: string;
@@ -1103,6 +1105,7 @@ const it: Dictionary = {
           booked: "Occupato",
           unavailable: "Non disponibile",
           onBreak: "Pausa",
+          onBreakWindow: "Pausa {window}",
           legendLabel: "Legenda orari",
         },
       },
@@ -1463,6 +1466,7 @@ const it: Dictionary = {
         freeSlot: "Libero — prenota",
         blockedSlot: "Chiuso / passato",
         breakSlot: "Pausa",
+        breakSlotWindow: "Pausa {window}",
         closedDay: "Chiuso",
         blockedDay: "Data bloccata",
         emptyDay: "Nessuno slot in questa giornata.",
@@ -1560,7 +1564,8 @@ const it: Dictionary = {
         blockedEmpty: "Nessuna data bloccata al momento.",
         remove: "Rimuovi",
         breaksTitle: "Pause",
-        breaksLead: "Intervalli in cui non si accettano prenotazioni (es. pranzo).",
+        breaksLead:
+          "Intervalli in cui non si accettano prenotazioni (es. pranzo). Restano bloccati anche gli slot da 40 minuti che si sovrappongono alla pausa — es. pausa 14:00–16:00 blocca anche le 13:50 (finirebbe alle 14:30).",
         breakDay: "Giorno",
         breakDayAll: "Ogni giorno",
         breakStart: "Inizio",
@@ -2020,6 +2025,7 @@ const en: Dictionary = {
           booked: "Booked",
           unavailable: "Unavailable",
           onBreak: "Break",
+          onBreakWindow: "Break {window}",
           legendLabel: "Time slot legend",
         },
       },
@@ -2378,6 +2384,7 @@ const en: Dictionary = {
         freeSlot: "Free — book",
         blockedSlot: "Closed / past",
         breakSlot: "Break",
+        breakSlotWindow: "Break {window}",
         closedDay: "Closed",
         blockedDay: "Blocked date",
         emptyDay: "No slots this day.",
@@ -2475,7 +2482,8 @@ const en: Dictionary = {
         blockedEmpty: "No blocked dates.",
         remove: "Remove",
         breaksTitle: "Breaks",
-        breaksLead: "Intervals when bookings are not accepted (e.g. lunch).",
+        breaksLead:
+          "Intervals when bookings are not accepted (e.g. lunch). Any 40-minute slot that overlaps the break is blocked — e.g. a 14:00–16:00 lunch also blocks 13:50 (would end at 14:30).",
         breakDay: "Day",
         breakDayAll: "Every day",
         breakStart: "Start",

@@ -137,7 +137,11 @@ export function AdminOverviewDayCalendar({
               return (
                 <div key={slot.startsAt} className="admin-cal-slot is-break">
                   <span>{time}</span>
-                  <span className="admin-cal-slot-meta">{cal.breakSlot}</span>
+                  <span className="admin-cal-slot-meta">
+                    {slot.breakWindow
+                      ? cal.breakSlotWindow.replace("{window}", slot.breakWindow)
+                      : cal.breakSlot}
+                  </span>
                 </div>
               );
             }

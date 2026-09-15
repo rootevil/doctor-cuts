@@ -24,6 +24,7 @@ export type TimeSlotCopy = {
   booked: string;
   unavailable: string;
   onBreak: string;
+  onBreakWindow: string;
   legendLabel: string;
 };
 
@@ -227,7 +228,9 @@ export function TimeSlotPicker({
                     state === "booked"
                       ? copy.booked
                       : state === "break"
-                        ? copy.onBreak
+                        ? slot.breakWindow
+                          ? copy.onBreakWindow.replace("{window}", slot.breakWindow)
+                          : copy.onBreak
                         : state === "unavailable"
                           ? copy.unavailable
                           : null;

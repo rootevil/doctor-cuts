@@ -31,6 +31,8 @@ export type AdminCalendarSlot = {
   startsAt: string;
   state: SlotState;
   appointment: AdminCalendarAppointment | null;
+  /** Present when state is "break" — configured pause window, e.g. "14:00–16:00". */
+  breakWindow?: string;
 };
 
 export type AdminCalendarDay = {
@@ -168,12 +170,25 @@ export async function getAdminCalendarDay(
   const slots: AdminCalendarSlot[] = grid.map((slot) => {
     const appointment = byStart.get(slot.startsAt) ?? null;
     if (appointment) {
-      return { startsAt: slot.startsAt, state: "booked", appointment };
+      return {
+        startsAt: slot.startsAt,
+        state: "booked",
+        appointment,
+      };
     }
     if (dateISO > lastDay && slot.state === "available") {
-      return { startsAt: slot.startsAt, state: "unavailable", appointment: null };
+      return {
+        startsAt: slot.startsAt,
+        state: "unavailable",
+        appointment: null,
+      };
     }
-    return { startsAt: slot.startsAt, state: slot.state, appointment: null };
+    return {
+      startsAt: slot.startsAt,
+      state: slot.state,
+      appointment: null,
+      breakWindow: slot.breakWindow,
+    };
   });
 
   return { dateISO, blocked, closed: false, slots };

@@ -560,7 +560,11 @@ function DayColumn({
             <div key={slot.startsAt} className="admin-cal-slot is-break">
               <span>{time}</span>
               {!compact ? (
-                <span className="admin-cal-slot-meta">{copy.breakSlot}</span>
+                <span className="admin-cal-slot-meta">
+                  {slot.breakWindow
+                    ? copy.breakSlotWindow.replace("{window}", slot.breakWindow)
+                    : copy.breakSlot}
+                </span>
               ) : null}
             </div>
           );
