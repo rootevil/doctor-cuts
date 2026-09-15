@@ -67,6 +67,7 @@ export function AdminOverviewDayCalendar({
       <div className="admin-cal-legend mt-3">
         <span data-state="available">{cal.legendFree}</span>
         <span data-state="booked">{cal.legendBooked}</span>
+        <span data-state="break">{cal.legendBreak}</span>
         <span data-state="unavailable">{cal.legendBlocked}</span>
       </div>
 
@@ -129,6 +130,15 @@ export function AdminOverviewDayCalendar({
                   <span>{time}</span>
                   <span className="admin-cal-slot-meta">{cal.freeSlot}</span>
                 </Link>
+              );
+            }
+
+            if (slot.state === "break") {
+              return (
+                <div key={slot.startsAt} className="admin-cal-slot is-break">
+                  <span>{time}</span>
+                  <span className="admin-cal-slot-meta">{cal.breakSlot}</span>
+                </div>
               );
             }
 

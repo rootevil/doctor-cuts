@@ -85,6 +85,29 @@ function revalidatePublic() {
   for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
 }
 
+/** Hours/breaks drive Prenota, Contatti, and the admin chair calendar. */
+function revalidateHoursCascade() {
+  revalidatePicked((r) => r.adminHours);
+  revalidatePicked((r) => r.adminCalendar);
+  revalidatePicked((r) => r.admin);
+  revalidatePicked((r) => r.book);
+  revalidatePicked((r) => r.contact);
+  revalidatePicked((r) => r.home);
+  revalidatePublic();
+}
+
+function normalizeTimeInput(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const match = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const hh = Number(match[1]);
+  const mm = Number(match[2]);
+  const ss = match[3] != null ? Number(match[3]) : 0;
+  if (hh > 23 || mm > 59 || ss > 59) return null;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+}
+
 function revalidateReviewsAdmin() {
   for (const path of forEachLocaleRoute((r) => r.adminReviews)) revalidatePath(path);
 }
@@ -562,14 +585,14 @@ export async function saveHours(formData: FormData) {
 
   for (let dow = 1; dow <= 7; dow++) {
     const closed = formData.get(`hours[${dow}][closed]`) === "on";
-    const open = String(formData.get(`hours[${dow}][open]`) ?? "").trim();
-    const close = String(formData.get(`hours[${dow}][close]`) ?? "").trim();
+    const open = normalizeTimeInput(String(formData.get(`hours[${dow}][open]`) ?? ""));
+    const close = normalizeTimeInput(String(formData.get(`hours[${dow}][close]`) ?? ""));
     // Always read open/close from the form (inputs stay enabled even when
     // "closed" is checked) so reopening a day keeps the last times.
     updates.push({
       day_of_week: dow,
-      open_time: closed ? null : open || null,
-      close_time: closed ? null : close || null,
+      open_time: closed ? null : open,
+      close_time: closed ? null : close,
       is_closed: closed,
     });
   }
@@ -578,8 +601,7 @@ export async function saveHours(formData: FormData) {
     .from("business_hours")
     .upsert(updates, { onConflict: "day_of_week" });
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminHours);
-  revalidatePublic();
+  revalidateHoursCascade();
 }
 
 export async function addBlockedDate(formData: FormData) {
@@ -589,8 +611,7 @@ export async function addBlockedDate(formData: FormData) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
   const { error } = await supabase.from("blocked_dates").insert({ date, reason });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
-  revalidatePicked((r) => r.adminHours);
-  revalidatePublic();
+  revalidateHoursCascade();
 }
 
 export async function removeBlockedDate(formData: FormData) {
@@ -599,27 +620,47 @@ export async function removeBlockedDate(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminHours);
-  revalidatePublic();
+  revalidateHoursCascade();
 }
 
 export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
-  const start = String(formData.get("start_time") ?? "").trim();
-  const end = String(formData.get("end_time") ?? "").trim();
+  const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
+  const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
-  if (!start || !end) return;
+  if (!start || !end || end <= start) return;
   const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
   const { error } = await supabase.from("breaks").insert({
     day_of_week: Number.isFinite(day_of_week as number) ? day_of_week : null,
-    start_time: start.length === 5 ? `${start}:00` : start,
-    end_time: end.length === 5 ? `${end}:00` : end,
+    start_time: start,
+    end_time: end,
     label,
   });
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminHours);
-  revalidatePublic();
+  revalidateHoursCascade();
+}
+
+export async function updateBreak(formData: FormData) {
+  const { supabase } = await requireAdminClient();
+  const id = String(formData.get("id") ?? "").trim();
+  const dayRaw = String(formData.get("day_of_week") ?? "").trim();
+  const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
+  const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
+  const label = String(formData.get("label") ?? "").trim() || null;
+  if (!id || !start || !end || end <= start) return;
+  const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
+  const { error } = await supabase
+    .from("breaks")
+    .update({
+      day_of_week: Number.isFinite(day_of_week as number) ? day_of_week : null,
+      start_time: start,
+      end_time: end,
+      label,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateHoursCascade();
 }
 
 export async function removeBreak(formData: FormData) {
@@ -628,8 +669,7 @@ export async function removeBreak(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("breaks").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminHours);
-  revalidatePublic();
+  revalidateHoursCascade();
 }
 
 /* ------------------------------------------------------------------ */

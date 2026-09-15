@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { supabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import type { BusinessHour, Break } from "@/lib/booking/availability";
 
 /** Reasonable fallback so the wizard still renders before the seed is run. */
@@ -15,29 +16,51 @@ export const DEFAULT_HOURS: BusinessHour[] = [
   { day_of_week: 7, open_time: null, close_time: null, is_closed: true },
 ];
 
+async function hoursClient() {
+  if (supabaseServiceRoleKey) return createSupabaseAdminClient();
+  return createSupabaseServerClient();
+}
+
+function normalizeBreak(row: {
+  day_of_week: number | null;
+  start_time: string;
+  end_time: string;
+}): Break {
+  return {
+    day_of_week: row.day_of_week == null ? null : Number(row.day_of_week),
+    start_time: String(row.start_time),
+    end_time: String(row.end_time),
+  };
+}
+
 export async function getBusinessHours(): Promise<BusinessHour[]> {
   if (!supabaseConfigured) return DEFAULT_HOURS;
-  const supabase = await createSupabaseServerClient();
+  const supabase = await hoursClient();
   const { data } = await supabase
     .from("business_hours")
     .select("day_of_week, open_time, close_time, is_closed")
     .order("day_of_week", { ascending: true });
   if (!data || data.length === 0) return DEFAULT_HOURS;
-  return data as BusinessHour[];
+  return data.map((row) => ({
+    day_of_week: Number(row.day_of_week),
+    open_time: row.open_time ? String(row.open_time) : null,
+    close_time: row.close_time ? String(row.close_time) : null,
+    is_closed: Boolean(row.is_closed),
+  }));
 }
 
 export async function getBreaks(): Promise<Break[]> {
   if (!supabaseConfigured) return [];
-  const supabase = await createSupabaseServerClient();
+  const supabase = await hoursClient();
   const { data } = await supabase
     .from("breaks")
     .select("day_of_week, start_time, end_time");
-  return (data ?? []) as Break[];
+  return (data ?? []).map(normalizeBreak);
 }
 
 export async function isDateBlocked(dateISO: string): Promise<boolean> {
   if (!supabaseConfigured) return false;
-  const supabase = await createSupabaseServerClient();
+  const supabase = await hoursClient();
   const { data } = await supabase
     .from("blocked_dates")
     .select("date")
@@ -48,7 +71,7 @@ export async function isDateBlocked(dateISO: string): Promise<boolean> {
 
 export async function getBlockedDates(fromISO: string, toISO: string): Promise<string[]> {
   if (!supabaseConfigured) return [];
-  const supabase = await createSupabaseServerClient();
+  const supabase = await hoursClient();
   const { data } = await supabase
     .from("blocked_dates")
     .select("date")

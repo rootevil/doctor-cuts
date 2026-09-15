@@ -2128,6 +2128,16 @@ button.text-nav:hover {
   background: var(--slot-unavailable-bg);
 }
 
+.time-slot-legend-swatch.is-break {
+  border-color: color-mix(in srgb, var(--brass) 40%, var(--border));
+  background: color-mix(in srgb, var(--brass) 18%, var(--surface));
+}
+
+.time-slot-btn--break {
+  border-style: dashed;
+  color: var(--brass-muted);
+}
+
 .time-slot-skeleton-grid {
   display: flex;
   flex-wrap: wrap;
@@ -2793,6 +2803,7 @@ body[data-admin] main {
 
 .admin-cal-legend [data-state="available"]::before,
 .admin-cal-legend [data-state="booked"]::before,
+.admin-cal-legend [data-state="break"]::before,
 .admin-cal-legend [data-state="unavailable"]::before {
   content: "";
   display: inline-block;
@@ -2931,6 +2942,17 @@ body[data-admin] main {
 .admin-cal-slot.is-unavailable {
   opacity: 0.45;
   color: var(--muted);
+}
+
+.admin-cal-slot.is-break {
+  opacity: 0.7;
+  color: var(--brass-muted);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--brass) 28%, var(--border));
+}
+
+.admin-cal-legend [data-state="break"]::before {
+  background: color-mix(in srgb, var(--brass) 45%, var(--border));
 }
 
 .admin-cal-week {

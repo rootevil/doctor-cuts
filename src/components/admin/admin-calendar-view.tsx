@@ -249,6 +249,7 @@ export function AdminCalendarView({
       <div className="admin-cal-legend">
         <span data-state="available">{copy.legendFree}</span>
         <span data-state="booked">{copy.legendBooked}</span>
+        <span data-state="break">{copy.legendBreak}</span>
         <span data-state="unavailable">{copy.legendBlocked}</span>
       </div>
 
@@ -552,6 +553,16 @@ function DayColumn({
               <span>{time}</span>
               {!compact ? <span className="admin-cal-slot-meta">{copy.freeSlot}</span> : null}
             </button>
+          );
+        }
+        if (slot.state === "break") {
+          return (
+            <div key={slot.startsAt} className="admin-cal-slot is-break">
+              <span>{time}</span>
+              {!compact ? (
+                <span className="admin-cal-slot-meta">{copy.breakSlot}</span>
+              ) : null}
+            </div>
           );
         }
         return (

@@ -11,6 +11,7 @@ import {
   removeBlockedDate,
   removeBreak,
   saveHours,
+  updateBreak,
 } from "@/lib/admin/actions";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
@@ -143,19 +144,65 @@ export default async function AdminHoursPage({
         {breaks.length === 0 ? (
           <p className="text-sm text-body">{copy.breaksEmpty}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border border-y border-border">
+          <ul className="flex flex-col gap-4">
             {breaks.map((b) => (
-              <li key={b.id} className="flex items-center justify-between gap-3 py-3">
-                <div>
-                  <span className="font-display text-lg">
-                    {b.day_of_week == null
-                      ? copy.breakDayAll
-                      : DAYS[b.day_of_week]?.[locale] ?? b.day_of_week}{" "}
-                    · {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}
-                  </span>
-                  {b.label ? <p className="text-xs text-muted">{b.label}</p> : null}
-                </div>
-                <form action={removeBreak}>
+              <li key={b.id} className="admin-panel flex flex-col gap-3">
+                <form
+                  action={updateBreak}
+                  className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1.2fr_auto] md:items-end"
+                >
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={b.id} />
+                  <label className="flex flex-col gap-1">
+                    <span className="text-caption">{copy.breakDay}</span>
+                    <select
+                      name="day_of_week"
+                      className="admin-field"
+                      defaultValue={b.day_of_week == null ? "all" : String(b.day_of_week)}
+                    >
+                      <option value="all">{copy.breakDayAll}</option>
+                      {Object.entries(DAYS).map(([dow, name]) => (
+                        <option key={dow} value={dow}>
+                          {name[locale]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-caption">{copy.breakStart}</span>
+                    <input
+                      type="time"
+                      name="start_time"
+                      required
+                      defaultValue={b.start_time.slice(0, 5)}
+                      className="admin-field"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-caption">{copy.breakEnd}</span>
+                    <input
+                      type="time"
+                      name="end_time"
+                      required
+                      defaultValue={b.end_time.slice(0, 5)}
+                      className="admin-field"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-caption">{copy.breakLabel}</span>
+                    <input
+                      type="text"
+                      name="label"
+                      defaultValue={b.label ?? ""}
+                      placeholder={copy.breakLabelPlaceholder}
+                      className="admin-field"
+                    />
+                  </label>
+                  <button type="submit" className="admin-btn admin-btn-primary">
+                    {copy.saveBreak}
+                  </button>
+                </form>
+                <form action={removeBreak} className="flex justify-end">
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="id" value={b.id} />
                   <button type="submit" className="admin-btn admin-btn-ghost !min-h-9">

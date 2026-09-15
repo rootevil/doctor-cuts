@@ -20,8 +20,10 @@ export type TimeSlotCopy = {
   legendAvailable: string;
   legendBooked: string;
   legendUnavailable: string;
+  legendBreak: string;
   booked: string;
   unavailable: string;
+  onBreak: string;
   legendLabel: string;
 };
 
@@ -182,6 +184,10 @@ export function TimeSlotPicker({
           {copy.legendBooked}
         </li>
         <li>
+          <span className="time-slot-legend-swatch is-break" aria-hidden />
+          {copy.legendBreak}
+        </li>
+        <li>
           <span className="time-slot-legend-swatch is-unavailable" aria-hidden />
           {copy.legendUnavailable}
         </li>
@@ -220,9 +226,11 @@ export function TimeSlotPicker({
                   const stateLabel =
                     state === "booked"
                       ? copy.booked
-                      : state === "unavailable"
-                        ? copy.unavailable
-                        : null;
+                      : state === "break"
+                        ? copy.onBreak
+                        : state === "unavailable"
+                          ? copy.unavailable
+                          : null;
                   return (
                     <button
                       key={startsAt}
@@ -233,9 +241,9 @@ export function TimeSlotPicker({
                       aria-label={`${timeLabel(startsAt)}${
                         stateLabel ? `, ${stateLabel}` : ""
                       }${selected ? `, ${copy.selected.replace("{time}", timeLabel(startsAt))}` : ""}`}
-                      className={`time-slot-btn time-slot-btn--${state} ${
+                      className={`time-slot-btn time-slot-btn--${state === "break" ? "unavailable" : state} ${
                         selected ? "time-slot-btn--selected" : ""
-                      }`}
+                      }${state === "break" ? " time-slot-btn--break" : ""}`}
                     >
                       <span className="time-slot-btn-time">{timeLabel(startsAt)}</span>
                       {stateLabel && !selected ? (

@@ -204,8 +204,10 @@ export type Dictionary = {
           legendAvailable: string;
           legendBooked: string;
           legendUnavailable: string;
+          legendBreak: string;
           booked: string;
           unavailable: string;
+          onBreak: string;
           legendLabel: string;
         };
       };
@@ -545,8 +547,10 @@ export type Dictionary = {
         legendFree: string;
         legendBooked: string;
         legendBlocked: string;
+        legendBreak: string;
         freeSlot: string;
         blockedSlot: string;
+        breakSlot: string;
         closedDay: string;
         blockedDay: string;
         emptyDay: string;
@@ -651,6 +655,7 @@ export type Dictionary = {
         breakLabel: string;
         breakLabelPlaceholder: string;
         addBreak: string;
+        saveBreak: string;
         breaksEmpty: string;
       };
       customers: {
@@ -1094,8 +1099,10 @@ const it: Dictionary = {
           legendAvailable: "Disponibile",
           legendBooked: "Occupato",
           legendUnavailable: "Chiuso",
+          legendBreak: "Pausa",
           booked: "Occupato",
           unavailable: "Non disponibile",
+          onBreak: "Pausa",
           legendLabel: "Legenda orari",
         },
       },
@@ -1452,8 +1459,10 @@ const it: Dictionary = {
         legendFree: "Libero",
         legendBooked: "Prenotato",
         legendBlocked: "Non disponibile",
+        legendBreak: "Pausa",
         freeSlot: "Libero — prenota",
         blockedSlot: "Chiuso / passato",
+        breakSlot: "Pausa",
         closedDay: "Chiuso",
         blockedDay: "Data bloccata",
         emptyDay: "Nessuno slot in questa giornata.",
@@ -1559,6 +1568,7 @@ const it: Dictionary = {
         breakLabel: "Etichetta",
         breakLabelPlaceholder: "es. Pranzo",
         addBreak: "Aggiungi pausa",
+        saveBreak: "Salva pausa",
         breaksEmpty: "Nessuna pausa configurata.",
       },
       customers: {
@@ -2006,8 +2016,10 @@ const en: Dictionary = {
           legendAvailable: "Open",
           legendBooked: "Taken",
           legendUnavailable: "Closed",
+          legendBreak: "Break",
           booked: "Booked",
           unavailable: "Unavailable",
+          onBreak: "Break",
           legendLabel: "Time slot legend",
         },
       },
@@ -2362,8 +2374,10 @@ const en: Dictionary = {
         legendFree: "Free",
         legendBooked: "Booked",
         legendBlocked: "Unavailable",
+        legendBreak: "Break",
         freeSlot: "Free — book",
         blockedSlot: "Closed / past",
+        breakSlot: "Break",
         closedDay: "Closed",
         blockedDay: "Blocked date",
         emptyDay: "No slots this day.",
@@ -2469,6 +2483,7 @@ const en: Dictionary = {
         breakLabel: "Label",
         breakLabelPlaceholder: "e.g. Lunch",
         addBreak: "Add break",
+        saveBreak: "Save break",
         breaksEmpty: "No breaks configured.",
       },
       customers: {
