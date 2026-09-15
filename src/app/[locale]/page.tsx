@@ -4,6 +4,7 @@ import { Statement } from "@/components/statement";
 import { Services } from "@/components/services";
 import { Gallery } from "@/components/gallery";
 import { About } from "@/components/about";
+import { Owner } from "@/components/owner";
 import { Testimonials } from "@/components/testimonials";
 import { Location } from "@/components/location";
 import { getPublicGallery } from "@/lib/data/gallery";
@@ -32,6 +33,7 @@ export default async function HomePage({
       <Statement t={t} />
       <Services locale={locale} t={t} />
       <Gallery t={t} locale={locale} items={galleryItems} />
+      <Owner locale={locale} t={t} />
       <About locale={locale} t={t} />
       <Testimonials t={t} reviews={reviews} />
       <Location locale={locale} t={t} />

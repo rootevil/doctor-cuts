@@ -1451,6 +1451,148 @@ button.text-nav:hover {
   border-color: color-mix(in srgb, var(--border) 72%, transparent);
 }
 
+/* Owner — full landscape photo dominates; bio fills the rest */
+.owner-section {
+  --owner-gap: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.owner-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: var(--owner-gap);
+  padding-block: clamp(2.75rem, 6vw, 4.25rem);
+}
+
+@media (min-width: 900px) {
+  .owner-section-grid {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.55fr);
+    gap: clamp(1.75rem, 3.5vw, 2.75rem);
+    padding-block: clamp(3rem, 5.5vw, 4.5rem);
+  }
+}
+
+.owner-section-copy {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.9rem, 2vw, 1.15rem);
+  max-width: 28rem;
+}
+
+@media (min-width: 900px) {
+  .owner-section-copy {
+    max-width: none;
+    padding-right: 0.35rem;
+  }
+}
+
+.owner-section-name {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.0625rem, 3vw, 1.375rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .owner-section-name {
+    font-size: 1rem;
+    white-space: normal;
+  }
+}
+
+@media (min-width: 900px) {
+  .owner-section-name {
+    font-size: clamp(1.125rem, 1.25vw, 1.375rem);
+  }
+}
+
+.owner-section-role {
+  margin-top: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.owner-section-body {
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--foreground-soft);
+}
+
+@media (min-width: 900px) {
+  .owner-section-body {
+    font-size: 0.875rem;
+    line-height: 1.65;
+  }
+}
+
+.owner-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.85rem 0 0;
+  list-style: none;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.owner-section-list li {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--foreground-soft);
+}
+
+.owner-section-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.owner-section-years {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--brass);
+}
+
+@media (min-width: 900px) {
+  .owner-section-years {
+    font-size: 1.625rem;
+  }
+}
+
+.owner-section-photo {
+  position: relative;
+  width: 100%;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--foreground) 3%, var(--surface-sunken));
+  line-height: 0;
+}
+
+.owner-section-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (min-width: 900px) {
+  .owner-section-photo {
+    margin-inline: 0;
+  }
+}
+
 /* Statement band — real studio as watermark under display type */
 .statement-band {
   background: var(--background);

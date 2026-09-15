@@ -9,7 +9,7 @@ import { RevealFade } from "@/components/motion/reveal-fade";
 
 export function About({ locale, t }: { locale: Locale; t: Dictionary }) {
   return (
-    <section id="about" className="section-alt section-shell">
+    <section id="about" className="section-shell bg-background">
       <div className="site-wrap-wide grid grid-cols-1 items-center gap-10 section-pad-y md:grid-cols-2 md:gap-12 lg:gap-16">
         <RevealFade>
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[22rem] overflow-hidden sm:max-w-[26rem] md:mx-0 md:max-w-[min(100%,32rem)]">

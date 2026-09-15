@@ -67,6 +67,17 @@ export type Dictionary = {
     findUs: string;
     imageAlt: string;
   };
+  owner: {
+    kicker: string;
+    name: string;
+    role: string;
+    body: string;
+    highlights: [string, string, string];
+    experienceLabel: string;
+    experienceValue: string;
+    bookCta: string;
+    imageAlt: string;
+  };
   testimonials: {
     kicker: string;
     title: string;
@@ -911,6 +922,21 @@ const it: Dictionary = {
     locationLabel: "Sede",
     findUs: "Come trovarci",
     imageAlt: "Interno Doctor Cuts a Macerata",
+  },
+  owner: {
+    kicker: "Il fondatore",
+    name: "Muhammad Sikandar Khan",
+    role: "Parrucchiere e estetista certificato",
+    body: "Sikandar guida Doctor Cuts con la stessa cura che mette in ogni taglio: ascolto, precisione e un occhio allenato su linee, texture e barba. Dal primo appuntamento al rifinito finale, l’obiettivo è un look pulito che regge nel tempo — senza fretta e senza compromessi.",
+    highlights: [
+      "Qualifica professionale in parrucchiere ed estetica",
+      "Specializzato in grooming maschile, sfumature e barba",
+      "Oltre dieci anni di esperienza in salone e studio",
+    ],
+    experienceLabel: "Esperienza",
+    experienceValue: "10+ anni",
+    bookCta: "Prenota ora",
+    imageAlt: "Muhammad Sikandar Khan, fondatore di Doctor Cuts",
   },
   testimonials: {
     kicker: "Recensioni",
@@ -1806,6 +1832,21 @@ const en: Dictionary = {
     locationLabel: "Location",
     findUs: "Find us",
     imageAlt: "Doctor Cuts interior in Macerata",
+  },
+  owner: {
+    kicker: "The owner",
+    name: "Muhammad Sikandar Khan",
+    role: "Certified hairdresser & beautician",
+    body: "Sikandar leads Doctor Cuts with the same care he puts into every cut: listening first, then shaping lines, texture, and beard with precision. From consultation to final detail, the goal is a clean look that holds — never rushed, never careless.",
+    highlights: [
+      "Professionally qualified in hairdressing and beauty",
+      "Focused on men’s grooming, fades, and beard work",
+      "More than ten years behind the chair",
+    ],
+    experienceLabel: "Experience",
+    experienceValue: "10+ years",
+    bookCta: "Book now",
+    imageAlt: "Muhammad Sikandar Khan, founder of Doctor Cuts",
   },
   testimonials: {
     kicker: "Reviews",
