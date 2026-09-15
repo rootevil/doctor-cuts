@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { preconnect, prefetchDNS } from "react-dom";
-import { Montserrat } from "next/font/google";
+import { IBM_Plex_Sans, Montserrat } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/site-url";
 import { supabaseUrl } from "@/lib/supabase/env";
@@ -10,6 +10,13 @@ const montserrat = Montserrat({
   subsets: ["latin", "latin-ext"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -70,7 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="it"
       data-scroll-behavior="smooth"
-      className={`${montserrat.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${ibmPlexSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">

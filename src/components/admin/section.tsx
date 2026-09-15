@@ -16,10 +16,8 @@ export function AdminSection({
       <header className="admin-section-header">
         <div className="flex flex-col gap-2">
           <span className="text-label text-accent-soft">{kicker}</span>
-          <h1 className="font-display text-3xl leading-none tracking-tight text-display md:text-5xl">
-            {title}
-          </h1>
-          {lead ? <p className="max-w-2xl text-sm text-body">{lead}</p> : null}
+          <h1 className="text-display">{title}</h1>
+          {lead ? <p className="max-w-2xl text-body">{lead}</p> : null}
         </div>
         {right ? <div className="flex flex-wrap items-center gap-3">{right}</div> : null}
       </header>

@@ -52,12 +52,12 @@ export function AdminOverviewDayCalendar({
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
         <h2 className="admin-overview-panel-title">{copy.todayCalendar}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[10px] tracking-[0.16em] text-muted uppercase">
+          <span className="text-[0.6875rem] tracking-[0.12em] text-muted uppercase">
             {copy.calendarBookedCount.replace("{count}", String(booked))}
           </span>
           <Link
             href={calendarHref}
-            className="text-[10px] tracking-[0.16em] text-brass uppercase transition hover:text-foreground"
+            className="text-[0.6875rem] tracking-[0.12em] text-brass uppercase transition hover:text-foreground"
           >
             {copy.actionCalendar} →
           </Link>
@@ -77,7 +77,7 @@ export function AdminOverviewDayCalendar({
       ) : day.slots.length === 0 ? (
         <p className="mt-3 text-sm text-muted">{cal.emptyDay}</p>
       ) : (
-        <div className="admin-cal-day mt-3">
+        <div className="admin-cal-day is-dense mt-3">
           {day.slots.map((slot) => {
             const time = formatInTimeZone(
               new Date(slot.startsAt),

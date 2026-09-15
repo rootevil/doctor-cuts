@@ -507,7 +507,7 @@ function DayColumn({
   }
 
   return (
-    <div className={compact ? "admin-cal-day is-compact" : "admin-cal-day"}>
+    <div className={compact ? "admin-cal-day is-compact" : "admin-cal-day is-dense"}>
       {day.slots.map((slot) => {
         const time = formatInTimeZone(new Date(slot.startsAt), SHOP_TZ, "HH:mm");
         const name =

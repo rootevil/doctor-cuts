@@ -77,18 +77,15 @@ export default async function AdminOverviewPage({
     <section className="admin-overview">
       <header className="admin-overview-header">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-brass uppercase">
+          <p className="text-[0.6875rem] font-semibold tracking-[0.16em] text-brass uppercase">
             {copy.kicker}
           </p>
-          <h1 className="mt-1.5 font-display text-2xl leading-tight tracking-tight text-foreground capitalize md:text-3xl">
+          <h1 className="mt-1.5 capitalize text-foreground">
             {dateLabel}
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm text-body">{copy.lead}</p>
+          <p className="mt-1.5 max-w-xl text-body">{copy.lead}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Link href={calendarHref} className="admin-btn admin-btn-brass">
-            {copy.actionCalendar}
-          </Link>
           <Link
             href={`${r.adminAppointments}?range=all&status=pending`}
             className="admin-btn admin-btn-ghost"
@@ -97,24 +94,6 @@ export default async function AdminOverviewPage({
           </Link>
         </div>
       </header>
-
-      <div className="admin-overview-actions">
-        <Link href={r.adminCalendar} className="admin-overview-action">
-          {copy.actionCalendar}
-        </Link>
-        <Link href={r.adminAppointments} className="admin-overview-action">
-          {copy.actionAppointments}
-        </Link>
-        <Link href={r.adminPayments} className="admin-overview-action">
-          {copy.actionPayments}
-        </Link>
-        <Link href={r.adminHours} className="admin-overview-action">
-          {copy.actionHours}
-        </Link>
-        <Link href={r.adminSettings} className="admin-overview-action">
-          {copy.actionSettings}
-        </Link>
-      </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <StatCard
@@ -152,7 +131,7 @@ export default async function AdminOverviewPage({
       <div className="admin-overview-panel">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
           <h2 className="admin-overview-panel-title">{copy.todaySchedule}</h2>
-          <span className="text-[10px] tracking-[0.16em] text-muted uppercase">
+          <span className="text-[0.6875rem] tracking-[0.12em] text-muted uppercase">
             {copy.scheduleCount.replace("{count}", String(today.length))}
           </span>
         </div>
@@ -171,7 +150,7 @@ export default async function AdminOverviewPage({
         <div className="admin-overview-panel">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2.5">
             <h2 className="admin-overview-panel-title">{copy.upcomingSchedule}</h2>
-            <span className="text-[10px] tracking-[0.16em] text-muted uppercase">
+            <span className="text-[0.6875rem] tracking-[0.12em] text-muted uppercase">
               {copy.scheduleCount.replace("{count}", String(upcoming.length))}
             </span>
           </div>
