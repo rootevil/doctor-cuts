@@ -11,6 +11,7 @@ import { SHOP_TZ } from "@/lib/booking/timezone";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
 import { cancelBooking } from "@/lib/booking/actions";
+import { retryDepositCheckoutForUser } from "@/lib/payments/actions";
 import { routes } from "@/lib/routes";
 
 type Props = {
@@ -62,8 +63,9 @@ export function AppointmentCard({
     appointment.status !== "cancelled" &&
     appointment.status !== "completed" &&
     appointment.status !== "no_show";
-  const showCancel = canCancel && upcoming;
-  const showReschedule = canReschedule && upcoming;
+  const awaitingPay = appointment.payment_status === "awaiting";
+  const showCancel = canCancel && upcoming && !awaitingPay;
+  const showReschedule = canReschedule && upcoming && !awaitingPay;
   const depositPaid =
     appointment.payment_status === "paid" && appointment.deposit_cents > 0;
   const cancelConfirm = depositPaid ? copy.confirmCancelPaid : copy.confirmCancel;
@@ -90,6 +92,21 @@ export function AppointmentCard({
     });
   };
 
+  const onPayDeposit = () => {
+    setError(null);
+    startTransition(async () => {
+      const res = await retryDepositCheckoutForUser({
+        appointmentId: appointment.id,
+        locale,
+      });
+      if (res.ok) {
+        window.location.assign(res.checkoutUrl);
+        return;
+      }
+      setError(copy.payDepositFailed);
+    });
+  };
+
   return (
     <article className="border border-border bg-surface p-5 md:p-6">
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between md:gap-8">
@@ -103,6 +120,11 @@ export function AppointmentCard({
             {depositPaid ? (
               <span className="inline-flex items-center px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-brass uppercase">
                 {copy.depositPaid}
+              </span>
+            ) : null}
+            {awaitingPay ? (
+              <span className="inline-flex items-center px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-[var(--error-text)] uppercase">
+                {copy.depositAwaiting}
               </span>
             ) : null}
             <span className="text-[11px] tracking-[0.18em] text-muted uppercase">
@@ -134,7 +156,7 @@ export function AppointmentCard({
             </p>
           ) : null}
 
-          {upcoming && !showCancel && !showReschedule ? (
+          {upcoming && !awaitingPay && !showCancel && !showReschedule ? (
             <p className="mt-3 text-sm text-muted">{copy.tooLateHint}</p>
           ) : null}
 
@@ -145,8 +167,21 @@ export function AppointmentCard({
           ) : null}
         </div>
 
-        {showCancel || showReschedule ? (
+        {awaitingPay || showCancel || showReschedule ? (
           <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row">
+            {awaitingPay ? (
+              <button
+                type="button"
+                onClick={onPayDeposit}
+                disabled={pending}
+                className="inline-flex min-h-10 items-center justify-center gap-2 border border-brass/50 bg-brass px-4 text-[11px] tracking-[0.22em] text-background uppercase transition hover:opacity-90 disabled:opacity-50"
+              >
+                {pending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : null}
+                {copy.payDeposit}
+              </button>
+            ) : null}
             {showReschedule ? (
               <Link
                 href={r.bookReschedule(appointment.id)}

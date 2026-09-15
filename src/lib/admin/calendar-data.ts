@@ -106,6 +106,7 @@ async function listLiveAppointmentsForDate(dateISO: string) {
     .from("appointments")
     .select(APPOINTMENT_SELECT)
     .in("status", ["pending", "confirmed", "arrived", "completed"])
+    .in("payment_status", ["paid", "none"])
     .lt("starts_at", endUtc)
     .gt("ends_at", startUtc)
     .order("starts_at", { ascending: true });

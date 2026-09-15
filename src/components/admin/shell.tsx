@@ -12,5 +12,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      {/* Avoid marketing header/footer flash before hydration. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.body.dataset.admin="true"`,
+        }}
+      />
+      {children}
+    </>
+  );
 }

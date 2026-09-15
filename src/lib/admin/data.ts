@@ -157,7 +157,7 @@ export async function listTodaysAppointments(): Promise<AdminAppointment[]> {
     .gte("starts_at", startUtc)
     .lt("starts_at", endUtc)
     .in("payment_status", [...VISIBLE_LIVE])
-    .not("status", "eq", "cancelled")
+    .in("status", ["pending", "confirmed", "arrived", "completed"])
     .order("starts_at", { ascending: true });
   if (error) {
     console.warn("[admin] today's appointments:", error.message);
@@ -344,7 +344,7 @@ export async function appointmentCounts() {
       .gte("starts_at", startUtc)
       .lt("starts_at", endUtc)
       .in("payment_status", [...VISIBLE_LIVE])
-      .in("status", ["pending", "confirmed", "arrived", "completed"]),
+      .in("status", ["pending", "confirmed", "arrived"]),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })

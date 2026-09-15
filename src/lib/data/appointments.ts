@@ -116,13 +116,14 @@ export async function listAppointmentsForCurrentUser() {
     // Match server cancel/reschedule: allowed while now <= cutoff.
     const mutable =
       (row.status === "pending" || row.status === "confirmed") && nowMs <= cutoffMs;
+    const awaitingPay = (row.payment_status ?? "none") === "awaiting";
     const record: AppointmentSummary = {
       ...row,
       payment_status: row.payment_status ?? "none",
       deposit_cents: Number(row.deposit_cents ?? 0),
       service: normalisedService,
-      can_cancel: mutable,
-      can_reschedule: mutable,
+      can_cancel: mutable && !awaitingPay,
+      can_reschedule: mutable && !awaitingPay,
     };
     if (
       new Date(row.starts_at).getTime() >= nowMs &&

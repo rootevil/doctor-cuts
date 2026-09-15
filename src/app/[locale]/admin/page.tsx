@@ -62,13 +62,6 @@ export default async function AdminOverviewPage({
     getAdminCalendarDay(todayISO),
   ]);
 
-  const remainingToday = today.filter(
-    (a) =>
-      a.status === "pending" ||
-      a.status === "confirmed" ||
-      a.status === "arrived",
-  );
-
   const dateLabel = formatInTimeZone(new Date(), SHOP_TZ, "EEEE d MMMM", {
     locale: locale === "it" ? it : enUS,
   });
@@ -100,11 +93,7 @@ export default async function AdminOverviewPage({
           label={copy.today}
           value={counts.today}
           hint={copy.todayHint}
-          href={
-            remainingToday.length > 0
-              ? `${r.adminAppointments}?range=today&status=pending`
-              : `${r.adminAppointments}?range=today&status=completed`
-          }
+          href={`${r.adminAppointments}?range=today&status=pending`}
         />
         <StatCard
           label={copy.pending}

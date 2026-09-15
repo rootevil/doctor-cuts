@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { PageHero } from "@/components/layout/page-hero";
 import { GuestCancelButton } from "@/components/booking/guest-cancel-button";
+import { PaymentRetryButton } from "@/components/booking/payment-retry-button";
 import { ButtonLink } from "@/components/ui/button";
 import { getGuestAppointment } from "@/lib/booking/actions";
 import { SHOP_TZ } from "@/lib/booking/timezone";
@@ -116,8 +117,20 @@ export default async function ManageGuestBookingPage({
           </div>
         </dl>
         <p className="text-[11px] tracking-[0.28em] text-muted uppercase">{statusLabel}</p>
+        {appointment.payment_status === "awaiting" ? (
+          <p className="text-sm text-[var(--error-text)]">
+            {t.pages.account.appointments.depositAwaiting}
+          </p>
+        ) : null}
 
-        {!cancelled && (appointment.can_cancel || appointment.can_reschedule) ? (
+        {!cancelled && appointment.payment_status === "awaiting" && appointment.payment_token ? (
+          <PaymentRetryButton
+            locale={locale}
+            referenceCode={appointment.reference_code}
+            paymentToken={appointment.payment_token}
+            label={t.pages.account.appointments.payDeposit}
+          />
+        ) : !cancelled && (appointment.can_cancel || appointment.can_reschedule) ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             {appointment.can_reschedule && token ? (
               <ButtonLink

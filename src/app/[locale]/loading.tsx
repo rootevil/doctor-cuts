@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { readPersistedLocale } from "@/i18n/cookie";
 
 export default function LocaleLoading() {
-  const [label, setLabel] = useState("Caricamento");
-
-  useEffect(() => {
-    setLabel(readPersistedLocale() === "en" ? "Loading" : "Caricamento");
-  }, []);
+  // Cookie is available on the client during render — no effect needed.
+  const label = readPersistedLocale() === "en" ? "Loading" : "Caricamento";
 
   return (
     <div

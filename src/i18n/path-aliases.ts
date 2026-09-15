@@ -36,6 +36,10 @@ const REST_RULES: Array<{
   { match: /^\/admin\/settings(?=\/|$)/, to: "/admin/impostazioni" },
   { match: /^\/admin\/reviews(?=\/|$)/, to: "/admin/recensioni" },
   { match: /^\/manage-booking(?=\/|$)/, to: "/gestisci-prenotazione" },
+  // Payment aliases before generic /book → /prenota (avoids /prenota/payment 404).
+  { match: /^\/(book|booking)\/payment(?=\/|$)/, to: "/prenota/pagamento" },
+  { match: /^\/prenota\/payment(?=\/|$)/, to: "/prenota/pagamento" },
+  { match: /^\/payment(?=\/|$)/, to: "/prenota/pagamento" },
   { match: /^\/services(?=\/|$)/, to: "/servizi" },
   { match: /^\/gallery(?=\/|$)/, to: "/galleria" },
   { match: /^\/about(?=\/|$)/, to: "/storia" },

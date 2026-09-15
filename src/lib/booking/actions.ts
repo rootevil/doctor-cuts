@@ -591,6 +591,7 @@ export type GuestAppointment = {
   price: number;
   deposit_cents: number;
   payment_status: string;
+  payment_token: string | null;
   can_cancel: boolean;
   can_reschedule: boolean;
 };
@@ -611,7 +612,7 @@ export async function getGuestAppointment(
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, deposit_cents, payment_status, service_id, service:services ( id, slug, name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, payment_token, deposit_cents, payment_status, service_id, service:services ( id, slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -629,6 +630,7 @@ export async function getGuestAppointment(
   const mutable =
     (data.status === "pending" || data.status === "confirmed") &&
     Date.now() <= cutoff.getTime();
+  const awaitingPay = ((data.payment_status as string) ?? "none") === "awaiting";
 
   return {
     id: data.id,
@@ -646,8 +648,9 @@ export async function getGuestAppointment(
     price: Number(service.price),
     deposit_cents: Number(data.deposit_cents ?? 0),
     payment_status: (data.payment_status as string) ?? "none",
-    can_cancel: mutable,
-    can_reschedule: mutable,
+    payment_token: (data.payment_token as string | null) ?? null,
+    can_cancel: mutable && !awaitingPay,
+    can_reschedule: mutable && !awaitingPay,
   };
 }
 

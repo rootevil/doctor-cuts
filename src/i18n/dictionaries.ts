@@ -396,6 +396,9 @@ export type Dictionary = {
         confirmCancelPaid: string;
         tooLateHint: string;
         depositPaid: string;
+        depositAwaiting: string;
+        payDeposit: string;
+        payDepositFailed: string;
         refLabel: string;
         statuses: {
           pending: string;
@@ -1298,6 +1301,9 @@ const it: Dictionary = {
         tooLateHint:
           "Troppo tardi per modificare online. Contatta lo studio via WhatsApp o telefono.",
         depositPaid: "Acconto pagato",
+        depositAwaiting: "Acconto da pagare",
+        payDeposit: "Paga acconto",
+        payDepositFailed: "Non è stato possibile riaprire il pagamento. Riprova tra un momento.",
         refLabel: "Rif.",
         statuses: {
           pending: "In attesa",
@@ -2205,6 +2211,9 @@ const en: Dictionary = {
         tooLateHint:
           "It’s too late to change this online. Reach us on WhatsApp or by phone.",
         depositPaid: "Deposit paid",
+        depositAwaiting: "Deposit due",
+        payDeposit: "Pay deposit",
+        payDepositFailed: "Couldn’t reopen checkout. Try again in a moment.",
         refLabel: "Ref.",
         statuses: {
           pending: "Pending",
