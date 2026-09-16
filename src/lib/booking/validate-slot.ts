@@ -61,12 +61,21 @@ export async function assertSlotBookable(input: {
     return { ok: false, reason: "beyond_window" };
   }
 
-  const [hours, breaks, schedule, bookings] = await Promise.all([
-    getBusinessHours(),
-    getBreaks(),
-    resolveDaySchedule(dateISO),
-    getBookingsForDate(dateISO, input.ignoreAppointmentId),
-  ]);
+  let hours;
+  let breaks;
+  let schedule;
+  let bookings;
+  try {
+    [hours, breaks, schedule, bookings] = await Promise.all([
+      getBusinessHours(),
+      getBreaks(),
+      resolveDaySchedule(dateISO),
+      getBookingsForDate(dateISO, input.ignoreAppointmentId),
+    ]);
+  } catch (err) {
+    console.warn("[booking] assertSlotBookable load failed:", err);
+    return { ok: false, reason: "slot_unavailable" };
+  }
 
   const slots = computeSlotGrid({
     dateISO,

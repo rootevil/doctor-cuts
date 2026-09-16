@@ -8,6 +8,7 @@ import type { ExistingBooking } from "@/lib/booking/availability";
 import { shopDateBoundsUtc } from "@/lib/booking/timezone";
 import { getSettings } from "@/lib/data/settings";
 import { completePastAppointments } from "@/lib/payments/complete";
+import { expireStalePaymentHolds } from "@/lib/payments/expire";
 
 export type AppointmentSummary = {
   id: string;
@@ -64,13 +65,15 @@ export async function getBookingsForDate(
 
   if (error) {
     console.warn("[appointments] busy-range fetch failed:", error.message);
-    return [];
+    // Fail closed: never show an open grid when we cannot see existing bookings.
+    throw new Error("busy_range_unavailable");
   }
   return (data ?? []).map(({ starts_at, ends_at }) => ({ starts_at, ends_at }));
 }
 
 export async function listAppointmentsForCurrentUser() {
   if (!supabaseConfigured) return { upcoming: [], past: [] };
+  await expireStalePaymentHolds();
   await completePastAppointments();
   const supabase = await createSupabaseServerClient();
   const {

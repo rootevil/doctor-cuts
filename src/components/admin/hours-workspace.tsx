@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -735,10 +734,6 @@ export function HoursWorkspace({
     },
     [startTransition],
   );
-
-  useEffect(() => {
-    setTab(initialTab);
-  }, [initialTab]);
 
   const onTabKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const i = TAB_ORDER.indexOf(tab);

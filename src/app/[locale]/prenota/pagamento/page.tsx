@@ -125,14 +125,32 @@ export default async function BookingPaymentReturnPage({
   const canRetry =
     appointment.status === "pending" && appointment.payment_status === "awaiting" && p;
 
+  const endedHold =
+    appointment.payment_status === "expired" ||
+    appointment.payment_status === "failed" ||
+    appointment.payment_status === "refunded" ||
+    appointment.status === "cancelled";
+
+  const title = canRetry
+    ? copy.payment.result.unpaidTitle
+    : appointment.payment_status === "expired"
+      ? copy.payment.result.expiredTitle
+      : endedHold
+        ? copy.payment.result.failedTitle
+        : copy.payment.result.processingTitle;
+
+  const lead = canRetry
+    ? copy.payment.result.unpaidLead
+    : appointment.payment_status === "expired"
+      ? copy.payment.result.expiredLead
+      : endedHold
+        ? copy.payment.result.failedLead
+        : copy.payment.result.processingLead;
+
   return (
     <ResultShell>
-      <h1 className="font-display text-3xl uppercase md:text-4xl">
-        {canRetry ? copy.payment.result.unpaidTitle : copy.payment.result.processingTitle}
-      </h1>
-      <p className="max-w-md text-body">
-        {canRetry ? copy.payment.result.unpaidLead : copy.payment.result.processingLead}
-      </p>
+      <h1 className="font-display text-3xl uppercase md:text-4xl">{title}</h1>
+      <p className="max-w-md text-body">{lead}</p>
       <p className="text-sm text-muted">
         {serviceName} · {when} · {appointment.reference_code}
       </p>

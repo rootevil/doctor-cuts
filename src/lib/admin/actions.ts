@@ -25,7 +25,8 @@ import {
 import { getDictionary } from "@/i18n/dictionaries";
 import { isAllowedAdminEmail } from "@/lib/auth/admin-email";
 import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
-import { expireStripeCheckoutSession } from "@/lib/payments/stripe";
+import { expireStripeCheckoutSession, inspectStripeCheckoutSession } from "@/lib/payments/stripe";
+import { syncAppointmentPayment } from "@/lib/payments/sync";
 import { bookingAlertAddress, sendEmail } from "@/lib/email/send";
 import {
   cancellationEmail,
@@ -313,8 +314,43 @@ export async function deleteAppointment(formData: FormData) {
     return { ok: false as const, reason: "not_allowed" as const };
   }
 
-  await expireCheckoutIfNeeded(row.nexi_order_id as string | null);
-  const { error } = await admin.from("appointments").delete().eq("id", row.id);
+  const sessionId = row.nexi_order_id as string | null;
+  if (
+    row.payment_status === "awaiting" &&
+    typeof sessionId === "string" &&
+    sessionId.startsWith("cs_")
+  ) {
+    try {
+      const snapshot = await inspectStripeCheckoutSession(sessionId);
+      if (snapshot.paid) {
+        await syncAppointmentPayment({ appointmentId: row.id });
+        return { ok: false as const, reason: "not_allowed" as const };
+      }
+    } catch (err) {
+      console.warn("[admin] delete inspect failed:", err);
+      return { ok: false as const, reason: "unknown" as const };
+    }
+  }
+
+  await expireCheckoutIfNeeded(sessionId);
+
+  // Re-check after closing Checkout — payment may have landed mid-delete.
+  const { data: fresh } = await admin
+    .from("appointments")
+    .select("id, status, payment_status, nexi_order_id")
+    .eq("id", row.id)
+    .maybeSingle();
+  if (!fresh) return { ok: false as const, reason: "not_found" as const };
+  if (
+    !appointmentIsHardDeletable({
+      status: fresh.status,
+      payment_status: fresh.payment_status,
+    })
+  ) {
+    return { ok: false as const, reason: "not_allowed" as const };
+  }
+
+  const { error } = await admin.from("appointments").delete().eq("id", fresh.id);
   if (error) {
     console.warn("[admin] delete appointment failed:", error.message);
     return { ok: false as const, reason: "unknown" as const };

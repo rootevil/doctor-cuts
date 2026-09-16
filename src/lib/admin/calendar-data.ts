@@ -130,13 +130,28 @@ export async function getAdminCalendarDay(
   await expireStalePaymentHolds();
   await completePastAppointments();
 
-  const [hours, breaks, schedule, bookings, appointments] = await Promise.all([
-    getBusinessHours(),
-    getBreaks(),
-    resolveDaySchedule(dateISO),
-    getBookingsForDate(dateISO, opts?.ignoreAppointmentId),
-    listLiveAppointmentsForDate(dateISO),
-  ]);
+  let hours;
+  let breaks;
+  let schedule;
+  let bookings;
+  let appointments;
+  try {
+    [hours, breaks, schedule, bookings, appointments] = await Promise.all([
+      getBusinessHours(),
+      getBreaks(),
+      resolveDaySchedule(dateISO),
+      getBookingsForDate(dateISO, opts?.ignoreAppointmentId),
+      listLiveAppointmentsForDate(dateISO),
+    ]);
+  } catch (err) {
+    console.warn("[admin] calendar day load failed:", err);
+    return {
+      dateISO,
+      blocked: true,
+      closed: true,
+      slots: [],
+    };
+  }
 
   const dayOfWeek = shopDayOfWeek(dateISO);
   const weekly = hours.find((h) => h.day_of_week === dayOfWeek);

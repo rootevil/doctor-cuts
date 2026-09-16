@@ -64,6 +64,7 @@ export default async function AdminHoursPage({
   return (
     <AdminSection kicker={copy.kicker} title={copy.title} lead={copy.lead}>
       <HoursWorkspace
+        key={`${parseTab(query.tab)}-${query.ok ?? ""}-${query.err ?? ""}`}
         locale={locale}
         copy={copy}
         initialTab={parseTab(query.tab)}

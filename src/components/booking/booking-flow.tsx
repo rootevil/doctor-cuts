@@ -128,7 +128,7 @@ export function BookingFlow({
   const [submitting, startSubmit] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState<Success | null>(null);
-  const [liveClosedDates, setLiveClosedDates] = useState<readonly string[]>(closedDates);
+  const [liveClosedDates, setLiveClosedDates] = useState<readonly string[]>(() => closedDates);
 
   const dateSectionRef = useRef<HTMLElement>(null);
   const timeSectionRef = useRef<HTMLElement>(null);
@@ -211,6 +211,13 @@ export function BookingFlow({
       .then((res) => {
         if (!res.ok) return;
         setLiveClosedDates(res.closedDates);
+        setDateISO((current) => {
+          if (!current || !res.closedDates.includes(current)) return current;
+          setSlot(null);
+          setSlots([]);
+          setSlotError(null);
+          return null;
+        });
       })
       .catch(() => {
         /* keep last closed set from SSR */
@@ -218,10 +225,6 @@ export function BookingFlow({
   }, []);
 
   // Keep month grid in sync with Orari (closed / blocked / special) for IT + EN.
-  useEffect(() => {
-    setLiveClosedDates(closedDates);
-  }, [closedDates]);
-
   useEffect(() => {
     if (success) return;
     refreshClosedDates();
@@ -238,16 +241,6 @@ export function BookingFlow({
       window.removeEventListener("focus", onFocus);
     };
   }, [success, refreshClosedDates]);
-
-  // If Orari closes the selected day while the customer is on Prenota, clear it.
-  useEffect(() => {
-    if (!dateISO) return;
-    if (!liveClosedDates.includes(dateISO)) return;
-    setDateISO(null);
-    setSlot(null);
-    setSlots([]);
-    setSlotError(null);
-  }, [dateISO, liveClosedDates]);
 
   useEffect(() => {
     if (!serviceId || !dateISO || success || submitting) return;

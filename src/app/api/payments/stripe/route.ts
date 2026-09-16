@@ -48,7 +48,15 @@ export async function POST(request: Request) {
     if (!sessionId) return NextResponse.json({ ok: true });
 
     const applied = await syncAppointmentPayment({ orderId: sessionId });
-    return NextResponse.json({ ok: applied.ok, paid: applied.paid });
+    // Non-2xx so Stripe retries until finalize succeeds (money already captured).
+    if (!applied.ok) {
+      console.warn("[stripe] sync failed — requesting retry", sessionId);
+      return NextResponse.json(
+        { ok: false, paid: false, retry: true },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json({ ok: true, paid: applied.paid });
   }
 
   if (event.type === "checkout.session.expired") {

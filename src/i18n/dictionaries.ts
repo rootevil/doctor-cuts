@@ -300,6 +300,10 @@ export type Dictionary = {
           processingLead: string;
           unpaidTitle: string;
           unpaidLead: string;
+          expiredTitle: string;
+          expiredLead: string;
+          failedTitle: string;
+          failedLead: string;
           retry: string;
           missingTitle: string;
           missingLead: string;
@@ -1241,6 +1245,12 @@ const it: Dictionary = {
           unpaidTitle: "Prenotazione non confermata",
           unpaidLead:
             "Il pagamento non è andato a buon fine o è stato annullato. L’orario è ancora tuo per pochi minuti.",
+          expiredTitle: "Tempo scaduto",
+          expiredLead:
+            "I 30 minuti per pagare sono finiti e l’orario è di nuovo libero. Prenota di nuovo.",
+          failedTitle: "Pagamento non riuscito",
+          failedLead:
+            "Non abbiamo ricevuto il pagamento. Prenota di nuovo o scrivici su WhatsApp.",
           retry: "Riprova il pagamento",
           missingTitle: "Link non valido",
           missingLead: "Questo link di pagamento è scaduto o non è corretto. Prenota di nuovo.",
@@ -2194,6 +2204,12 @@ const en: Dictionary = {
           unpaidTitle: "Booking not confirmed",
           unpaidLead:
             "Payment didn’t go through or was cancelled. The slot is still yours for a few minutes.",
+          expiredTitle: "Time ran out",
+          expiredLead:
+            "The 30-minute payment window ended and the slot is free again. Please book again.",
+          failedTitle: "Payment failed",
+          failedLead:
+            "We didn’t receive your payment. Book again or message us on WhatsApp.",
           retry: "Try payment again",
           missingTitle: "Link not valid",
           missingLead: "This payment link is expired or incorrect. Please book again.",

@@ -20,7 +20,8 @@ function looksLikeStripeSessionId(id: string) {
 
 /**
  * Refunds a charge that cannot become a booking. Never overwrites a
- * confirmed+paid row (webhook and return URL can race).
+ * confirmed+paid row (webhook and return URL can race). Always frees the
+ * chair by cancelling non-confirmed rows so pending+refunded cannot linger.
  */
 async function refundOrphanStripeCharge(
   appointmentId: string,
@@ -42,6 +43,7 @@ async function refundOrphanStripeCharge(
   await admin
     .from("appointments")
     .update({
+      status: "cancelled",
       payment_status: "refunded",
       stripe_refund_id: refund.refundId ?? null,
     })

@@ -62,8 +62,29 @@ export async function refundAppointmentDeposit(appointmentId: string): Promise<{
     .eq("payment_status", "paid")
     .select("id");
 
-  if (!updated?.length && row.payment_status === "refunded") {
-    return { ok: true, refunded: true, refundId: row.stripe_refund_id ?? undefined };
+  if (!updated?.length) {
+    const { data: again } = await admin
+      .from("appointments")
+      .select("payment_status, stripe_refund_id")
+      .eq("id", appointmentId)
+      .maybeSingle();
+    if (again?.payment_status === "refunded") {
+      return {
+        ok: true,
+        refunded: true,
+        refundId: again.stripe_refund_id ?? refund.refundId,
+      };
+    }
+    console.warn(
+      "[payments] Stripe refund succeeded but ledger update missed for",
+      appointmentId,
+    );
+    return {
+      ok: false,
+      refunded: true,
+      refundId: refund.refundId,
+      message: "ledger_update_failed",
+    };
   }
 
   return { ok: true, refunded: true, refundId: refund.refundId };

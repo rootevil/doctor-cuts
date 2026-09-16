@@ -48,6 +48,7 @@ import { expireStalePaymentHolds } from "@/lib/payments/expire";
 import { completePastAppointments } from "@/lib/payments/complete";
 import { expireStripeCheckoutSession } from "@/lib/payments/stripe";
 import { cancelAppointmentAndRefund } from "@/lib/payments/cancel";
+import { syncAppointmentPayment } from "@/lib/payments/sync";
 import { requestOrigin } from "@/lib/http/origin";
 import type { AppointmentStatus } from "@/lib/supabase/types";
 
@@ -111,12 +112,21 @@ export async function getAvailableSlots(
   const lastBookableDay = lastBookableDateISO(today, settings.max_booking_days);
   if (dateISO > lastBookableDay) return { ok: false, reason: "beyond_window" };
 
-  const [hours, breaks, schedule, bookings] = await Promise.all([
-    getBusinessHours(),
-    getBreaks(),
-    resolveDaySchedule(dateISO),
-    getBookingsForDate(dateISO, ignoreId?.success ? ignoreId.data : null),
-  ]);
+  let hours;
+  let breaks;
+  let schedule;
+  let bookings;
+  try {
+    [hours, breaks, schedule, bookings] = await Promise.all([
+      getBusinessHours(),
+      getBreaks(),
+      resolveDaySchedule(dateISO),
+      getBookingsForDate(dateISO, ignoreId?.success ? ignoreId.data : null),
+    ]);
+  } catch (err) {
+    console.warn("[booking] slot grid load failed:", err);
+    return { ok: false, reason: "invalid_input" };
+  }
 
   const slots = computeSlotGrid({
     dateISO,
@@ -276,11 +286,12 @@ export async function createBooking(
   if (Number.isNaN(startsAt.getTime())) return { ok: false, reason: "invalid_time" };
   const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
 
+  const breakdown = depositBreakdown(Number(service.price), settings.deposit_cents);
+  // Stripe rejects charges under €0.50 — never insert an awaiting hold we cannot collect.
   const takeDeposit =
     isDepositCheckoutReady() &&
     settings.deposit_required &&
-    depositBreakdown(Number(service.price), settings.deposit_cents).payNowCents > 0;
-  const breakdown = depositBreakdown(Number(service.price), settings.deposit_cents);
+    breakdown.payNowCents >= 50;
   const paymentToken = takeDeposit ? newPaymentToken() : null;
 
   const initialStatus = takeDeposit
@@ -505,7 +516,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   const { data: existing, error: fetchErr } = await supabase
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, customer_notes, customer_id, deposit_cents, service:services ( id, slug, name, price, duration_minutes )",
+      "id, starts_at, ends_at, status, reference_code, customer_notes, customer_id, deposit_cents, payment_status, service:services ( id, slug, name, price, duration_minutes )",
     )
     .eq("id", appointmentId)
     .maybeSingle();
@@ -513,6 +524,9 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
   if (fetchErr || !existing) return { ok: false, reason: "not_found" };
   if (existing.customer_id !== user.id) return { ok: false, reason: "not_found" };
   if (existing.status !== "pending" && existing.status !== "confirmed") {
+    return { ok: false, reason: "too_late" };
+  }
+  if (existing.payment_status === "awaiting") {
     return { ok: false, reason: "too_late" };
   }
 
@@ -627,11 +641,14 @@ export async function getGuestAppointment(
   });
   if (!parsed.success) return null;
 
+  await expireStalePaymentHolds();
+  await completePastAppointments();
+
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, payment_token, deposit_cents, payment_status, service_id, service:services ( id, slug, name, duration_minutes, price )",
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, payment_token, deposit_cents, payment_status, nexi_order_id, service_id, service:services ( id, slug, name, duration_minutes, price )",
     )
     .eq("reference_code", parsed.data.reference_code)
     .maybeSingle();
@@ -639,35 +656,54 @@ export async function getGuestAppointment(
   if (!data?.manage_token) return null;
   if (!tokensEqual(data.manage_token, parsed.data.token)) return null;
 
+  if (
+    data.payment_status === "awaiting" &&
+    typeof data.nexi_order_id === "string" &&
+    data.nexi_order_id.startsWith("cs_")
+  ) {
+    await syncAppointmentPayment({ appointmentId: data.id });
+  }
+
+  const { data: fresh } = await admin
+    .from("appointments")
+    .select(
+      "id, starts_at, ends_at, status, reference_code, guest_name, guest_email, guest_phone, manage_token, payment_token, deposit_cents, payment_status, service_id, service:services ( id, slug, name, duration_minutes, price )",
+    )
+    .eq("id", data.id)
+    .maybeSingle();
+
+  const row = fresh ?? data;
+  if (!row?.manage_token) return null;
+
   const settings = await getSettings();
   const cutoff = new Date(
-    new Date(data.starts_at).getTime() - settings.cancellation_hours * 3_600_000,
+    new Date(row.starts_at).getTime() - settings.cancellation_hours * 3_600_000,
   );
-  const service = Array.isArray(data.service) ? data.service[0] : data.service;
+  const service = Array.isArray(row.service) ? row.service[0] : row.service;
   if (!service) return null;
 
   const mutable =
-    (data.status === "pending" || data.status === "confirmed") &&
+    (row.status === "pending" || row.status === "confirmed") &&
     Date.now() <= cutoff.getTime();
-  const awaitingPay = ((data.payment_status as string) ?? "none") === "awaiting";
+  const awaitingPay = ((row.payment_status as string) ?? "none") === "awaiting";
 
   return {
-    id: data.id,
-    starts_at: data.starts_at,
-    ends_at: data.ends_at,
-    status: data.status as AppointmentStatus,
-    reference_code: data.reference_code,
-    guest_name: data.guest_name,
-    guest_email: data.guest_email,
-    guest_phone: data.guest_phone,
-    service_id: (data.service_id as string) || service.id,
+    id: row.id,
+    starts_at: row.starts_at,
+    ends_at: row.ends_at,
+    status: row.status as AppointmentStatus,
+    reference_code: row.reference_code,
+    guest_name: row.guest_name,
+    guest_email: row.guest_email,
+    guest_phone: row.guest_phone,
+    service_id: (row.service_id as string) || service.id,
     service_name: service.name,
     service_slug: service.slug,
     duration_minutes: service.duration_minutes,
     price: Number(service.price),
-    deposit_cents: Number(data.deposit_cents ?? 0),
-    payment_status: (data.payment_status as string) ?? "none",
-    payment_token: (data.payment_token as string | null) ?? null,
+    deposit_cents: Number(row.deposit_cents ?? 0),
+    payment_status: (row.payment_status as string) ?? "none",
+    payment_token: (row.payment_token as string | null) ?? null,
     can_cancel: mutable && !awaitingPay,
     can_reschedule: mutable && !awaitingPay,
   };
@@ -925,7 +961,7 @@ export async function rescheduleBooking(input: {
       ? parsed.data.notes || null
       : existing.customer_notes;
 
-  const { error } = await admin
+  const { data: moved, error } = await admin
     .from("appointments")
     .update({
       starts_at: startsAt.toISOString(),
@@ -933,13 +969,15 @@ export async function rescheduleBooking(input: {
       customer_notes: notes,
     })
     .eq("id", existing.id)
-    .in("status", ["pending", "confirmed"]);
+    .in("status", ["pending", "confirmed"])
+    .select("id");
 
   if (error) {
     if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
     console.warn("[booking] reschedule failed:", error.message);
     return { ok: false, reason: "unknown" };
   }
+  if (!moved?.length) return { ok: false, reason: "too_late" };
 
   const service = Array.isArray(existing.service) ? existing.service[0] : existing.service;
   const { data: profile } = await supabase
@@ -1057,7 +1095,7 @@ export async function rescheduleGuestBooking(formData: FormData): Promise<Resche
 
   const endsAt = new Date(startsAt.getTime() + BOOKING_SLOT_MINUTES * 60_000);
   const admin = createSupabaseAdminClient();
-  const { error } = await admin
+  const { data: moved, error } = await admin
     .from("appointments")
     .update({
       starts_at: startsAt.toISOString(),
@@ -1067,13 +1105,15 @@ export async function rescheduleGuestBooking(formData: FormData): Promise<Resche
         : {}),
     })
     .eq("id", appointment.id)
-    .in("status", ["pending", "confirmed"]);
+    .in("status", ["pending", "confirmed"])
+    .select("id");
 
   if (error) {
     if (error.code === "23P01") return { ok: false, reason: "slot_taken" };
     console.warn("[booking] guest reschedule failed:", error.message);
     return { ok: false, reason: "unknown" };
   }
+  if (!moved?.length) return { ok: false, reason: "too_late" };
 
   const settings = await getSettings();
   const origin = await requestOrigin();
