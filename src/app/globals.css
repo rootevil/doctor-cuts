@@ -2639,7 +2639,8 @@ body[data-admin] main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 46rem;
+  width: 100%;
+  max-width: none;
 }
 
 .hours-flash {
@@ -2779,7 +2780,7 @@ body[data-admin] main {
 
 .hours-panel-lead {
   margin: 0.35rem 0 0;
-  max-width: 36rem;
+  max-width: 42rem;
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--muted);
@@ -2887,11 +2888,39 @@ body[data-admin] main {
   gap: 0.55rem;
   padding: 0.85rem 1.05rem 1rem;
   border-bottom: 1px solid var(--border);
+  min-width: 0;
 }
 
 .hours-zone--list {
   border-bottom: none;
   padding-bottom: 0.35rem;
+}
+
+/* Wide screens: Add | Scheduled side-by-side to use full content width */
+@media (min-width: 960px) {
+  .hours-panel:has(> .hours-zone--list) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: stretch;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-panel-intro {
+    grid-column: 1 / -1;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-zone {
+    border-bottom: none;
+    height: 100%;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-zone:not(.hours-zone--list) {
+    border-right: 1px solid var(--border);
+    background: color-mix(in srgb, var(--foreground) 1.5%, var(--admin-panel, var(--surface)));
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-zone--list {
+    padding-bottom: 1rem;
+  }
 }
 
 .hours-zone-head {
@@ -2922,9 +2951,9 @@ body[data-admin] main {
 
 .hours-week-head {
   display: none;
-  grid-template-columns: minmax(7rem, 1.35fr) minmax(11rem, 1.4fr) 6.5rem;
-  gap: 0.65rem;
-  padding: 0.55rem 1.05rem;
+  grid-template-columns: minmax(9rem, 1.4fr) minmax(14rem, 1.2fr) 7rem;
+  gap: 0.85rem 1.25rem;
+  padding: 0.55rem 1.25rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.62rem;
   letter-spacing: 0.14em;
@@ -2945,10 +2974,10 @@ body[data-admin] main {
 
 .hours-week-row {
   display: grid;
-  grid-template-columns: minmax(5.5rem, 1fr) minmax(0, 1.5fr) auto;
+  grid-template-columns: minmax(6rem, 1.2fr) minmax(0, 1.4fr) auto;
   align-items: center;
-  gap: 0.55rem 0.7rem;
-  padding: 0.7rem 1.05rem;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
 }
@@ -2984,9 +3013,9 @@ body[data-admin] main {
 
 .hours-week-bar {
   position: relative;
-  height: 0.28rem;
+  height: 0.32rem;
   width: 100%;
-  max-width: 9.5rem;
+  max-width: none;
   border-radius: 999px;
   background: color-mix(in srgb, var(--foreground) 8%, transparent);
   overflow: hidden;
@@ -3129,11 +3158,29 @@ body[data-admin] main {
   }
 
   .hours-week-row {
-    grid-template-columns: minmax(7rem, 1.35fr) minmax(11rem, 1.4fr) 6.5rem;
+    grid-template-columns: minmax(9rem, 1.4fr) minmax(14rem, 1.2fr) 7rem;
   }
 
   .hours-week-toggle-label {
     display: none;
+  }
+}
+
+@media (min-width: 1100px) {
+  .hours-week-head,
+  .hours-week-row {
+    grid-template-columns: minmax(12rem, 1.6fr) minmax(16rem, 1fr) 7.5rem;
+    gap: 1rem 1.75rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .hours-week-time .admin-field {
+    max-width: 8.5rem;
+  }
+
+  .hours-week-times {
+    justify-content: flex-start;
   }
 }
 
@@ -3155,6 +3202,7 @@ body[data-admin] main {
   grid-template-columns: 1fr;
 }
 
+/* Stack fields in the left Add column; expand on very wide / non-split layouts */
 @media (min-width: 740px) {
   .hours-composer {
     grid-template-columns: minmax(7.5rem, 9.5rem) 5.75rem 5.75rem minmax(7rem, 1fr) auto;
@@ -3184,6 +3232,45 @@ body[data-admin] main {
   .hours-composer--special .hours-cta {
     grid-column: 4;
     justify-self: end;
+  }
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  .hours-panel:has(> .hours-zone--list) .hours-composer,
+  .hours-panel:has(> .hours-zone--list) .hours-composer--simple,
+  .hours-panel:has(> .hours-zone--list) .hours-composer--special {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-field--grow,
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-check,
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-cta {
+    grid-column: 1 / -1;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-cta {
+    justify-self: stretch;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hours-panel:has(> .hours-zone--list) .hours-composer {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-field--grow,
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-check,
+  .hours-panel:has(> .hours-zone--list) .hours-composer .hours-cta {
+    grid-column: 1 / -1;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-composer--simple {
+    grid-template-columns: 1fr;
+  }
+
+  .hours-panel:has(> .hours-zone--list) .hours-composer--simple .hours-cta {
+    justify-self: stretch;
   }
 }
 
