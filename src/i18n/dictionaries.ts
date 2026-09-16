@@ -186,6 +186,7 @@ export type Dictionary = {
           prevMonth: string;
           nextMonth: string;
           today: string;
+          closedDay: string;
           weekdays: readonly [string, string, string, string, string, string, string];
           gridLabel: string;
         };
@@ -1086,11 +1087,12 @@ const it: Dictionary = {
         "Prenota il tuo appuntamento da Doctor Cuts a Macerata: scegli servizio, data e orario in pochi secondi.",
       steps: {
         service: { title: "Servizio", lead: "Cosa vuoi prenotare." },
-        date: { title: "Data", lead: "Scegli un giorno disponibile." },
+        date: { title: "Data", lead: "I giorni chiusi da Orari non sono selezionabili." },
         calendar: {
           prevMonth: "Mese precedente",
           nextMonth: "Mese successivo",
           today: "Oggi",
+          closedDay: "Chiuso",
           weekdays: ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"],
           gridLabel: "Calendario prenotazioni",
         },
@@ -1562,7 +1564,7 @@ const it: Dictionary = {
       hours: {
         kicker: "Orari",
         title: "Orari e chiusure",
-        lead: "Aggiorna l’orario settimanale, le pause e le date di chiusura. Le modifiche aggiornano prenotazioni e pagina Contatti.",
+        lead: "Aggiorna l’orario settimanale, le pause e le date di chiusura. Le modifiche aggiornano subito Prenota, Contatti e il calendario.",
         open: "Apertura",
         close: "Chiusura",
         closed: "Chiuso",
@@ -2019,11 +2021,12 @@ const en: Dictionary = {
         "Book your appointment at Doctor Cuts in Macerata: pick a service, date, and time in seconds.",
       steps: {
         service: { title: "Service", lead: "What would you like?" },
-        date: { title: "Date", lead: "Pick an available day." },
+        date: { title: "Date", lead: "Days closed in Hours are not selectable." },
         calendar: {
           prevMonth: "Previous month",
           nextMonth: "Next month",
           today: "Today",
+          closedDay: "Closed",
           weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
           gridLabel: "Booking calendar",
         },
@@ -2493,7 +2496,7 @@ const en: Dictionary = {
       hours: {
         kicker: "Hours",
         title: "Hours & closures",
-        lead: "Update weekly hours, breaks, and blocked days. Changes update booking and the contact page.",
+        lead: "Update weekly hours, breaks, and blocked days. Changes update booking, Contact, and the calendar right away.",
         open: "Open",
         close: "Close",
         closed: "Closed",

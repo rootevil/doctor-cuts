@@ -16,6 +16,7 @@ export type CalendarCopy = {
   prevMonth: string;
   nextMonth: string;
   today: string;
+  closedDay: string;
   weekdays: readonly [string, string, string, string, string, string, string];
   gridLabel: string;
 };
@@ -24,6 +25,8 @@ type Props = {
   locale: Locale;
   timezone: string;
   maxDays: number;
+  /** Dates closed from Orari (weekly closed, blocked, special closed). */
+  closedDates?: readonly string[];
   value: string | null;
   onChange: (iso: string) => void;
   copy: CalendarCopy;
@@ -42,6 +45,7 @@ export function BookingCalendar({
   locale,
   timezone,
   maxDays,
+  closedDates = [],
   value,
   onChange,
   copy,
@@ -51,6 +55,7 @@ export function BookingCalendar({
   const todayISO = useMemo(() => shopToday(), []);
   const minISO = todayISO;
   const maxISO = useMemo(() => shiftDate(todayISO, maxDays - 1), [todayISO, maxDays]);
+  const closedSet = useMemo(() => new Set(closedDates), [closedDates]);
 
   const initialView = value ?? todayISO;
   const [{ year, month }, setView] = useState(() => parseViewMonth(initialView));
@@ -64,8 +69,9 @@ export function BookingCalendar({
         minISO,
         maxISO,
         timezone,
+        closedDates: closedSet,
       }),
-    [year, month, todayISO, minISO, maxISO, timezone],
+    [year, month, todayISO, minISO, maxISO, timezone, closedSet],
   );
 
   const flatSelectable = useMemo(
@@ -87,12 +93,14 @@ export function BookingCalendar({
     shiftMonth(year, month, -1).month,
     minISO,
     maxISO,
+    closedSet,
   );
   const canNext = monthContainsSelectableDay(
     shiftMonth(year, month, 1).year,
     shiftMonth(year, month, 1).month,
     minISO,
     maxISO,
+    closedSet,
   );
 
   const goPrev = () => {
@@ -254,6 +262,7 @@ export function BookingCalendar({
                 key={iso}
                 role="gridcell"
                 aria-disabled="true"
+                aria-label={`${formatDayLong(iso, timezone, locale)}, ${copy.closedDay}`}
                 className="calendar-day calendar-day--disabled"
               >
                 <span className="calendar-day-num">{day}</span>

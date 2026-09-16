@@ -53,6 +53,8 @@ type Props = {
   services: ServiceDTO[];
   maxDays: number;
   timezone: string;
+  /** Closed / blocked dates from admin Orari (language-agnostic). */
+  closedDates?: readonly string[];
   isAuthenticated: boolean;
   depositEnabled?: boolean;
   depositCents?: number;
@@ -88,6 +90,7 @@ export function BookingFlow({
   services,
   maxDays,
   timezone,
+  closedDates = [],
   isAuthenticated,
   depositEnabled = false,
   depositCents = 500,
@@ -608,6 +611,7 @@ export function BookingFlow({
                   locale={locale}
                   timezone={timezone}
                   maxDays={maxDays}
+                  closedDates={closedDates}
                   value={dateISO}
                   onChange={pickDate}
                   copy={copy.steps.calendar}

@@ -10,16 +10,20 @@ export type CalendarCell = {
   isSelectable: boolean;
 };
 
+export type MonthGridOpts = {
+  todayISO: string;
+  minISO: string;
+  maxISO: string;
+  timezone: string;
+  /** Shop-closed / blocked dates (weekly closed, blocked, special closed). */
+  closedDates?: ReadonlySet<string>;
+};
+
 /** Build a ISO-week (Mon–Sun) month grid for HCI calendar display. */
 export function buildMonthGrid(
   viewYear: number,
   viewMonth: number,
-  opts: {
-    todayISO: string;
-    minISO: string;
-    maxISO: string;
-    timezone: string;
-  },
+  opts: MonthGridOpts,
 ): CalendarCell[][] {
   const prefix = `${viewYear}-${String(viewMonth).padStart(2, "0")}`;
   const firstISO = `${prefix}-01`;
@@ -57,12 +61,14 @@ export function buildMonthGrid(
 
 function makeCell(
   iso: string,
-  opts: { todayISO: string; minISO: string; maxISO: string; timezone: string },
+  opts: MonthGridOpts,
   inMonth: boolean,
 ): CalendarCell {
   const day = Number(formatInTimeZone(new Date(`${iso}T12:00:00Z`), opts.timezone, "d"));
   const isToday = iso === opts.todayISO;
-  const isSelectable = inMonth && iso >= opts.minISO && iso <= opts.maxISO;
+  const inWindow = iso >= opts.minISO && iso <= opts.maxISO;
+  const shopOpen = !opts.closedDates?.has(iso);
+  const isSelectable = inMonth && inWindow && shopOpen;
   return { iso, day, inMonth, isToday, isSelectable };
 }
 
@@ -85,14 +91,20 @@ export function monthContainsSelectableDay(
   month: number,
   minISO: string,
   maxISO: string,
+  closedDates?: ReadonlySet<string>,
 ): boolean {
   const prefix = `${year}-${String(month).padStart(2, "0")}`;
   const first = `${prefix}-01`;
-  let last = first;
-  while (last.startsWith(prefix)) {
-    const next = shiftDate(last, 1);
-    if (!next.startsWith(prefix)) break;
-    last = next;
+  let cursor = first;
+  while (cursor.startsWith(prefix)) {
+    if (
+      cursor >= minISO &&
+      cursor <= maxISO &&
+      !closedDates?.has(cursor)
+    ) {
+      return true;
+    }
+    cursor = shiftDate(cursor, 1);
   }
-  return last >= minISO && first <= maxISO;
+  return false;
 }

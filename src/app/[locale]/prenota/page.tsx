@@ -5,9 +5,10 @@ import { BookingFlow } from "@/components/booking/booking-flow";
 import { Kicker } from "@/components/ui/kicker";
 import { getActiveServices, getServiceById } from "@/lib/data/services";
 import { getSettings } from "@/lib/data/settings";
+import { getClosedBookingDates } from "@/lib/data/hours";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/supabase/env";
-import { SHOP_TZ } from "@/lib/booking/timezone";
+import { SHOP_TZ, shopToday, shiftDate } from "@/lib/booking/timezone";
 import { getRescheduleTarget } from "@/lib/booking/actions";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
@@ -85,6 +86,12 @@ export default async function PrenotaPage({
         })
       : Promise.resolve(null),
   ]);
+
+  const today = shopToday();
+  const lastBookable = shiftDate(today, Math.max(1, settings.max_booking_days) - 1);
+  const closedDates = settings.bookings_enabled
+    ? await getClosedBookingDates(today, lastBookable)
+    : [];
 
   let bookingServices = services;
   if (reschedule) {
@@ -172,6 +179,7 @@ export default async function PrenotaPage({
             services={bookingServices}
             maxDays={settings.max_booking_days}
             timezone={SHOP_TZ}
+            closedDates={closedDates}
             isAuthenticated={Boolean(userId) || Boolean(reschedule && !reschedule.isGuest)}
             depositEnabled={
               !reschedule && isDepositCheckoutReady() && settings.deposit_required
