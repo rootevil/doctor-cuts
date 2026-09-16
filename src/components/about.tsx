@@ -18,7 +18,7 @@ export function About({ locale, t }: { locale: Locale; t: Dictionary }) {
               alt={t.about.imageAlt}
               fill
               sizes="(min-width: 768px) 40vw, 26rem"
-              className="object-cover object-[center_30%]"
+              className="object-cover object-center"
             />
           </div>
         </RevealFade>
