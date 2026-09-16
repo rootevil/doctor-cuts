@@ -81,14 +81,23 @@ function normalizeTimeInput(raw: string): string | null {
 }
 
 /** After Orari mutations: bust caches then reload the admin hours page. */
+function hoursTabFromForm(formData: FormData): string {
+  const raw = String(formData.get("tab") ?? "").trim();
+  return ["weekly", "breaks", "special", "blocked"].includes(raw) ? raw : "weekly";
+}
+
 function finishHoursMutation(
   locale: Locale,
   flash: "ok" | "invalid_times" | "invalid_date",
+  tab = "weekly",
 ): never {
   revalidateSite();
   const base = routes(locale).adminHours;
-  if (flash === "ok") redirect(`${base}?ok=1`);
-  redirect(`${base}?err=${flash}`);
+  const q = new URLSearchParams();
+  if (flash === "ok") q.set("ok", "1");
+  else q.set("err", flash);
+  if (tab !== "weekly") q.set("tab", tab);
+  redirect(`${base}?${q.toString()}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -543,6 +552,7 @@ export async function deleteService(formData: FormData) {
 export async function saveHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
 
   // Fields come as e.g. hours[1][open]=10:00, hours[1][close]=21:00, hours[1][closed]=on
   const updates: Array<{
@@ -557,7 +567,7 @@ export async function saveHours(formData: FormData) {
     const open = normalizeTimeInput(String(formData.get(`hours[${dow}][open]`) ?? ""));
     const close = normalizeTimeInput(String(formData.get(`hours[${dow}][close]`) ?? ""));
     if (!closed && (!open || !close || close <= open)) {
-      finishHoursMutation(locale, "invalid_times");
+      finishHoursMutation(locale, "invalid_times", tab);
     }
     // Always read open/close from the form (inputs stay enabled even when
     // "closed" is checked) so reopening a day keeps the last times.
@@ -573,47 +583,50 @@ export async function saveHours(formData: FormData) {
     .from("business_hours")
     .upsert(updates, { onConflict: "day_of_week" });
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function addBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const date = String(formData.get("date") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim() || null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
   const { error } = await supabase.from("blocked_dates").insert({ date, reason });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function removeBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
   const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function upsertSpecialHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const date = String(formData.get("date") ?? "").trim();
   const closed = formData.get("closed") === "on";
   const open = normalizeTimeInput(String(formData.get("open_time") ?? ""));
   const close = normalizeTimeInput(String(formData.get("close_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
   if (!closed && (!open || !close || close <= open)) {
-    finishHoursMutation(locale, "invalid_times");
+    finishHoursMutation(locale, "invalid_times", tab);
   }
 
   const { error } = await supabase.from("special_hours").upsert(
@@ -627,37 +640,39 @@ export async function upsertSpecialHours(formData: FormData) {
     { onConflict: "date" },
   );
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function removeSpecialHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
   const { error } = await supabase.from("special_hours").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "").trim();
   const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
   if (!start || !end || end <= start) {
-    finishHoursMutation(locale, "invalid_times");
+    finishHoursMutation(locale, "invalid_times", tab);
   }
 
   const isCustomDate = dayRaw === "custom";
   if (isCustomDate) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
-      finishHoursMutation(locale, "invalid_date");
+      finishHoursMutation(locale, "invalid_date", tab);
     }
   }
 
@@ -670,7 +685,7 @@ export async function addBreak(formData: FormData) {
     day_of_week != null &&
     (!Number.isFinite(day_of_week) || day_of_week < 1 || day_of_week > 7)
   ) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
 
   const { error } = await supabase.from("breaks").insert({
@@ -685,12 +700,13 @@ export async function addBreak(formData: FormData) {
     label,
   });
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function updateBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const id = String(formData.get("id") ?? "").trim();
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "").trim();
@@ -698,13 +714,13 @@ export async function updateBreak(formData: FormData) {
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
   if (!id || !start || !end || end <= start) {
-    finishHoursMutation(locale, "invalid_times");
+    finishHoursMutation(locale, "invalid_times", tab);
   }
 
   const isCustomDate = dayRaw === "custom";
   if (isCustomDate) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
-      finishHoursMutation(locale, "invalid_date");
+      finishHoursMutation(locale, "invalid_date", tab);
     }
   }
 
@@ -717,7 +733,7 @@ export async function updateBreak(formData: FormData) {
     day_of_week != null &&
     (!Number.isFinite(day_of_week) || day_of_week < 1 || day_of_week > 7)
   ) {
-    finishHoursMutation(locale, "invalid_date");
+    finishHoursMutation(locale, "invalid_date", tab);
   }
 
   const { error } = await supabase
@@ -735,19 +751,20 @@ export async function updateBreak(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 export async function removeBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
+  const tab = hoursTabFromForm(formData);
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    finishHoursMutation(locale, "invalid_times");
+    finishHoursMutation(locale, "invalid_times", tab);
   }
   const { error } = await supabase.from("breaks").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  finishHoursMutation(locale, "ok");
+  finishHoursMutation(locale, "ok", tab);
 }
 
 /* ------------------------------------------------------------------ */

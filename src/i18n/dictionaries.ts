@@ -641,6 +641,26 @@ export type Dictionary = {
         close: string;
         closed: string;
         saveHours: string;
+        saving: string;
+        tabsLabel: string;
+        tabWeekly: string;
+        tabBreaks: string;
+        tabSpecial: string;
+        tabBlocked: string;
+        tabWeeklyHint: string;
+        tabBreaksHint: string;
+        tabSpecialHint: string;
+        tabBlockedHint: string;
+        weeklyTitle: string;
+        weeklyLead: string;
+        weeklyHint: string;
+        weeklyOpenCount: string;
+        openShort: string;
+        closedShort: string;
+        edit: string;
+        cancelEdit: string;
+        addSection: string;
+        listSection: string;
         blockedTitle: string;
         blockedLead: string;
         date: string;
@@ -1566,25 +1586,45 @@ const it: Dictionary = {
       hours: {
         kicker: "Orari",
         title: "Orari e chiusure",
-        lead: "Aggiorna l’orario settimanale, le pause e le date di chiusura. Le modifiche aggiornano subito Prenota, Contatti e il calendario.",
+        lead: "Imposta la settimana, poi le eccezioni. Ogni salvataggio aggiorna subito Prenota.",
         open: "Apertura",
         close: "Chiusura",
         closed: "Chiuso",
-        saveHours: "Salva orari",
+        saveHours: "Salva settimana",
+        saving: "Salvataggio…",
+        tabsLabel: "Sezioni orari",
+        tabWeekly: "Settimana",
+        tabBreaks: "Pause",
+        tabSpecial: "Speciali",
+        tabBlocked: "Chiuse",
+        tabWeeklyHint: "Orario ricorrente",
+        tabBreaksHint: "Pranzo e pause",
+        tabSpecialHint: "Un giorno diverso",
+        tabBlockedHint: "Giorno intero off",
+        weeklyTitle: "Orario settimanale",
+        weeklyLead: "Il modello di ogni settimana. Eccezioni nelle altre schede.",
+        weeklyHint: "Salva per pubblicare su Prenota e sul calendario.",
+        weeklyOpenCount: "{open} aperti · {closed} chiusi",
+        openShort: "Aperto",
+        closedShort: "Chiuso",
+        edit: "Modifica",
+        cancelEdit: "Annulla",
+        addSection: "Aggiungi",
+        listSection: "In programma",
         blockedTitle: "Date chiuse",
-        blockedLead: "Ferie, festivi o singole giornate in cui lo studio non riceve.",
+        blockedLead: "Giorni interamente non prenotabili — ferie, festivi, emergenze.",
         date: "Data",
         reason: "Motivo",
-        reasonPlaceholder: "es. Ferie estive, festivo",
-        addBlocked: "Aggiungi",
-        blockedEmpty: "Nessuna data bloccata al momento.",
+        reasonPlaceholder: "es. Ferie, festivo",
+        addBlocked: "Aggiungi chiusura",
+        blockedEmpty: "Nessuna data chiusa. Aggiungine una quando serve.",
         remove: "Rimuovi",
         breaksTitle: "Pause",
         breaksLead:
-          "Intervalli in cui non si accettano prenotazioni (es. pranzo). Restano bloccati anche gli slot da 40 minuti che si sovrappongono alla pausa — es. pausa 14:00–16:00 blocca anche le 13:50 (finirebbe alle 14:30). Puoi ripetere ogni giorno, un giorno della settimana, o una data specifica.",
-        breakDay: "Giorno",
+          "Nasconde gli slot che si sovrappongono (es. 14:00–16:00 blocca anche le 13:50).",
+        breakDay: "Quando",
         breakDayAll: "Ogni giorno",
-        breakDayCustom: "Data personalizzata",
+        breakDayCustom: "Data specifica",
         breakDate: "Data",
         breakStart: "Inizio",
         breakEnd: "Fine",
@@ -1592,19 +1632,18 @@ const it: Dictionary = {
         breakLabelPlaceholder: "es. Pranzo",
         addBreak: "Aggiungi pausa",
         saveBreak: "Salva pausa",
-        breaksEmpty: "Nessuna pausa configurata.",
-        specialTitle: "Orari speciali (data singola)",
-        specialLead:
-          "Sostituisce l’orario settimanale per un giorno preciso — es. chiusura anticipata o apertura straordinaria. Le date bloccate restano prioritarie.",
+        breaksEmpty: "Nessuna pausa. Aggiungi pranzo o altre interruzioni sopra.",
+        specialTitle: "Orari speciali",
+        specialLead: "Sostituisce la settimana per un solo giorno. Le date chiuse restano prioritarie.",
         specialOpen: "Apertura",
         specialClose: "Chiusura",
         specialClosed: "Chiuso tutto il giorno",
         specialLabel: "Nota",
-        specialLabelPlaceholder: "es. Vigilia, evento",
-        addSpecial: "Salva orario speciale",
-        specialEmpty: "Nessun orario speciale configurato.",
-        flashSaved: "Salvato. Prenota, Contatti e il calendario si aggiornano subito.",
-        flashInvalidTimes: "Controlla gli orari: la chiusura deve essere dopo l’apertura.",
+        specialLabelPlaceholder: "es. Vigilia",
+        addSpecial: "Salva giorno speciale",
+        specialEmpty: "Nessun orario speciale. Aggiungi vigilia, festivo anticipato, ecc.",
+        flashSaved: "Salvato. Prenota e il calendario sono aggiornati.",
+        flashInvalidTimes: "La chiusura deve essere dopo l’apertura.",
         flashInvalidDate: "Data non valida.",
       },
       customers: {
@@ -2500,25 +2539,45 @@ const en: Dictionary = {
       hours: {
         kicker: "Hours",
         title: "Hours & closures",
-        lead: "Update weekly hours, breaks, and blocked days. Changes update booking, Contact, and the calendar right away.",
-        open: "Open",
-        close: "Close",
+        lead: "Set the week first, then exceptions. Every save updates Prenota right away.",
+        open: "Opens",
+        close: "Closes",
         closed: "Closed",
-        saveHours: "Save hours",
-        blockedTitle: "Blocked dates",
-        blockedLead: "Holidays, breaks, or single days the studio is closed.",
+        saveHours: "Save week",
+        saving: "Saving…",
+        tabsLabel: "Hours sections",
+        tabWeekly: "Weekly",
+        tabBreaks: "Breaks",
+        tabSpecial: "Special",
+        tabBlocked: "Closed",
+        tabWeeklyHint: "Recurring hours",
+        tabBreaksHint: "Lunch & pauses",
+        tabSpecialHint: "One day different",
+        tabBlockedHint: "Full day off",
+        weeklyTitle: "Weekly hours",
+        weeklyLead: "The template for every week. Exceptions live in the other tabs.",
+        weeklyHint: "Save to publish on Prenota and the calendar.",
+        weeklyOpenCount: "{open} open · {closed} closed",
+        openShort: "Open",
+        closedShort: "Closed",
+        edit: "Edit",
+        cancelEdit: "Cancel",
+        addSection: "Add",
+        listSection: "Scheduled",
+        blockedTitle: "Closed dates",
+        blockedLead: "Full days with no bookings — holidays, leave, emergencies.",
         date: "Date",
         reason: "Reason",
-        reasonPlaceholder: "e.g. summer holiday, public holiday",
-        addBlocked: "Add",
-        blockedEmpty: "No blocked dates.",
+        reasonPlaceholder: "e.g. holiday, leave",
+        addBlocked: "Add closed day",
+        blockedEmpty: "No closed dates. Add one when you need a full day off.",
         remove: "Remove",
         breaksTitle: "Breaks",
         breaksLead:
-          "Intervals when bookings are not accepted (e.g. lunch). Any 40-minute slot that overlaps the break is blocked — e.g. a 14:00–16:00 lunch also blocks 13:50 (would end at 14:30). Repeat every day, one weekday, or a single custom date.",
-        breakDay: "Day",
+          "Hides any overlapping slot (e.g. lunch 14:00–16:00 also blocks 13:50).",
+        breakDay: "When",
         breakDayAll: "Every day",
-        breakDayCustom: "Custom date",
+        breakDayCustom: "Specific date",
         breakDate: "Date",
         breakStart: "Start",
         breakEnd: "End",
@@ -2526,19 +2585,18 @@ const en: Dictionary = {
         breakLabelPlaceholder: "e.g. Lunch",
         addBreak: "Add break",
         saveBreak: "Save break",
-        breaksEmpty: "No breaks configured.",
-        specialTitle: "Special hours (single date)",
-        specialLead:
-          "Overrides the weekly schedule for one day — e.g. early close or extra opening. Blocked dates still take priority.",
-        specialOpen: "Open",
-        specialClose: "Close",
+        breaksEmpty: "No breaks yet. Add lunch or other pauses above.",
+        specialTitle: "Special hours",
+        specialLead: "Overrides the week for one day. Closed dates still win.",
+        specialOpen: "Opens",
+        specialClose: "Closes",
         specialClosed: "Closed all day",
         specialLabel: "Note",
-        specialLabelPlaceholder: "e.g. Eve, event",
-        addSpecial: "Save special hours",
-        specialEmpty: "No special hours configured.",
-        flashSaved: "Saved. Booking, Contact, and the calendar update right away.",
-        flashInvalidTimes: "Check the times: closing must be after opening.",
+        specialLabelPlaceholder: "e.g. Eve",
+        addSpecial: "Save special day",
+        specialEmpty: "No special hours. Add eve, early close, etc. above.",
+        flashSaved: "Saved. Booking and the calendar are up to date.",
+        flashInvalidTimes: "Closing must be after opening.",
         flashInvalidDate: "Invalid date.",
       },
       customers: {

@@ -42,8 +42,8 @@ export function BreakDayFields({
       ? "all"
       : String(defaultDay);
   const [mode, setMode] = useState(initialMode);
-  const labelClass = compact ? "admin-hours-field-label" : "text-caption";
-  const fieldClass = compact ? "admin-hours-field" : "flex flex-col gap-1";
+  const labelClass = compact ? "hours-field-label" : "text-caption";
+  const fieldClass = compact ? "hours-field" : "flex flex-col gap-1";
 
   return (
     <>
