@@ -2681,7 +2681,7 @@ body[data-admin] main {
 }
 
 .admin-hours-weekly-day {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.95rem;
   letter-spacing: -0.01em;
   color: var(--foreground);
