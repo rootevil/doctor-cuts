@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateSite } from "@/lib/cache/revalidate-site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
@@ -26,7 +26,7 @@ import {
 } from "@/lib/email/templates";
 import type { Locale } from "@/i18n/config";
 import { localizedServiceName } from "@/lib/services/localize";
-import { routes, forEachLocaleRoute } from "@/lib/routes";
+import { routes } from "@/lib/routes";
 import {
   bookingInputSchema,
   cancelBookingSchema,
@@ -425,9 +425,7 @@ export async function createBooking(
     });
   }
 
-  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
   return {
     ok: true,
     mode: "instant",
@@ -570,9 +568,7 @@ export async function cancelBooking(formData: FormData): Promise<CancelResult> {
     });
   }
 
-  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
   return { ok: true };
 }
 
@@ -731,7 +727,7 @@ export async function cancelGuestBooking(formData: FormData): Promise<CancelResu
     });
   }
 
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
   return { ok: true };
 }
 
@@ -980,9 +976,7 @@ export async function rescheduleBooking(input: {
     await sendEmail({ to: bookingAlertAddress(), ...alert, replyTo: to });
   }
 
-  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
 
   return {
     ok: true,
@@ -1107,7 +1101,7 @@ export async function rescheduleGuestBooking(formData: FormData): Promise<Resche
     });
   }
 
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
   return {
     ok: true,
     referenceCode: appointment.reference_code,

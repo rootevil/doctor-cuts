@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,7 +8,8 @@ import {
   supabaseServiceRoleKey,
 } from "@/lib/supabase/env";
 import { isLocale, type Locale } from "@/i18n/config";
-import { routes, forEachLocaleRoute, type SiteRoutes } from "@/lib/routes";
+import { routes } from "@/lib/routes";
+import { revalidateSite } from "@/lib/cache/revalidate-site";
 import {
   adminAppointmentNotesSchema,
   adminAppointmentStatusSchema,
@@ -68,34 +68,6 @@ async function requireAdminClient() {
   return { supabase, userId: user.id };
 }
 
-function revalidatePicked(pick: (r: SiteRoutes) => string, type?: "layout") {
-  for (const path of forEachLocaleRoute(pick)) {
-    if (type) revalidatePath(path, type);
-    else revalidatePath(path);
-  }
-}
-
-function revalidatePublic() {
-  for (const path of forEachLocaleRoute((r) => r.home)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.services)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.gallery)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.contact)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.about)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.book)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
-}
-
-/** Hours/breaks drive Prenota, Contatti, and the admin chair calendar. */
-function revalidateHoursCascade() {
-  revalidatePicked((r) => r.adminHours);
-  revalidatePicked((r) => r.adminCalendar);
-  revalidatePicked((r) => r.admin);
-  revalidatePicked((r) => r.book);
-  revalidatePicked((r) => r.contact);
-  revalidatePicked((r) => r.home);
-  revalidatePublic();
-}
-
 function normalizeTimeInput(raw: string): string | null {
   const value = raw.trim();
   if (!value) return null;
@@ -108,8 +80,15 @@ function normalizeTimeInput(raw: string): string | null {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 }
 
-function revalidateReviewsAdmin() {
-  for (const path of forEachLocaleRoute((r) => r.adminReviews)) revalidatePath(path);
+/** After Orari mutations: bust caches then reload the admin hours page. */
+function finishHoursMutation(
+  locale: Locale,
+  flash: "ok" | "invalid_times" | "invalid_date",
+): never {
+  revalidateSite();
+  const base = routes(locale).adminHours;
+  if (flash === "ok") redirect(`${base}?ok=1`);
+  redirect(`${base}?err=${flash}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -216,9 +195,7 @@ export async function cancelAndRefundAppointment(formData: FormData) {
     await sendEmail({ to: bookingAlertAddress(), ...alert, replyTo: to });
   }
 
-  revalidatePicked((r) => r.admin, "layout");
-  revalidatePicked((r) => r.account);
-  revalidatePicked((r) => r.accountAppointments);
+  revalidateSite();
   return { ok: true as const, refunded: result.refunded };
 }
 
@@ -278,9 +255,7 @@ export async function updateAppointmentStatus(formData: FormData) {
     return { ok: false as const, reason: "unknown" as const };
   }
 
-  revalidatePicked((r) => r.admin, "layout");
-  revalidatePicked((r) => r.account);
-  revalidatePicked((r) => r.accountAppointments);
+  revalidateSite();
   return { ok: true as const };
 }
 
@@ -295,7 +270,7 @@ export async function updateAppointmentNotes(formData: FormData) {
     .update({ admin_notes: admin_notes || null })
     .eq("id", appointment_id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.admin, "layout");
+  revalidateSite();
 }
 
 async function expireCheckoutIfNeeded(sessionId: string | null | undefined) {
@@ -336,9 +311,7 @@ export async function deleteAppointment(formData: FormData) {
     return { ok: false as const, reason: "unknown" as const };
   }
 
-  revalidatePicked((r) => r.admin, "layout");
-  revalidatePicked((r) => r.account);
-  revalidatePicked((r) => r.accountAppointments);
+  revalidateSite();
   return { ok: true as const };
 }
 
@@ -411,7 +384,7 @@ export async function createAdminAppointment(formData: FormData) {
     return { ok: false as const, reason: "unknown" as const };
   }
 
-  revalidatePicked((r) => r.admin, "layout");
+  revalidateSite();
   return {
     ok: true as const,
     id: data.id as string,
@@ -473,16 +446,14 @@ export async function rescheduleAdminAppointment(formData: FormData) {
     return { ok: false as const, reason: "unknown" as const };
   }
 
-  revalidatePicked((r) => r.admin, "layout");
-  revalidatePicked((r) => r.account);
-  revalidatePicked((r) => r.accountAppointments);
+  revalidateSite();
   return { ok: true as const };
 }
 
 export async function syncAdminPayments() {
   await requireAdminClient();
   const result = await syncAwaitingPayments();
-  revalidatePicked((r) => r.admin, "layout");
+  revalidateSite();
   return { ok: true as const, ...result };
 }
 
@@ -542,8 +513,7 @@ export async function saveService(
     if (error) return { error: humanise(error.message) };
   }
 
-  revalidatePicked((r) => r.adminServices, "layout");
-  revalidatePublic();
+  revalidateSite();
   redirect(routes(locale).adminServices);
 }
 
@@ -554,8 +524,7 @@ export async function toggleServiceActive(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("services").update({ is_active }).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminServices, "layout");
-  revalidatePublic();
+  revalidateSite();
 }
 
 export async function deleteService(formData: FormData) {
@@ -564,8 +533,7 @@ export async function deleteService(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("services").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminServices, "layout");
-  revalidatePublic();
+  revalidateSite();
 }
 
 /* ------------------------------------------------------------------ */
@@ -574,6 +542,7 @@ export async function deleteService(formData: FormData) {
 
 export async function saveHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
 
   // Fields come as e.g. hours[1][open]=10:00, hours[1][close]=21:00, hours[1][closed]=on
   const updates: Array<{
@@ -587,6 +556,9 @@ export async function saveHours(formData: FormData) {
     const closed = formData.get(`hours[${dow}][closed]`) === "on";
     const open = normalizeTimeInput(String(formData.get(`hours[${dow}][open]`) ?? ""));
     const close = normalizeTimeInput(String(formData.get(`hours[${dow}][close]`) ?? ""));
+    if (!closed && (!open || !close || close <= open)) {
+      finishHoursMutation(locale, "invalid_times");
+    }
     // Always read open/close from the form (inputs stay enabled even when
     // "closed" is checked) so reopening a day keeps the last times.
     updates.push({
@@ -601,37 +573,48 @@ export async function saveHours(formData: FormData) {
     .from("business_hours")
     .upsert(updates, { onConflict: "day_of_week" });
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function addBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const date = String(formData.get("date") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim() || null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    finishHoursMutation(locale, "invalid_date");
+  }
   const { error } = await supabase.from("blocked_dates").insert({ date, reason });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function removeBlockedDate(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) {
+    finishHoursMutation(locale, "invalid_date");
+  }
   const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function upsertSpecialHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const date = String(formData.get("date") ?? "").trim();
   const closed = formData.get("closed") === "on";
   const open = normalizeTimeInput(String(formData.get("open_time") ?? ""));
   const close = normalizeTimeInput(String(formData.get("close_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-  if (!closed && (!open || !close || close <= open)) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    finishHoursMutation(locale, "invalid_date");
+  }
+  if (!closed && (!open || !close || close <= open)) {
+    finishHoursMutation(locale, "invalid_times");
+  }
 
   const { error } = await supabase.from("special_hours").upsert(
     {
@@ -644,25 +627,31 @@ export async function upsertSpecialHours(formData: FormData) {
     { onConflict: "date" },
   );
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function removeSpecialHours(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) {
+    finishHoursMutation(locale, "invalid_date");
+  }
   const { error } = await supabase.from("special_hours").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
   const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
-  if (!start || !end || end <= start) return;
+  if (!start || !end || end <= start) {
+    finishHoursMutation(locale, "invalid_times");
+  }
   const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
   const { error } = await supabase.from("breaks").insert({
     day_of_week: Number.isFinite(day_of_week as number) ? day_of_week : null,
@@ -671,17 +660,20 @@ export async function addBreak(formData: FormData) {
     label,
   });
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function updateBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "").trim();
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
   const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
-  if (!id || !start || !end || end <= start) return;
+  if (!id || !start || !end || end <= start) {
+    finishHoursMutation(locale, "invalid_times");
+  }
   const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
   const { error } = await supabase
     .from("breaks")
@@ -693,16 +685,19 @@ export async function updateBreak(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 export async function removeBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
+  const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) {
+    finishHoursMutation(locale, "invalid_times");
+  }
   const { error } = await supabase.from("breaks").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateHoursCascade();
+  finishHoursMutation(locale, "ok");
 }
 
 /* ------------------------------------------------------------------ */
@@ -754,8 +749,7 @@ export async function uploadGalleryImage(
   });
   if (insertError) return { error: insertError.message };
 
-  revalidatePicked((r) => r.adminGallery);
-  revalidatePublic();
+  revalidateSite();
   return { success: getDictionary(locale).pages.admin.messages.uploaded };
 }
 
@@ -777,8 +771,7 @@ export async function updateGalleryItem(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePicked((r) => r.adminGallery);
-  revalidatePublic();
+  revalidateSite();
 }
 
 export async function deleteGalleryItem(formData: FormData) {
@@ -799,8 +792,7 @@ export async function deleteGalleryItem(formData: FormData) {
     }
   }
 
-  revalidatePicked((r) => r.adminGallery);
-  revalidatePublic();
+  revalidateSite();
 }
 
 /* ------------------------------------------------------------------ */
@@ -845,8 +837,7 @@ export async function createCuratedReview(
   });
   if (error) return { error: error.message };
 
-  revalidateReviewsAdmin();
-  revalidatePublic();
+  revalidateSite();
   return { success: "created" };
 }
 
@@ -872,8 +863,7 @@ export async function moderateReview(formData: FormData) {
       const payload: Record<string, unknown> = { status };
       const { error } = await supabase.from("reviews").update(payload).eq("id", id);
       if (error) throw new Error(error.message);
-      revalidateReviewsAdmin();
-      revalidatePublic();
+      revalidateSite();
       return;
     }
   }
@@ -882,8 +872,7 @@ export async function moderateReview(formData: FormData) {
   if (["approved", "rejected", "pending"].includes(status)) payload.status = status;
   const { error } = await supabase.from("reviews").update(payload).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateReviewsAdmin();
-  revalidatePublic();
+  revalidateSite();
 }
 
 export async function deleteReview(formData: FormData) {
@@ -892,8 +881,7 @@ export async function deleteReview(formData: FormData) {
   if (!id) return;
   const { error } = await supabase.from("reviews").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidateReviewsAdmin();
-  revalidatePublic();
+  revalidateSite();
 }
 
 /* ------------------------------------------------------------------ */
@@ -945,7 +933,6 @@ export async function saveSettings(
     const { error } = await supabase.from("settings").insert({ ...payload, singleton: true });
     if (error) return { error: error.message };
   }
-  revalidatePicked((r) => r.adminSettings, "layout");
-  revalidatePublic();
+  revalidateSite();
   return { success: getDictionary(locale).pages.admin.messages.saved };
 }

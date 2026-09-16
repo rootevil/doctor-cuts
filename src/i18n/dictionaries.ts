@@ -668,6 +668,9 @@ export type Dictionary = {
         specialLabelPlaceholder: string;
         addSpecial: string;
         specialEmpty: string;
+        flashSaved: string;
+        flashInvalidTimes: string;
+        flashInvalidDate: string;
       };
       customers: {
         kicker: string;
@@ -1594,6 +1597,9 @@ const it: Dictionary = {
         specialLabelPlaceholder: "es. Vigilia, evento",
         addSpecial: "Salva orario speciale",
         specialEmpty: "Nessun orario speciale configurato.",
+        flashSaved: "Salvato. Prenota, Contatti e il calendario si aggiornano subito.",
+        flashInvalidTimes: "Controlla gli orari: la chiusura deve essere dopo l’apertura.",
+        flashInvalidDate: "Data non valida.",
       },
       customers: {
         kicker: "Clienti",
@@ -2522,6 +2528,9 @@ const en: Dictionary = {
         specialLabelPlaceholder: "e.g. Eve, event",
         addSpecial: "Save special hours",
         specialEmpty: "No special hours configured.",
+        flashSaved: "Saved. Booking, Contact, and the calendar update right away.",
+        flashInvalidTimes: "Check the times: closing must be after opening.",
+        flashInvalidDate: "Invalid date.",
       },
       customers: {
         kicker: "Customers",

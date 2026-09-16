@@ -1,6 +1,6 @@
 import "server-only";
 
-import { revalidatePath } from "next/cache";
+import { revalidateSite } from "@/lib/cache/revalidate-site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
@@ -12,7 +12,7 @@ import {
 } from "@/lib/email/templates";
 import { getSettings } from "@/lib/data/settings";
 import { localizedServiceName } from "@/lib/services/localize";
-import { routes, forEachLocaleRoute } from "@/lib/routes";
+import { routes } from "@/lib/routes";
 import { requestOrigin } from "@/lib/http/origin";
 import { isLocale, type Locale } from "@/i18n/config";
 import { formatEurFromCents } from "@/lib/payments/deposit";
@@ -102,9 +102,7 @@ export async function finalizePaidAppointment(appointmentId: string): Promise<{
   }
 
   await sendBookingConfirmedEmails(typed);
-  for (const path of forEachLocaleRoute((r) => r.account)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.accountAppointments)) revalidatePath(path);
-  for (const path of forEachLocaleRoute((r) => r.admin)) revalidatePath(path, "layout");
+  revalidateSite();
   return { ok: true };
 }
 

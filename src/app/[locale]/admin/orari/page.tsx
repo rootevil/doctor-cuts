@@ -45,12 +45,15 @@ function formatAdminDate(dateISO: string, locale: "it" | "en") {
 
 export default async function AdminHoursPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ ok?: string; err?: string }>;
 }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale = await requestLocale(raw);
+  const flash = await searchParams;
   const t = getDictionary(locale);
   const copy = t.pages.admin.hours;
 
@@ -62,8 +65,31 @@ export default async function AdminHoursPage({
   ]);
   const byDay = new Map(hours.map((h) => [h.day_of_week, h]));
 
+  const flashMessage =
+    flash.ok === "1"
+      ? copy.flashSaved
+      : flash.err === "invalid_times"
+        ? copy.flashInvalidTimes
+        : flash.err === "invalid_date"
+          ? copy.flashInvalidDate
+          : null;
+  const flashTone = flash.ok === "1" ? "ok" : flashMessage ? "err" : null;
+
   return (
     <AdminSection kicker={copy.kicker} title={copy.title} lead={copy.lead}>
+      {flashMessage && flashTone ? (
+        <p
+          role="status"
+          className={
+            flashTone === "ok"
+              ? "rounded-sm border border-brass/40 bg-brass/10 px-4 py-3 text-sm text-foreground"
+              : "rounded-sm border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-foreground"
+          }
+        >
+          {flashMessage}
+        </p>
+      ) : null}
+
       <form action={saveHours} className="flex flex-col gap-3">
         <input type="hidden" name="locale" value={locale} />
         {Object.entries(DAYS).map(([dowStr, name]) => {
