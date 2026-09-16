@@ -450,7 +450,7 @@ export async function listAdminBreaks(): Promise<AdminBreak[]> {
   return (data ?? []).map((row) => ({
     id: row.id as string,
     day_of_week: row.day_of_week == null ? null : Number(row.day_of_week),
-    date: row.date ? String(row.date) : null,
+    date: row.date ? String(row.date).slice(0, 10) : null,
     start_time: String(row.start_time),
     end_time: String(row.end_time),
     label: (row.label as string | null) ?? null,

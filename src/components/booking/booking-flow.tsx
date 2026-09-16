@@ -34,7 +34,13 @@ import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServiceDTO } from "@/lib/data/services";
 import type { SlotOption } from "@/lib/booking/availability";
-import { createBooking, getAvailableSlots, rescheduleBooking, rescheduleGuestBooking } from "@/lib/booking/actions";
+import {
+  createBooking,
+  getAvailableSlots,
+  getBookingClosedDates,
+  rescheduleBooking,
+  rescheduleGuestBooking,
+} from "@/lib/booking/actions";
 import type { RescheduleTarget } from "@/lib/booking/actions";
 import { dateFnsLocale } from "@/lib/booking/date-locale";
 import { localizedServiceName } from "@/lib/services/localize";
@@ -122,6 +128,7 @@ export function BookingFlow({
   const [submitting, startSubmit] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState<Success | null>(null);
+  const [liveClosedDates, setLiveClosedDates] = useState<readonly string[]>(closedDates);
 
   const dateSectionRef = useRef<HTMLElement>(null);
   const timeSectionRef = useRef<HTMLElement>(null);
@@ -198,6 +205,46 @@ export function BookingFlow({
     },
     [copy.errors.slotTaken, ignoreAppointmentId],
   );
+
+  const refreshClosedDates = useCallback(() => {
+    getBookingClosedDates()
+      .then((res) => {
+        if (!res.ok) return;
+        setLiveClosedDates(res.closedDates);
+      })
+      .catch(() => {
+        /* keep last closed set from SSR */
+      });
+  }, []);
+
+  // Keep month grid in sync with Orari (closed / blocked / special) for IT + EN.
+  useEffect(() => {
+    setLiveClosedDates(closedDates);
+  }, [closedDates]);
+
+  useEffect(() => {
+    if (success) return;
+    refreshClosedDates();
+    const id = window.setInterval(refreshClosedDates, 20_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") refreshClosedDates();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [success, refreshClosedDates]);
+
+  // If Orari closes the selected day while the customer is on Prenota, clear it.
+  useEffect(() => {
+    if (!dateISO) return;
+    if (!liveClosedDates.includes(dateISO)) return;
+    setDateISO(null);
+    setSlot(null);
+    setSlots([]);
+    setSlotError(null);
+  }, [dateISO, liveClosedDates]);
 
   useEffect(() => {
     if (!serviceId || !dateISO || success || submitting) return;
@@ -611,7 +658,7 @@ export function BookingFlow({
                   locale={locale}
                   timezone={timezone}
                   maxDays={maxDays}
-                  closedDates={closedDates}
+                  closedDates={liveClosedDates}
                   value={dateISO}
                   onChange={pickDate}
                   copy={copy.steps.calendar}

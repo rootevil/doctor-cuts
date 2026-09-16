@@ -12,6 +12,7 @@ import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
   getBreaks,
+  getClosedBookingDates,
   resolveDaySchedule,
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
@@ -137,6 +138,26 @@ export async function getAvailableSlots(
     slots,
     bookingsEnabled: true,
   };
+}
+
+/**
+ * Live closed / blocked dates for the Prenota month grid (IT + EN share this data).
+ * Refreshed from the client so Orari changes apply without a full page reload.
+ */
+export async function getBookingClosedDates(): Promise<
+  | { ok: true; closedDates: string[]; maxDays: number }
+  | { ok: false; reason: "not_configured" | "bookings_closed" }
+> {
+  if (!supabaseConfigured) return { ok: false, reason: "not_configured" };
+  const settings = await getSettings();
+  if (!settings.bookings_enabled) {
+    return { ok: false, reason: "bookings_closed" };
+  }
+  const today = shopToday();
+  const maxDays = Math.max(1, settings.max_booking_days);
+  const lastBookable = shiftDate(today, maxDays - 1);
+  const closedDates = await getClosedBookingDates(today, lastBookable);
+  return { ok: true, closedDates, maxDays };
 }
 
 export type CreateBookingInput = {

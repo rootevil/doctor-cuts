@@ -38,6 +38,13 @@ async function hoursClient() {
   return createSupabaseServerClient();
 }
 
+function toDateISO(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1]! : null;
+}
+
 function normalizeBreak(row: {
   day_of_week: number | null;
   date?: string | null;
@@ -46,7 +53,7 @@ function normalizeBreak(row: {
 }): Break {
   return {
     day_of_week: row.day_of_week == null ? null : Number(row.day_of_week),
-    date: row.date ? String(row.date) : null,
+    date: toDateISO(row.date),
     start_time: String(row.start_time),
     end_time: String(row.end_time),
   };
@@ -60,7 +67,7 @@ function mapSpecialHours(row: {
   label: string | null;
 }): SpecialHours {
   return {
-    date: String(row.date),
+    date: toDateISO(row.date) ?? String(row.date),
     open_time: row.open_time ? String(row.open_time) : null,
     close_time: row.close_time ? String(row.close_time) : null,
     is_closed: Boolean(row.is_closed),
