@@ -26,20 +26,29 @@ type Props = {
   defaultDay?: number | null;
   /** One-off date (YYYY-MM-DD). */
   defaultDate?: string | null;
+  compact?: boolean;
 };
 
-export function BreakDayFields({ locale, copy, defaultDay = null, defaultDate = null }: Props) {
+export function BreakDayFields({
+  locale,
+  copy,
+  defaultDay = null,
+  defaultDate = null,
+  compact = false,
+}: Props) {
   const initialMode = defaultDate
     ? "custom"
     : defaultDay == null
       ? "all"
       : String(defaultDay);
   const [mode, setMode] = useState(initialMode);
+  const labelClass = compact ? "admin-hours-field-label" : "text-caption";
+  const fieldClass = compact ? "admin-hours-field" : "flex flex-col gap-1";
 
   return (
     <>
-      <label className="flex flex-col gap-1">
-        <span className="text-caption">{copy.breakDay}</span>
+      <label className={fieldClass}>
+        <span className={labelClass}>{copy.breakDay}</span>
         <select
           name="day_of_week"
           className="admin-field"
@@ -56,8 +65,8 @@ export function BreakDayFields({ locale, copy, defaultDay = null, defaultDate = 
         </select>
       </label>
       {mode === "custom" ? (
-        <label className="flex flex-col gap-1">
-          <span className="text-caption">{copy.breakDate}</span>
+        <label className={fieldClass}>
+          <span className={labelClass}>{copy.breakDate}</span>
           <input
             type="date"
             name="date"

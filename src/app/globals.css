@@ -2645,6 +2645,220 @@ body[data-admin] main {
   overflow: hidden;
 }
 
+.admin-hours-layout {
+  display: grid;
+  gap: 1.35rem;
+}
+
+@media (min-width: 1100px) {
+  .admin-hours-layout {
+    grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr);
+    gap: 1.25rem 1.5rem;
+    align-items: start;
+  }
+
+  .admin-hours-block--weekly {
+    grid-row: 1 / span 3;
+  }
+}
+
+.admin-hours-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.admin-hours-block-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-hours-block-title {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass-muted, #b08d57);
+}
+
+.admin-hours-block-lead {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.admin-hours-card {
+  border: 1px solid var(--border);
+  background: var(--admin-panel);
+  overflow: hidden;
+}
+
+.admin-hours-flash {
+  margin: 0;
+  border-radius: 2px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.admin-hours-flash--ok {
+  border: 1px solid color-mix(in srgb, var(--brass) 40%, var(--border));
+  background: color-mix(in srgb, var(--brass) 10%, transparent);
+}
+
+.admin-hours-flash--err {
+  border: 1px solid color-mix(in srgb, #ef4444 40%, var(--border));
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+}
+
+.admin-hours-composer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--foreground) 2%, var(--admin-panel));
+}
+
+.admin-hours-composer--nested {
+  border-bottom: none;
+  background: transparent;
+  padding: 0.55rem 0 0;
+}
+
+@media (min-width: 640px) {
+  .admin-hours-composer {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    align-items: end;
+  }
+
+  .admin-hours-composer .admin-hours-field--grow {
+    grid-column: 1 / -2;
+  }
+
+  .admin-hours-composer .admin-hours-check {
+    grid-column: 1 / -2;
+  }
+}
+
+@media (min-width: 900px) {
+  .admin-hours-composer {
+    grid-template-columns: minmax(7rem, 9rem) repeat(2, 5.75rem) minmax(8rem, 1fr) auto;
+  }
+
+  .admin-hours-composer .admin-hours-field--grow {
+    grid-column: auto;
+  }
+
+  .admin-hours-composer .admin-hours-check {
+    grid-column: 1 / -2;
+  }
+}
+
+.admin-hours-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.admin-hours-field-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-hours-field .admin-field {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.admin-hours-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-hours-empty {
+  margin: 0;
+  padding: 0.85rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.admin-hours-entries {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-hours-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.admin-hours-entry:first-child {
+  border-top: none;
+}
+
+.admin-hours-entry-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-hours-entry-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-hours-entry-title {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.admin-hours-entry-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-hours-entry-edit {
+  width: 100%;
+}
+
+.admin-hours-entry-edit summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brass-muted, #b08d57);
+  list-style: none;
+}
+
+.admin-hours-entry-edit summary::-webkit-details-marker {
+  display: none;
+}
+
 .admin-hours-weekly-head {
   display: none;
   grid-template-columns: minmax(5.5rem, 1fr) 5.75rem 5.75rem 4.25rem;
