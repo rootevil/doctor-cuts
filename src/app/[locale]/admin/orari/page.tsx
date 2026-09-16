@@ -4,14 +4,17 @@ import {
   listAdminBlockedDates,
   listAdminBreaks,
   listAdminHours,
+  listAdminSpecialHours,
 } from "@/lib/admin/data";
 import {
   addBlockedDate,
   addBreak,
   removeBlockedDate,
   removeBreak,
+  removeSpecialHours,
   saveHours,
   updateBreak,
+  upsertSpecialHours,
 } from "@/lib/admin/actions";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
@@ -33,6 +36,13 @@ const DAYS: Record<number, { it: string; en: string }> = {
   7: { it: "Domenica", en: "Sunday" },
 };
 
+function formatAdminDate(dateISO: string, locale: "it" | "en") {
+  return new Date(dateISO + "T12:00:00").toLocaleDateString(
+    locale === "it" ? "it-IT" : "en-GB",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric" },
+  );
+}
+
 export default async function AdminHoursPage({
   params,
 }: {
@@ -44,10 +54,11 @@ export default async function AdminHoursPage({
   const t = getDictionary(locale);
   const copy = t.pages.admin.hours;
 
-  const [hours, blocked, breaks] = await Promise.all([
+  const [hours, blocked, breaks, special] = await Promise.all([
     listAdminHours(),
     listAdminBlockedDates(),
     listAdminBreaks(),
+    listAdminSpecialHours(),
   ]);
   const byDay = new Map(hours.map((h) => [h.day_of_week, h]));
 
@@ -216,6 +227,77 @@ export default async function AdminHoursPage({
       </div>
 
       <div className="flex flex-col gap-4 border-t border-border pt-8">
+        <h2 className="text-label text-accent-soft">{copy.specialTitle}</h2>
+        <p className="text-sm text-body">{copy.specialLead}</p>
+
+        <form
+          action={upsertSpecialHours}
+          className="admin-panel grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1.2fr_auto] md:items-end"
+        >
+          <input type="hidden" name="locale" value={locale} />
+          <label className="flex flex-col gap-1">
+            <span className="text-caption">{copy.date}</span>
+            <input type="date" name="date" required className="admin-field" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-caption">{copy.specialOpen}</span>
+            <input type="time" name="open_time" defaultValue="08:30" className="admin-field" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-caption">{copy.specialClose}</span>
+            <input type="time" name="close_time" defaultValue="14:00" className="admin-field" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-caption">{copy.specialLabel}</span>
+            <input
+              type="text"
+              name="label"
+              placeholder={copy.specialLabelPlaceholder}
+              className="admin-field"
+            />
+          </label>
+          <div className="flex flex-col gap-3 md:col-span-5 md:flex-row md:items-center md:justify-between">
+            <label className="flex items-center gap-2 text-[11px] tracking-[0.22em] text-foreground uppercase">
+              <input type="checkbox" name="closed" className="h-4 w-4 accent-brass" />
+              {copy.specialClosed}
+            </label>
+            <button type="submit" className="admin-btn admin-btn-primary w-fit">
+              {copy.addSpecial}
+            </button>
+          </div>
+        </form>
+
+        {special.length === 0 ? (
+          <p className="text-sm text-body">{copy.specialEmpty}</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border border-y border-border">
+            {special.map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <span className="font-display text-lg">
+                    {formatAdminDate(row.date, locale)}
+                  </span>
+                  <p className="text-xs text-muted">
+                    {row.is_closed
+                      ? copy.specialClosed
+                      : `${row.open_time?.slice(0, 5) ?? "—"} – ${row.close_time?.slice(0, 5) ?? "—"}`}
+                    {row.label ? ` · ${row.label}` : ""}
+                  </p>
+                </div>
+                <form action={removeSpecialHours}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={row.id} />
+                  <button type="submit" className="admin-btn admin-btn-ghost !min-h-9">
+                    {copy.remove}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-border pt-8">
         <h2 className="text-label text-accent-soft">{copy.blockedTitle}</h2>
         <p className="text-sm text-body">{copy.blockedLead}</p>
 
@@ -247,10 +329,7 @@ export default async function AdminHoursPage({
               <li key={b.id} className="flex items-center justify-between py-3">
                 <div>
                   <span className="font-display text-lg">
-                    {new Date(b.date + "T12:00:00").toLocaleDateString(
-                      locale === "it" ? "it-IT" : "en-GB",
-                      { weekday: "long", day: "numeric", month: "long", year: "numeric" },
-                    )}
+                    {formatAdminDate(b.date, locale)}
                   </span>
                   {b.reason ? <p className="text-xs text-muted">{b.reason}</p> : null}
                 </div>

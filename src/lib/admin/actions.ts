@@ -623,6 +623,39 @@ export async function removeBlockedDate(formData: FormData) {
   revalidateHoursCascade();
 }
 
+export async function upsertSpecialHours(formData: FormData) {
+  const { supabase } = await requireAdminClient();
+  const date = String(formData.get("date") ?? "").trim();
+  const closed = formData.get("closed") === "on";
+  const open = normalizeTimeInput(String(formData.get("open_time") ?? ""));
+  const close = normalizeTimeInput(String(formData.get("close_time") ?? ""));
+  const label = String(formData.get("label") ?? "").trim() || null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  if (!closed && (!open || !close || close <= open)) return;
+
+  const { error } = await supabase.from("special_hours").upsert(
+    {
+      date,
+      open_time: closed ? null : open,
+      close_time: closed ? null : close,
+      is_closed: closed,
+      label,
+    },
+    { onConflict: "date" },
+  );
+  if (error) throw new Error(error.message);
+  revalidateHoursCascade();
+}
+
+export async function removeSpecialHours(formData: FormData) {
+  const { supabase } = await requireAdminClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const { error } = await supabase.from("special_hours").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateHoursCascade();
+}
+
 export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();

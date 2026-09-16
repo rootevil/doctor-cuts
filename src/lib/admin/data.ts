@@ -417,6 +417,15 @@ export type AdminBlockedDate = {
   reason: string | null;
 };
 
+export type AdminSpecialHours = {
+  id: string;
+  date: string;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
+  label: string | null;
+};
+
 export async function listAdminHours(): Promise<AdminBusinessHour[]> {
   if (!supabaseConfigured) return [];
   const supabase = await createSupabaseServerClient();
@@ -447,6 +456,25 @@ export async function listAdminBlockedDates(): Promise<AdminBlockedDate[]> {
     .gte("date", today)
     .order("date", { ascending: true });
   return (data ?? []) as AdminBlockedDate[];
+}
+
+export async function listAdminSpecialHours(): Promise<AdminSpecialHours[]> {
+  if (!supabaseConfigured) return [];
+  const supabase = await createSupabaseServerClient();
+  const today = shopToday();
+  const { data } = await supabase
+    .from("special_hours")
+    .select("id, date, open_time, close_time, is_closed, label")
+    .gte("date", today)
+    .order("date", { ascending: true });
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    date: String(row.date),
+    open_time: row.open_time ? String(row.open_time) : null,
+    close_time: row.close_time ? String(row.close_time) : null,
+    is_closed: Boolean(row.is_closed),
+    label: (row.label as string | null) ?? null,
+  }));
 }
 
 /* ------------------------------------------------------------------ */

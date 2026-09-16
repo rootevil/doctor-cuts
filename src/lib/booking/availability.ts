@@ -32,6 +32,11 @@ export type AvailabilityInput = {
   bookingNoticeHours: number;
   now: Date;
   hours: BusinessHour[];
+  /**
+   * When set, replaces the weekly row for this date (special hours).
+   * Use with blockedDate for fully closed days.
+   */
+  hoursOverride?: Pick<BusinessHour, "open_time" | "close_time" | "is_closed"> | null;
   breaks: Break[];
   blockedDate: boolean;
   bookings: ExistingBooking[];
@@ -143,7 +148,14 @@ export function slotStartMinutes(
 export function computeSlotGrid(input: AvailabilityInput): SlotOption[] {
   if (input.blockedDate) return [];
 
-  const dayHours = input.hours.find((h) => h.day_of_week === input.dayOfWeek);
+  const dayHours = input.hoursOverride
+    ? {
+        day_of_week: input.dayOfWeek,
+        open_time: input.hoursOverride.open_time,
+        close_time: input.hoursOverride.close_time,
+        is_closed: input.hoursOverride.is_closed,
+      }
+    : input.hours.find((h) => h.day_of_week === input.dayOfWeek);
   if (!dayHours || dayHours.is_closed || !dayHours.open_time || !dayHours.close_time) {
     return [];
   }

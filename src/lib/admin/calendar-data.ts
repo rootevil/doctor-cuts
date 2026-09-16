@@ -12,7 +12,7 @@ import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
   getBreaks,
-  isDateBlocked,
+  resolveDaySchedule,
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -130,32 +130,50 @@ export async function getAdminCalendarDay(
   await expireStalePaymentHolds();
   await completePastAppointments();
 
-  const [hours, breaks, blocked, bookings, appointments] = await Promise.all([
+  const [hours, breaks, schedule, bookings, appointments] = await Promise.all([
     getBusinessHours(),
     getBreaks(),
-    isDateBlocked(dateISO),
+    resolveDaySchedule(dateISO),
     getBookingsForDate(dateISO, opts?.ignoreAppointmentId),
     listLiveAppointmentsForDate(dateISO),
   ]);
 
-  const dayHours = hours.find((h) => h.day_of_week === shopDayOfWeek(dateISO));
+  const dayOfWeek = shopDayOfWeek(dateISO);
+  const weekly = hours.find((h) => h.day_of_week === dayOfWeek);
+  const dayHours = schedule.hoursOverride
+    ? {
+        day_of_week: dayOfWeek,
+        open_time: schedule.hoursOverride.open_time,
+        close_time: schedule.hoursOverride.close_time,
+        is_closed: schedule.hoursOverride.is_closed,
+      }
+    : weekly;
   const closed = Boolean(
-    blocked || !dayHours || dayHours.is_closed || !dayHours.open_time,
+    schedule.blocked ||
+      !dayHours ||
+      dayHours.is_closed ||
+      !dayHours.open_time,
   );
 
   if (closed) {
-    return { dateISO, blocked, closed: true, slots: [] };
+    return {
+      dateISO,
+      blocked: schedule.blocked || Boolean(schedule.special?.is_closed),
+      closed: true,
+      slots: [],
+    };
   }
 
   const settings = await getSettings();
   const grid = computeSlotGrid({
     dateISO,
-    dayOfWeek: shopDayOfWeek(dateISO),
+    dayOfWeek,
     serviceDurationMinutes: BOOKING_SLOT_MINUTES,
     slotIntervalMinutes: BOOKING_SLOT_MINUTES,
     bookingNoticeHours: 0,
     now: new Date(),
     hours,
+    hoursOverride: schedule.hoursOverride,
     breaks,
     blockedDate: false,
     bookings,
@@ -191,7 +209,7 @@ export async function getAdminCalendarDay(
     };
   });
 
-  return { dateISO, blocked, closed: false, slots };
+  return { dateISO, blocked: schedule.blocked, closed: false, slots };
 }
 
 export async function getAdminCalendarWeek(startISO: string) {

@@ -659,6 +659,15 @@ export type Dictionary = {
         addBreak: string;
         saveBreak: string;
         breaksEmpty: string;
+        specialTitle: string;
+        specialLead: string;
+        specialOpen: string;
+        specialClose: string;
+        specialClosed: string;
+        specialLabel: string;
+        specialLabelPlaceholder: string;
+        addSpecial: string;
+        specialEmpty: string;
       };
       customers: {
         kicker: string;
@@ -1575,6 +1584,16 @@ const it: Dictionary = {
         addBreak: "Aggiungi pausa",
         saveBreak: "Salva pausa",
         breaksEmpty: "Nessuna pausa configurata.",
+        specialTitle: "Orari speciali (data singola)",
+        specialLead:
+          "Sostituisce l’orario settimanale per un giorno preciso — es. chiusura anticipata o apertura straordinaria. Le date bloccate restano prioritarie.",
+        specialOpen: "Apertura",
+        specialClose: "Chiusura",
+        specialClosed: "Chiuso tutto il giorno",
+        specialLabel: "Nota",
+        specialLabelPlaceholder: "es. Vigilia, evento",
+        addSpecial: "Salva orario speciale",
+        specialEmpty: "Nessun orario speciale configurato.",
       },
       customers: {
         kicker: "Clienti",
@@ -2493,6 +2512,16 @@ const en: Dictionary = {
         addBreak: "Add break",
         saveBreak: "Save break",
         breaksEmpty: "No breaks configured.",
+        specialTitle: "Special hours (single date)",
+        specialLead:
+          "Overrides the weekly schedule for one day — e.g. early close or extra opening. Blocked dates still take priority.",
+        specialOpen: "Open",
+        specialClose: "Close",
+        specialClosed: "Closed all day",
+        specialLabel: "Note",
+        specialLabelPlaceholder: "e.g. Eve, event",
+        addSpecial: "Save special hours",
+        specialEmpty: "No special hours configured.",
       },
       customers: {
         kicker: "Customers",

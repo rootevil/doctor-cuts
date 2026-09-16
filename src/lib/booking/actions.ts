@@ -12,7 +12,7 @@ import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
   getBreaks,
-  isDateBlocked,
+  resolveDaySchedule,
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
 import { getServiceById } from "@/lib/data/services";
@@ -109,10 +109,10 @@ export async function getAvailableSlots(
   const lastBookableDay = shiftDate(today, settings.max_booking_days);
   if (dateISO > lastBookableDay) return { ok: false, reason: "beyond_window" };
 
-  const [hours, breaks, blocked, bookings] = await Promise.all([
+  const [hours, breaks, schedule, bookings] = await Promise.all([
     getBusinessHours(),
     getBreaks(),
-    isDateBlocked(dateISO),
+    resolveDaySchedule(dateISO),
     getBookingsForDate(dateISO, ignoreId?.success ? ignoreId.data : null),
   ]);
 
@@ -124,8 +124,9 @@ export async function getAvailableSlots(
     bookingNoticeHours: settings.booking_notice_hours,
     now: new Date(),
     hours,
+    hoursOverride: schedule.hoursOverride,
     breaks,
-    blockedDate: blocked,
+    blockedDate: schedule.blocked,
     bookings,
   });
 

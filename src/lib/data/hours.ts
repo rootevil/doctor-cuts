@@ -16,6 +16,22 @@ export const DEFAULT_HOURS: BusinessHour[] = [
   { day_of_week: 7, open_time: null, close_time: null, is_closed: true },
 ];
 
+export type SpecialHours = {
+  date: string;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
+  label: string | null;
+};
+
+/** Resolved schedule for one shop-local calendar day. */
+export type DaySchedule = {
+  blocked: boolean;
+  /** When set, use instead of the weekly row for this date. */
+  hoursOverride: Pick<BusinessHour, "open_time" | "close_time" | "is_closed"> | null;
+  special: SpecialHours | null;
+};
+
 async function hoursClient() {
   if (supabaseServiceRoleKey) return createSupabaseAdminClient();
   return createSupabaseServerClient();
@@ -78,4 +94,64 @@ export async function getBlockedDates(fromISO: string, toISO: string): Promise<s
     .gte("date", fromISO)
     .lte("date", toISO);
   return (data ?? []).map((r: { date: string }) => r.date);
+}
+
+export async function getSpecialHoursForDate(
+  dateISO: string,
+): Promise<SpecialHours | null> {
+  if (!supabaseConfigured) return null;
+  const supabase = await hoursClient();
+  const { data } = await supabase
+    .from("special_hours")
+    .select("date, open_time, close_time, is_closed, label")
+    .eq("date", dateISO)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    date: String(data.date),
+    open_time: data.open_time ? String(data.open_time) : null,
+    close_time: data.close_time ? String(data.close_time) : null,
+    is_closed: Boolean(data.is_closed),
+    label: (data.label as string | null) ?? null,
+  };
+}
+
+/**
+ * Priority: blocked date → special hours for that date → weekly template.
+ * Special closed days count as blocked for slot generation.
+ */
+export async function resolveDaySchedule(dateISO: string): Promise<DaySchedule> {
+  const [blocked, special] = await Promise.all([
+    isDateBlocked(dateISO),
+    getSpecialHoursForDate(dateISO),
+  ]);
+
+  if (blocked) {
+    return { blocked: true, hoursOverride: null, special: null };
+  }
+
+  if (special) {
+    if (special.is_closed) {
+      return {
+        blocked: true,
+        hoursOverride: {
+          open_time: null,
+          close_time: null,
+          is_closed: true,
+        },
+        special,
+      };
+    }
+    return {
+      blocked: false,
+      hoursOverride: {
+        open_time: special.open_time,
+        close_time: special.close_time,
+        is_closed: false,
+      },
+      special,
+    };
+  }
+
+  return { blocked: false, hoursOverride: null, special: null };
 }
