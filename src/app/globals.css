@@ -3169,18 +3169,24 @@ body[data-admin] main {
 @media (min-width: 1100px) {
   .hours-week-head,
   .hours-week-row {
-    grid-template-columns: minmax(12rem, 1.6fr) minmax(16rem, 1fr) 7.5rem;
-    gap: 1rem 1.75rem;
+    grid-template-columns: minmax(0, 1fr) auto 7.5rem;
+    gap: 1rem 2rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
 
-  .hours-week-time .admin-field {
-    max-width: 8.5rem;
+  .hours-week-times {
+    width: max-content;
+    max-width: 100%;
   }
 
-  .hours-week-times {
-    justify-content: flex-start;
+  .hours-week-time .admin-field {
+    width: 7.75rem;
+  }
+
+  .hours-week-closed-badge {
+    min-width: 16.5rem;
+    justify-content: center;
   }
 }
 
