@@ -7,12 +7,13 @@ import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
 import { computeSlotGrid, type SlotOption } from "@/lib/booking/availability";
 import { assertSlotBookable } from "@/lib/booking/validate-slot";
 import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
-import { SHOP_TZ, shopDayOfWeek, shopToday, shiftDate } from "@/lib/booking/timezone";
+import { SHOP_TZ, shopDayOfWeek, shopToday } from "@/lib/booking/timezone";
 import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
   getBreaks,
   getClosedBookingDates,
+  lastBookableDateISO,
   resolveDaySchedule,
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
@@ -107,7 +108,7 @@ export async function getAvailableSlots(
   const today = shopToday();
   if (dateISO < today) return { ok: false, reason: "past_date" };
 
-  const lastBookableDay = shiftDate(today, settings.max_booking_days);
+  const lastBookableDay = lastBookableDateISO(today, settings.max_booking_days);
   if (dateISO > lastBookableDay) return { ok: false, reason: "beyond_window" };
 
   const [hours, breaks, schedule, bookings] = await Promise.all([
@@ -155,7 +156,7 @@ export async function getBookingClosedDates(): Promise<
   }
   const today = shopToday();
   const maxDays = Math.max(1, settings.max_booking_days);
-  const lastBookable = shiftDate(today, maxDays - 1);
+  const lastBookable = lastBookableDateISO(today, maxDays);
   const closedDates = await getClosedBookingDates(today, lastBookable);
   return { ok: true, closedDates, maxDays };
 }

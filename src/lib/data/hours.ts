@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured, supabaseServiceRoleKey } from "@/lib/supabase/env";
@@ -34,6 +35,8 @@ export type DaySchedule = {
 };
 
 async function hoursClient() {
+  // Orari changes must reach Prenota immediately (IT + EN share this data).
+  noStore();
   if (supabaseServiceRoleKey) return createSupabaseAdminClient();
   return createSupabaseServerClient();
 }
@@ -119,7 +122,9 @@ export async function getBlockedDates(fromISO: string, toISO: string): Promise<s
     .select("date")
     .gte("date", fromISO)
     .lte("date", toISO);
-  return (data ?? []).map((r: { date: string }) => r.date);
+  return (data ?? [])
+    .map((r: { date: string }) => toDateISO(r.date))
+    .filter((d): d is string => Boolean(d));
 }
 
 export async function getSpecialHoursForDate(
@@ -183,8 +188,17 @@ export function isShopClosedOnDate(
 }
 
 /**
+ * Last bookable shop-local day for a max_booking_days window
+ * (today inclusive → today + maxDays - 1).
+ */
+export function lastBookableDateISO(todayISO: string, maxBookingDays: number): string {
+  return shiftDate(todayISO, Math.max(1, maxBookingDays) - 1);
+}
+
+/**
  * Closed / blocked dates inside the booking window for the public calendar.
  * Special open days (even on a normally closed weekday) stay bookable.
+ * Shared by IT + EN Prenota (same `/it/prenota` route, cookie locale).
  */
 export async function getClosedBookingDates(
   fromISO: string,

@@ -3,7 +3,6 @@ import "server-only";
 import { computeSlotGrid } from "@/lib/booking/availability";
 import { BOOKING_SLOT_MINUTES } from "@/lib/booking/slot";
 import {
-  shiftDate,
   shopDateISO,
   shopDayOfWeek,
   shopToday,
@@ -12,6 +11,7 @@ import { getBookingsForDate } from "@/lib/data/appointments";
 import {
   getBusinessHours,
   getBreaks,
+  lastBookableDateISO,
   resolveDaySchedule,
 } from "@/lib/data/hours";
 import { getSettings } from "@/lib/data/settings";
@@ -56,7 +56,7 @@ export async function assertSlotBookable(input: {
   const today = shopToday();
   if (dateISO < today) return { ok: false, reason: "invalid_time" };
 
-  const lastBookableDay = shiftDate(today, settings.max_booking_days);
+  const lastBookableDay = lastBookableDateISO(today, settings.max_booking_days);
   if (!input.adminOverride && dateISO > lastBookableDay) {
     return { ok: false, reason: "beyond_window" };
   }

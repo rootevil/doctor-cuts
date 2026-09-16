@@ -225,14 +225,17 @@ export function BookingFlow({
   useEffect(() => {
     if (success) return;
     refreshClosedDates();
-    const id = window.setInterval(refreshClosedDates, 20_000);
+    const id = window.setInterval(refreshClosedDates, 10_000);
     const onVis = () => {
       if (document.visibilityState === "visible") refreshClosedDates();
     };
+    const onFocus = () => refreshClosedDates();
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
     };
   }, [success, refreshClosedDates]);
 
@@ -278,6 +281,7 @@ export function BookingFlow({
     if (id === serviceId) return;
     setServiceId(id);
     setSubmitError(null);
+    refreshClosedDates();
     if (dateISO) fetchSlots(id, dateISO);
     // Guide attention to the next decision (Hick: one stage at a time)
     requestAnimationFrame(() => scrollToSection(dateSectionRef.current));
@@ -287,6 +291,7 @@ export function BookingFlow({
     if (iso === dateISO) return;
     setDateISO(iso);
     setSubmitError(null);
+    refreshClosedDates();
     if (serviceId) fetchSlots(serviceId, iso);
     requestAnimationFrame(() => scrollToSection(timeSectionRef.current));
   };
