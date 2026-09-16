@@ -91,50 +91,57 @@ export default async function AdminHoursPage({
         </p>
       ) : null}
 
-      <form action={saveHours} className="flex flex-col gap-3">
+      <form action={saveHours} className="admin-hours-weekly">
         <input type="hidden" name="locale" value={locale} />
-        {Object.entries(DAYS).map(([dowStr, name]) => {
-          const dow = Number(dowStr);
-          const row = byDay.get(dow);
-          const closed = row?.is_closed ?? false;
-          const open = row?.open_time?.slice(0, 5) ?? "08:30";
-          const close = row?.close_time?.slice(0, 5) ?? "21:00";
-          return (
-            <div
-              key={dow}
-              className="admin-panel grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 md:grid-cols-[10rem_1fr_1fr_10rem]"
-            >
-              <span className="font-display text-lg">{name[locale]}</span>
-              <label className="flex flex-col gap-1">
-                <span className="text-caption">{copy.open}</span>
-                <input
-                  type="time"
-                  name={`hours[${dow}][open]`}
-                  defaultValue={open}
-                  className="admin-field"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-caption">{copy.close}</span>
-                <input
-                  type="time"
-                  name={`hours[${dow}][close]`}
-                  defaultValue={close}
-                  className="admin-field"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-[11px] tracking-[0.22em] text-foreground uppercase">
-                <input
-                  type="checkbox"
-                  name={`hours[${dow}][closed]`}
-                  defaultChecked={closed}
-                  className="h-4 w-4 accent-brass"
-                />
-                {copy.closed}
-              </label>
-            </div>
-          );
-        })}
+        <div className="admin-hours-weekly-card admin-panel">
+          <div className="admin-hours-weekly-head" aria-hidden>
+            <span />
+            <span>{copy.open}</span>
+            <span>{copy.close}</span>
+            <span>{copy.closed}</span>
+          </div>
+          <ul className="admin-hours-weekly-list">
+            {Object.entries(DAYS).map(([dowStr, name]) => {
+              const dow = Number(dowStr);
+              const row = byDay.get(dow);
+              const closed = row?.is_closed ?? false;
+              const open = row?.open_time?.slice(0, 5) ?? "08:30";
+              const close = row?.close_time?.slice(0, 5) ?? "21:00";
+              return (
+                <li key={dow} className="admin-hours-weekly-row">
+                  <span className="admin-hours-weekly-day">{name[locale]}</span>
+                  <label className="admin-hours-weekly-time">
+                    <span className="sr-only">{copy.open}</span>
+                    <input
+                      type="time"
+                      name={`hours[${dow}][open]`}
+                      defaultValue={open}
+                      className="admin-field"
+                    />
+                  </label>
+                  <label className="admin-hours-weekly-time">
+                    <span className="sr-only">{copy.close}</span>
+                    <input
+                      type="time"
+                      name={`hours[${dow}][close]`}
+                      defaultValue={close}
+                      className="admin-field"
+                    />
+                  </label>
+                  <label className="admin-hours-weekly-closed">
+                    <input
+                      type="checkbox"
+                      name={`hours[${dow}][closed]`}
+                      defaultChecked={closed}
+                      className="h-4 w-4 accent-brass"
+                    />
+                    <span className="admin-hours-weekly-closed-label">{copy.closed}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
         <button type="submit" className="admin-btn admin-btn-primary w-fit">
           {copy.saveHours}
         </button>
