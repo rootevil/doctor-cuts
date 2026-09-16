@@ -653,6 +653,8 @@ export type Dictionary = {
         breaksLead: string;
         breakDay: string;
         breakDayAll: string;
+        breakDayCustom: string;
+        breakDate: string;
         breakStart: string;
         breakEnd: string;
         breakLabel: string;
@@ -1579,9 +1581,11 @@ const it: Dictionary = {
         remove: "Rimuovi",
         breaksTitle: "Pause",
         breaksLead:
-          "Intervalli in cui non si accettano prenotazioni (es. pranzo). Restano bloccati anche gli slot da 40 minuti che si sovrappongono alla pausa — es. pausa 14:00–16:00 blocca anche le 13:50 (finirebbe alle 14:30).",
+          "Intervalli in cui non si accettano prenotazioni (es. pranzo). Restano bloccati anche gli slot da 40 minuti che si sovrappongono alla pausa — es. pausa 14:00–16:00 blocca anche le 13:50 (finirebbe alle 14:30). Puoi ripetere ogni giorno, un giorno della settimana, o una data specifica.",
         breakDay: "Giorno",
         breakDayAll: "Ogni giorno",
+        breakDayCustom: "Data personalizzata",
+        breakDate: "Data",
         breakStart: "Inizio",
         breakEnd: "Fine",
         breakLabel: "Etichetta",
@@ -2511,9 +2515,11 @@ const en: Dictionary = {
         remove: "Remove",
         breaksTitle: "Breaks",
         breaksLead:
-          "Intervals when bookings are not accepted (e.g. lunch). Any 40-minute slot that overlaps the break is blocked — e.g. a 14:00–16:00 lunch also blocks 13:50 (would end at 14:30).",
+          "Intervals when bookings are not accepted (e.g. lunch). Any 40-minute slot that overlaps the break is blocked — e.g. a 14:00–16:00 lunch also blocks 13:50 (would end at 14:30). Repeat every day, one weekday, or a single custom date.",
         breakDay: "Day",
         breakDayAll: "Every day",
+        breakDayCustom: "Custom date",
+        breakDate: "Date",
         breakStart: "Start",
         breakEnd: "End",
         breakLabel: "Label",

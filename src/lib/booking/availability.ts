@@ -14,7 +14,9 @@ export type BusinessHour = {
 };
 
 export type Break = {
-  day_of_week: number | null; // null = every day
+  day_of_week: number | null; // null = every day (when date is also null)
+  /** When set, applies only on this shop-local date (day_of_week is null). */
+  date: string | null;
   start_time: string; // "HH:mm:ss"
   end_time: string;
 };
@@ -93,11 +95,19 @@ function bookingRanges(
   return ranges;
 }
 
-function breakRanges(dayOfWeek: number, breaks: Break[]): Array<[number, number]> {
+function breakRanges(
+  dateISO: string,
+  dayOfWeek: number,
+  breaks: Break[],
+): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
   for (const b of breaks) {
-    // null / undefined = every day (admin “Ogni giorno”)
-    if (b.day_of_week != null && Number(b.day_of_week) !== dayOfWeek) continue;
+    if (b.date) {
+      if (b.date !== dateISO) continue;
+    } else if (b.day_of_week != null && Number(b.day_of_week) !== dayOfWeek) {
+      // null day_of_week + null date = every day
+      continue;
+    }
     const start = hhmmToMinutes(b.start_time);
     const end = hhmmToMinutes(b.end_time);
     if (!(end > start)) continue;
@@ -169,7 +179,7 @@ export function computeSlotGrid(input: AvailabilityInput): SlotOption[] {
   );
 
   const taken = bookingRanges(input.dateISO, input.bookings);
-  const paused = breakRanges(input.dayOfWeek, input.breaks);
+  const paused = breakRanges(input.dateISO, input.dayOfWeek, input.breaks);
   const starts = slotStartMinutes(openMin, closeMin, duration, step);
 
   const slots: SlotOption[] = [];

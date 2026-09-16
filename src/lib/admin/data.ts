@@ -406,6 +406,7 @@ export type AdminBusinessHour = {
 export type AdminBreak = {
   id: string;
   day_of_week: number | null;
+  date: string | null;
   start_time: string;
   end_time: string;
   label: string | null;
@@ -439,11 +440,21 @@ export async function listAdminHours(): Promise<AdminBusinessHour[]> {
 export async function listAdminBreaks(): Promise<AdminBreak[]> {
   if (!supabaseConfigured) return [];
   const supabase = await createSupabaseServerClient();
+  const today = shopToday();
   const { data } = await supabase
     .from("breaks")
-    .select("id, day_of_week, start_time, end_time, label")
-    .order("day_of_week", { ascending: true });
-  return (data ?? []) as AdminBreak[];
+    .select("id, day_of_week, date, start_time, end_time, label")
+    .or(`date.is.null,date.gte.${today}`)
+    .order("date", { ascending: true, nullsFirst: false })
+    .order("day_of_week", { ascending: true, nullsFirst: true });
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    day_of_week: row.day_of_week == null ? null : Number(row.day_of_week),
+    date: row.date ? String(row.date) : null,
+    start_time: String(row.start_time),
+    end_time: String(row.end_time),
+    label: (row.label as string | null) ?? null,
+  }));
 }
 
 export async function listAdminBlockedDates(): Promise<AdminBlockedDate[]> {

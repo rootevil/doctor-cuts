@@ -16,6 +16,7 @@ import {
   updateBreak,
   upsertSpecialHours,
 } from "@/lib/admin/actions";
+import { BreakDayFields } from "@/components/admin/break-day-fields";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, urlLocaleParams } from "@/i18n/config";
 import { requestLocale } from "@/i18n/request-locale";
@@ -143,19 +144,20 @@ export default async function AdminHoursPage({
         <h2 className="text-label text-accent-soft">{copy.breaksTitle}</h2>
         <p className="text-sm text-body">{copy.breaksLead}</p>
 
-        <form action={addBreak} className="admin-panel grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1.2fr_auto] md:items-end">
+        <form
+          action={addBreak}
+          className="admin-panel grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1.2fr_auto] md:items-end"
+        >
           <input type="hidden" name="locale" value={locale} />
-          <label className="flex flex-col gap-1">
-            <span className="text-caption">{copy.breakDay}</span>
-            <select name="day_of_week" className="admin-field" defaultValue="all">
-              <option value="all">{copy.breakDayAll}</option>
-              {Object.entries(DAYS).map(([dow, name]) => (
-                <option key={dow} value={dow}>
-                  {name[locale]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <BreakDayFields
+            locale={locale}
+            copy={{
+              breakDay: copy.breakDay,
+              breakDayAll: copy.breakDayAll,
+              breakDayCustom: copy.breakDayCustom,
+              breakDate: copy.breakDate,
+            }}
+          />
           <label className="flex flex-col gap-1">
             <span className="text-caption">{copy.breakStart}</span>
             <input type="time" name="start_time" required defaultValue="13:00" className="admin-field" />
@@ -190,21 +192,17 @@ export default async function AdminHoursPage({
                 >
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="id" value={b.id} />
-                  <label className="flex flex-col gap-1">
-                    <span className="text-caption">{copy.breakDay}</span>
-                    <select
-                      name="day_of_week"
-                      className="admin-field"
-                      defaultValue={b.day_of_week == null ? "all" : String(b.day_of_week)}
-                    >
-                      <option value="all">{copy.breakDayAll}</option>
-                      {Object.entries(DAYS).map(([dow, name]) => (
-                        <option key={dow} value={dow}>
-                          {name[locale]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <BreakDayFields
+                    locale={locale}
+                    copy={{
+                      breakDay: copy.breakDay,
+                      breakDayAll: copy.breakDayAll,
+                      breakDayCustom: copy.breakDayCustom,
+                      breakDate: copy.breakDate,
+                    }}
+                    defaultDay={b.day_of_week}
+                    defaultDate={b.date}
+                  />
                   <label className="flex flex-col gap-1">
                     <span className="text-caption">{copy.breakStart}</span>
                     <input

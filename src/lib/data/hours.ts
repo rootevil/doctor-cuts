@@ -40,11 +40,13 @@ async function hoursClient() {
 
 function normalizeBreak(row: {
   day_of_week: number | null;
+  date?: string | null;
   start_time: string;
   end_time: string;
 }): Break {
   return {
     day_of_week: row.day_of_week == null ? null : Number(row.day_of_week),
+    date: row.date ? String(row.date) : null,
     start_time: String(row.start_time),
     end_time: String(row.end_time),
   };
@@ -87,7 +89,7 @@ export async function getBreaks(): Promise<Break[]> {
   const supabase = await hoursClient();
   const { data } = await supabase
     .from("breaks")
-    .select("day_of_week, start_time, end_time");
+    .select("day_of_week, date, start_time, end_time");
   return (data ?? []).map(normalizeBreak);
 }
 

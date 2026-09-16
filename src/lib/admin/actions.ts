@@ -646,15 +646,40 @@ export async function addBreak(formData: FormData) {
   const { supabase } = await requireAdminClient();
   const locale = coerceLocale(formData.get("locale"));
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
+  const dateRaw = String(formData.get("date") ?? "").trim();
   const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
   if (!start || !end || end <= start) {
     finishHoursMutation(locale, "invalid_times");
   }
-  const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
+
+  const isCustomDate = dayRaw === "custom";
+  if (isCustomDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
+      finishHoursMutation(locale, "invalid_date");
+    }
+  }
+
+  const day_of_week =
+    isCustomDate || dayRaw === "" || dayRaw === "all"
+      ? null
+      : Number(dayRaw);
+  if (
+    !isCustomDate &&
+    day_of_week != null &&
+    (!Number.isFinite(day_of_week) || day_of_week < 1 || day_of_week > 7)
+  ) {
+    finishHoursMutation(locale, "invalid_date");
+  }
+
   const { error } = await supabase.from("breaks").insert({
-    day_of_week: Number.isFinite(day_of_week as number) ? day_of_week : null,
+    day_of_week: isCustomDate
+      ? null
+      : Number.isFinite(day_of_week as number)
+        ? day_of_week
+        : null,
+    date: isCustomDate ? dateRaw : null,
     start_time: start,
     end_time: end,
     label,
@@ -668,17 +693,42 @@ export async function updateBreak(formData: FormData) {
   const locale = coerceLocale(formData.get("locale"));
   const id = String(formData.get("id") ?? "").trim();
   const dayRaw = String(formData.get("day_of_week") ?? "").trim();
+  const dateRaw = String(formData.get("date") ?? "").trim();
   const start = normalizeTimeInput(String(formData.get("start_time") ?? ""));
   const end = normalizeTimeInput(String(formData.get("end_time") ?? ""));
   const label = String(formData.get("label") ?? "").trim() || null;
   if (!id || !start || !end || end <= start) {
     finishHoursMutation(locale, "invalid_times");
   }
-  const day_of_week = dayRaw === "" || dayRaw === "all" ? null : Number(dayRaw);
+
+  const isCustomDate = dayRaw === "custom";
+  if (isCustomDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
+      finishHoursMutation(locale, "invalid_date");
+    }
+  }
+
+  const day_of_week =
+    isCustomDate || dayRaw === "" || dayRaw === "all"
+      ? null
+      : Number(dayRaw);
+  if (
+    !isCustomDate &&
+    day_of_week != null &&
+    (!Number.isFinite(day_of_week) || day_of_week < 1 || day_of_week > 7)
+  ) {
+    finishHoursMutation(locale, "invalid_date");
+  }
+
   const { error } = await supabase
     .from("breaks")
     .update({
-      day_of_week: Number.isFinite(day_of_week as number) ? day_of_week : null,
+      day_of_week: isCustomDate
+        ? null
+        : Number.isFinite(day_of_week as number)
+          ? day_of_week
+          : null,
+      date: isCustomDate ? dateRaw : null,
       start_time: start,
       end_time: end,
       label,
